@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
-import HandCursor from '@/components/HandCursor';
 import HandSkeleton from '@/components/HandSkeleton';
 import InteractiveCard from '@/components/InteractiveCard';
 import { useToast } from '@/hooks/use-toast';
@@ -433,26 +432,14 @@ const Index = () => {
                 })}
             </div>
 
-            {/* Hand cursors for each hand */}
-            {handPositions.map((pos, index) => (
-              <HandCursor
-                key={index}
-                position={pos}
-                gestureState={gestureStates[index] || { 
-                  isPinching: false, 
-                  isPointing: false, 
-                  pinchStrength: 0, 
-                  handIndex: index,
-                  fingers: {
-                    thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
-                    index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
-                    middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
-                    ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
-                    pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }
-                  }
-                }}
+            {/* Hand skeleton overlay */}
+            {videoRef.current && (
+              <HandSkeleton 
+                landmarks={landmarks} 
+                videoWidth={videoRef.current.videoWidth || 640}
+                videoHeight={videoRef.current.videoHeight || 480}
               />
-            ))}
+            )}
           </div>
         )}
       </div>
