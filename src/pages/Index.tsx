@@ -60,10 +60,6 @@ const Index = () => {
     // Wait for React to render the video element
     setTimeout(async () => {
       await startCamera();
-      toast({
-        title: "Hand Tracking Active",
-        description: "Move your hand to control the cursor. Pinch to click!",
-      });
     }, 200);
   };
 
@@ -78,37 +74,6 @@ const Index = () => {
     }
 
     const updateDrag = () => {
-      // Check if both hands are pinching the same card
-      const bothHandsPinching = handPositions.length === 2 && 
-        gestureStates[0]?.isPinching && 
-        gestureStates[1]?.isPinching;
-      
-      if (bothHandsPinching) {
-        const card0 = grabbedCards.get(0);
-        const card1 = grabbedCards.get(1);
-        
-        // If both hands are grabbing the same card, calculate scale
-        if (card0 && card1 && card0.id === card1.id) {
-          const hand1X = handPositions[0].x * 100;
-          const hand1Y = handPositions[0].y * 100;
-          const hand2X = handPositions[1].x * 100;
-          const hand2Y = handPositions[1].y * 100;
-          
-          const distance = Math.sqrt(
-            Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2)
-          );
-          
-          const baseDistance = baseDistanceRef.current.get(card0.id);
-          if (!baseDistance) {
-            baseDistanceRef.current.set(card0.id, distance);
-          } else {
-            const scaleFactor = distance / baseDistance;
-            const newScale = Math.max(0.5, Math.min(3, scaleFactor));
-            setCardScales(prev => new Map(prev).set(card0.id, newScale));
-          }
-        }
-      }
-
       const newGrabbedCards = new Map(grabbedCards);
       let hasChanges = false;
 
@@ -127,53 +92,84 @@ const Index = () => {
           const cardWidth = 16;
           const cardHeight = 12;
           
-          // Find closest card not already grabbed
-          const availableCard = cards
-            .filter(card => !Array.from(newGrabbedCards.values()).some(g => g.id === card.id))
-            .find((card) => {
-              const dx = Math.abs(handX - card.position.x);
-              const dy = Math.abs(handY - card.position.y);
-              return dx < cardWidth && dy < cardHeight;
-            });
+          // Find card under hand (allow multiple hands on same card)
+          const targetCard = cards.find((card) => {
+            const dx = Math.abs(handX - card.position.x);
+            const dy = Math.abs(handY - card.position.y);
+            return dx < cardWidth && dy < cardHeight;
+          });
 
-          if (availableCard) {
+          if (targetCard) {
             newGrabbedCards.set(handIndex, {
-              id: availableCard.id,
-              offsetX: handX - availableCard.position.x,
-              offsetY: handY - availableCard.position.y,
+              id: targetCard.id,
+              offsetX: handX - targetCard.position.x,
+              offsetY: handY - targetCard.position.y,
             });
             hasChanges = true;
             
             // Bring card to front
             maxZIndexRef.current += 1;
             setCards(prev => prev.map(card =>
-              card.id === availableCard.id
+              card.id === targetCard.id
                 ? { ...card, zIndex: maxZIndexRef.current }
                 : card
             ));
-            
-            toast({
-              title: "Card Grabbed!",
-              description: `Hand ${handIndex + 1} holding ${availableCard.title}`,
-              duration: 1000,
-            });
           }
         }
 
-        // Continue pinch - update position
+        // Continue pinch - check if both hands grabbing same card for scaling
         if (isPinching) {
-          const grabbed = newGrabbedCards.get(handIndex);
-          if (grabbed) {
-            const newX = Math.max(5, Math.min(95, handX - grabbed.offsetX));
-            const newY = Math.max(5, Math.min(90, handY - grabbed.offsetY));
+          const card0 = newGrabbedCards.get(0);
+          const card1 = newGrabbedCards.get(1);
+          
+          // Both hands on same card = scale mode
+          if (card0 && card1 && card0.id === card1.id && handPositions.length === 2) {
+            const hand1X = handPositions[0].x * 100;
+            const hand1Y = handPositions[0].y * 100;
+            const hand2X = handPositions[1].x * 100;
+            const hand2Y = handPositions[1].y * 100;
+            
+            const distance = Math.sqrt(
+              Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2)
+            );
+            
+            const baseDistance = baseDistanceRef.current.get(card0.id);
+            if (!baseDistance) {
+              baseDistanceRef.current.set(card0.id, distance);
+            } else {
+              const scaleFactor = distance / baseDistance;
+              const newScale = Math.max(0.5, Math.min(3, scaleFactor));
+              setCardScales(prev => new Map(prev).set(card0.id, newScale));
+            }
+            
+            // Update position to midpoint between hands
+            const midX = (hand1X + hand2X) / 2;
+            const midY = (hand1Y + hand2Y) / 2;
+            const newX = Math.max(5, Math.min(95, midX));
+            const newY = Math.max(5, Math.min(90, midY));
             
             setCards(prev =>
               prev.map(card =>
-                card.id === grabbed.id
+                card.id === card0.id
                   ? { ...card, position: { x: newX, y: newY } }
                   : card
               )
             );
+          } else {
+            // Single hand drag mode
+            const grabbed = newGrabbedCards.get(handIndex);
+            if (grabbed) {
+              const newX = Math.max(5, Math.min(95, handX - grabbed.offsetX));
+              const newY = Math.max(5, Math.min(90, handY - grabbed.offsetY));
+              
+              setCards(prev =>
+                prev.map(card =>
+                  card.id === grabbed.id
+                    ? { ...card, position: { x: newX, y: newY } }
+                    : card
+                )
+              );
+            }
           }
         }
 
@@ -189,12 +185,6 @@ const Index = () => {
             if (!otherHandHolding) {
               baseDistanceRef.current.delete(grabbed.id);
             }
-            
-            toast({
-              title: "Card Released",
-              description: `Hand ${handIndex + 1} dropped card`,
-              duration: 1000,
-            });
           }
         }
 
