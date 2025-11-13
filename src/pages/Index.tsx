@@ -20,7 +20,7 @@ const Index = () => {
         title: "Hand Tracking Active",
         description: "Move your hand to control the cursor. Pinch to click!",
       });
-    }, 100);
+    }, 200);
   };
 
   const handleCardInteract = (cardName: string) => {
@@ -80,27 +80,24 @@ const Index = () => {
           </div>
         ) : (
           <div className="relative min-h-screen">
-            {/* Fullscreen video preview with skeleton overlay */}
+            {/* Video container */}
             <div className="fixed inset-0 z-40 bg-black">
-              <div className="relative w-full h-full">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
-                />
-                
-                {/* Hand skeleton overlay */}
-                {landmarks && videoRef.current && videoRef.current.videoWidth > 0 && (
-                  <HandSkeleton
-                    landmarks={landmarks}
-                    videoWidth={videoRef.current.videoWidth}
-                    videoHeight={videoRef.current.videoHeight}
-                  />
-                )}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+              />
               
-              </div>
+              {/* Hand skeleton overlay canvas */}
+              {landmarks && videoRef.current && videoRef.current.videoWidth > 0 && (
+                <HandSkeleton
+                  landmarks={landmarks}
+                  videoWidth={videoRef.current.videoWidth}
+                  videoHeight={videoRef.current.videoHeight}
+                />
+              )}
               
               {/* Status indicator */}
               <div className="absolute top-4 left-4 glass-panel px-4 py-3 rounded-lg z-50">
@@ -114,6 +111,11 @@ const Index = () => {
                   {landmarks && landmarks.length > 0 && (
                     <div className="text-xs font-mono text-primary">
                       Landmarks: {landmarks[0]?.length || 0} points tracked
+                    </div>
+                  )}
+                  {videoRef.current && (
+                    <div className="text-xs font-mono text-muted-foreground">
+                      Video: {videoRef.current.videoWidth}x{videoRef.current.videoHeight}
                     </div>
                   )}
                 </div>

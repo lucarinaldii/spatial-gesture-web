@@ -113,23 +113,29 @@ export const useHandTracking = () => {
         },
       });
 
+      console.log('✓ Camera stream obtained');
       videoRef.current.srcObject = stream;
       
-      // Wait for video to be loaded and ready
+      // Play the video and wait for it to have dimensions
+      await videoRef.current.play();
+      console.log('✓ Video playing');
+      
+      // Wait for video to have valid dimensions
       await new Promise<void>((resolve) => {
-        if (!videoRef.current) return;
-        
-        const onLoadedData = () => {
-          console.log('✓ Video loaded:', {
-            width: videoRef.current?.videoWidth,
-            height: videoRef.current?.videoHeight,
-            readyState: videoRef.current?.readyState
-          });
-          resolve();
+        const checkDimensions = () => {
+          if (videoRef.current && 
+              videoRef.current.videoWidth > 0 && 
+              videoRef.current.videoHeight > 0) {
+            console.log('✓ Video ready with dimensions:', {
+              width: videoRef.current.videoWidth,
+              height: videoRef.current.videoHeight,
+            });
+            resolve();
+          } else {
+            requestAnimationFrame(checkDimensions);
+          }
         };
-        
-        videoRef.current.addEventListener('loadeddata', onLoadedData, { once: true });
-        videoRef.current.play();
+        checkDimensions();
       });
       
       // Start processing frames
