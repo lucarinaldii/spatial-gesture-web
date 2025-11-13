@@ -34,6 +34,8 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    console.log('Drawing hand skeleton with', landmarks.length, 'hands');
+
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -43,10 +45,12 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     ctx.translate(-canvas.width, 0);
 
     landmarks.forEach((hand: any) => {
-      // Draw connections with cyan glow
+      console.log('Hand has', hand.length, 'landmarks');
+      
+      // Draw connections with cyan glow - MUCH THICKER
       ctx.strokeStyle = '#00D9FF';
-      ctx.lineWidth = 3;
-      ctx.shadowBlur = 15;
+      ctx.lineWidth = 6;
+      ctx.shadowBlur = 20;
       ctx.shadowColor = '#00D9FF';
 
       HAND_CONNECTIONS.forEach(([start, end]) => {
@@ -59,14 +63,14 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         ctx.stroke();
       });
 
-      // Draw landmark points with purple glow
-      ctx.shadowColor = '#B644FF';
-      ctx.shadowBlur = 20;
+      // Draw landmark points with purple glow - MUCH LARGER
+      ctx.shadowColor = '#FF44DD';
+      ctx.shadowBlur = 30;
       
       hand.forEach((landmark: any, index: number) => {
         // Make fingertips larger and brighter
         const isFingertip = [4, 8, 12, 16, 20].includes(index);
-        const radius = isFingertip ? 8 : 5;
+        const radius = isFingertip ? 15 : 10;
         
         ctx.fillStyle = isFingertip ? '#FF44DD' : '#B644FF';
         ctx.beginPath();
@@ -90,7 +94,6 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
       width={videoWidth}
       height={videoHeight}
       className="absolute inset-0 w-full h-full pointer-events-none z-10"
-      style={{ mixBlendMode: 'screen' }}
     />
   );
 };

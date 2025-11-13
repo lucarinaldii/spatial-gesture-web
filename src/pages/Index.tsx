@@ -85,33 +85,38 @@ const Index = () => {
           </div>
         ) : (
           <div className="relative min-h-screen">
-            {/* Video preview with skeleton overlay */}
-            <div className="fixed top-4 right-4 w-[400px] h-[300px] glass-panel overflow-hidden rounded-lg border border-primary/30 z-50">
+            {/* Large video preview with skeleton overlay - taking most of screen */}
+            <div className="fixed inset-4 glass-panel overflow-hidden rounded-lg border border-primary/30 z-40 max-w-[90vw] max-h-[90vh] m-auto">
               <div className="relative w-full h-full">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
-                  width={400}
-                  height={300}
+                  className="absolute inset-0 w-full h-full object-contain scale-x-[-1]"
                 />
                 <HandSkeleton
                   landmarks={landmarks}
-                  videoWidth={400}
-                  videoHeight={300}
+                  videoWidth={1280}
+                  videoHeight={720}
                 />
               
               </div>
               
               {/* Status indicator */}
-              <div className="absolute bottom-2 left-2 glass-panel px-3 py-1 rounded-full z-20">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${handPosition ? 'bg-primary' : 'bg-muted'} animate-pulse`} />
-                  <span className="text-xs font-mono text-foreground">
-                    {handPosition ? 'TRACKING' : 'NO HAND DETECTED'}
-                  </span>
+              <div className="absolute top-4 left-4 glass-panel px-4 py-3 rounded-lg z-50">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${handPosition ? 'bg-primary' : 'bg-muted'} animate-pulse`} />
+                    <span className="text-sm font-mono text-foreground font-bold">
+                      {handPosition ? 'HAND DETECTED ✓' : 'NO HAND - SHOW YOUR HAND'}
+                    </span>
+                  </div>
+                  {landmarks && landmarks.length > 0 && (
+                    <div className="text-xs font-mono text-primary">
+                      Landmarks: {landmarks[0]?.length || 0} points tracked
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

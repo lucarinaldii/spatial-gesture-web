@@ -38,6 +38,8 @@ export const useHandTracking = () => {
     if (result.landmarks && result.landmarks.length > 0) {
       const hand = result.landmarks[0];
       
+      console.log('✓ Hand detected! Landmarks:', hand.length);
+      
       // Index finger tip (landmark 8)
       const indexTip = hand[8];
       
@@ -66,6 +68,7 @@ export const useHandTracking = () => {
 
       setLandmarks(result.landmarks);
     } else {
+      console.log('✗ No hand detected');
       setHandPosition(null);
       setLandmarks(null);
     }
