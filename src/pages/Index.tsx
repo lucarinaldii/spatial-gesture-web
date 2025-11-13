@@ -12,6 +12,8 @@ interface CardData {
   position: { x: number; y: number };
   zIndex: number;
   rotation: { x: number; y: number; z: number };
+  velocity: { x: number; y: number };
+  isPhysicsEnabled: boolean;
 }
 
 const Index = () => {
@@ -27,6 +29,8 @@ const Index = () => {
       position: { x: 20, y: 35 },
       zIndex: 1,
       rotation: { x: 0, y: 0, z: 0 },
+      velocity: { x: 0, y: 0 },
+      isPhysicsEnabled: false,
     },
     {
       id: '2',
@@ -35,6 +39,8 @@ const Index = () => {
       position: { x: 50, y: 50 },
       zIndex: 2,
       rotation: { x: 0, y: 0, z: 0 },
+      velocity: { x: 0, y: 0 },
+      isPhysicsEnabled: false,
     },
     {
       id: '3',
@@ -43,6 +49,8 @@ const Index = () => {
       position: { x: 80, y: 35 },
       zIndex: 3,
       rotation: { x: 0, y: 0, z: 0 },
+      velocity: { x: 0, y: 0 },
+      isPhysicsEnabled: false,
     },
   ]);
   
@@ -172,6 +180,13 @@ const Index = () => {
               ...(cardUpdates.get(targetCard.id) || {}),
               zIndex: maxZIndexRef.current 
             });
+            
+            // Disable physics when grabbed
+            setCards(prev => prev.map(card => 
+              card.id === targetCard.id 
+                ? { ...card, isPhysicsEnabled: false, velocity: { x: 0, y: 0 } }
+                : card
+            ));
           } else {
             // No card found - start canvas drag
             if (!canvasDragStartRef.current) {
@@ -312,6 +327,17 @@ const Index = () => {
             if (!otherHandHolding) {
               baseDistanceRef.current.delete(grabbed.id);
               baseAngleRef.current.delete(grabbed.id);
+              
+              // Enable physics for this card
+              cardUpdates.set(grabbed.id, {
+                ...(cardUpdates.get(grabbed.id) || {}),
+              });
+              
+              setCards(prev => prev.map(card => 
+                card.id === grabbed.id 
+                  ? { ...card, isPhysicsEnabled: true, velocity: { x: 0, y: 0 } }
+                  : card
+              ));
             }
           } else {
             // Release canvas drag/zoom
@@ -363,6 +389,61 @@ const Index = () => {
       }
     };
   }, [handPositions, gestureStates, grabbedCards, cards, toast]);
+
+  // Physics simulation for gravity
+  useEffect(() => {
+    const GRAVITY = 0.5; // Gravity acceleration
+    const FLOOR_Y = 85; // Floor position (percentage)
+    const BOUNCE_DAMPING = 0.6; // Energy loss on bounce
+    const FRICTION = 0.98; // Horizontal friction
+    
+    const physicsLoop = () => {
+      setCards(prev => prev.map(card => {
+        if (!card.isPhysicsEnabled) return card;
+        
+        // Apply gravity
+        let newVelocityY = card.velocity.y + GRAVITY;
+        let newVelocityX = card.velocity.x * FRICTION;
+        let newY = card.position.y + newVelocityY;
+        let newX = card.position.x + newVelocityX;
+        
+        // Floor collision
+        if (newY >= FLOOR_Y) {
+          newY = FLOOR_Y;
+          newVelocityY = -newVelocityY * BOUNCE_DAMPING;
+          
+          // Stop physics if barely moving
+          if (Math.abs(newVelocityY) < 0.5 && Math.abs(newVelocityX) < 0.1) {
+            return {
+              ...card,
+              position: { x: newX, y: FLOOR_Y },
+              velocity: { x: 0, y: 0 },
+              isPhysicsEnabled: false,
+            };
+          }
+        }
+        
+        // Side boundaries
+        if (newX < 5) {
+          newX = 5;
+          newVelocityX = -newVelocityX * BOUNCE_DAMPING;
+        } else if (newX > 95) {
+          newX = 95;
+          newVelocityX = -newVelocityX * BOUNCE_DAMPING;
+        }
+        
+        return {
+          ...card,
+          position: { x: newX, y: newY },
+          velocity: { x: newVelocityX, y: newVelocityY },
+        };
+      }));
+    };
+    
+    const intervalId = setInterval(physicsLoop, 1000 / 60); // 60 FPS
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
