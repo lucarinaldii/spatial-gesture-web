@@ -6,6 +6,7 @@ interface InteractiveCardProps {
   title: string;
   description: string;
   position: { x: number; y: number };
+  rotation: { x: number; y: number; z: number };
   zIndex: number;
   handPosition: HandPosition | null;
   gestureState: GestureState;
@@ -18,6 +19,7 @@ const InteractiveCard = memo(({
   title,
   description,
   position,
+  rotation,
   zIndex,
   handPosition,
   gestureState,
@@ -65,7 +67,9 @@ const InteractiveCard = memo(({
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
-        transform: `translate(-50%, -50%) scale(${scale})`,
+        transform: `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
+        transformStyle: 'preserve-3d',
+        perspective: '1000px',
         transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex,
       }}

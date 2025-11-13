@@ -12,6 +12,7 @@ interface CardData {
   description: string;
   position: { x: number; y: number };
   zIndex: number;
+  rotation: { x: number; y: number; z: number };
 }
 
 const Index = () => {
@@ -26,6 +27,7 @@ const Index = () => {
       description: 'Hover with your hand and pinch to drag',
       position: { x: 20, y: 35 },
       zIndex: 1,
+      rotation: { x: 0, y: 0, z: 0 },
     },
     {
       id: '2',
@@ -33,6 +35,7 @@ const Index = () => {
       description: 'Experience natural gesture controls',
       position: { x: 50, y: 50 },
       zIndex: 2,
+      rotation: { x: 0, y: 0, z: 0 },
     },
     {
       id: '3',
@@ -40,6 +43,7 @@ const Index = () => {
       description: 'Point and pinch for seamless interaction',
       position: { x: 80, y: 35 },
       zIndex: 3,
+      rotation: { x: 0, y: 0, z: 0 },
     },
   ]);
   
@@ -55,6 +59,7 @@ const Index = () => {
   const animationFrameRef = useRef<number>();
   const maxZIndexRef = useRef(3);
   const baseDistanceRef = useRef<Map<string, number>>(new Map());
+  const baseAngleRef = useRef<Map<string, number>>(new Map());
   const canvasDragStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleStartTracking = async () => {
@@ -78,7 +83,7 @@ const Index = () => {
     const updateDrag = () => {
       const newGrabbedCards = new Map(grabbedCards);
       let hasChanges = false;
-      const cardUpdates = new Map<string, { position?: { x: number; y: number }, zIndex?: number }>();
+      const cardUpdates = new Map<string, { position?: { x: number; y: number }, zIndex?: number, rotation?: { x: number; y: number; z: number } }>();
       let scaleUpdate: { id: string; scale: number } | null = null;
 
       // Process each hand
@@ -198,10 +203,11 @@ const Index = () => {
             newGrabbedCards.delete(handIndex);
             hasChanges = true;
             
-            // Reset base distance for this card if no other hand is holding it
+            // Reset base distance and angle for this card if no other hand is holding it
             const otherHandHolding = Array.from(newGrabbedCards.values()).some(g => g.id === grabbed.id);
             if (!otherHandHolding) {
               baseDistanceRef.current.delete(grabbed.id);
+              baseAngleRef.current.delete(grabbed.id);
             }
           } else {
             // Release canvas drag
@@ -234,6 +240,7 @@ const Index = () => {
               ...card,
               ...(update.position && { position: update.position }),
               ...(update.zIndex !== undefined && { zIndex: update.zIndex }),
+              ...(update.rotation && { rotation: update.rotation }),
             };
           })
         );
@@ -332,6 +339,7 @@ const Index = () => {
                     title={card.title}
                     description={card.description}
                     position={adjustedPosition}
+                    rotation={card.rotation}
                     zIndex={card.zIndex}
                     handPosition={handPos}
                     gestureState={gesture || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0 }}
