@@ -36,26 +36,15 @@ All colors MUST be HSL.
     --input: 240 8% 20%;
     --ring: 190 95% 55%;
 
-    --radius: 1rem;
+    --radius: 0.375rem;
     
-    /* Spatial UI specific colors */
+    /* Minimal flat UI colors */
     --neon-cyan: 190 95% 55%;
     --neon-purple: 280 80% 60%;
     --neon-pink: 320 85% 65%;
-    --glass-bg: 240 8% 12%;
-    
-    /* Gradients */
-    --gradient-cosmic: linear-gradient(135deg, hsl(240 10% 8%), hsl(280 20% 12%));
-    --gradient-neon: linear-gradient(135deg, hsl(190 95% 55%), hsl(280 80% 60%));
-    
-    /* Shadows and glows */
-    --glow-cyan: 0 0 20px hsl(190 95% 55% / 0.5);
-    --glow-purple: 0 0 30px hsl(280 80% 60% / 0.6);
-    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     
     /* Animation */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-smooth: all 0.2s ease;
 
     --sidebar-background: 0 0% 98%;
 
@@ -81,19 +70,8 @@ All colors MUST be HSL.
 
 @layer utilities {
   .glass-panel {
-    background: hsl(var(--glass-bg) / 0.4);
-    backdrop-filter: blur(10px);
-    border: 1px solid hsl(var(--border) / 0.3);
-    box-shadow: var(--shadow-glass);
-  }
-  
-  .neon-glow {
-    box-shadow: var(--glow-cyan);
-    transition: var(--transition-smooth);
-  }
-  
-  .neon-glow:hover {
-    box-shadow: var(--glow-purple);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
   }
   
   .cursor-hand {
@@ -101,7 +79,6 @@ All colors MUST be HSL.
     height: 24px;
     border-radius: 50%;
     background: hsl(var(--neon-cyan));
-    box-shadow: var(--glow-cyan);
     pointer-events: none;
     z-index: 9999;
   }
