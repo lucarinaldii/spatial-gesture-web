@@ -169,7 +169,7 @@ const Index = () => {
 
     const buttonRect = importButtonRef.current.getBoundingClientRect();
     let isHovering = false;
-    let isPinching = false;
+    let anyPinching = false;
     
     handPositions.forEach((handPos, handIndex) => {
       const handX = handPos.x * window.innerWidth;
@@ -180,15 +180,20 @@ const Index = () => {
       if (isInBounds) {
         isHovering = true;
         const gesture = gestureStates[handIndex];
-        if (gesture?.isPinching && !lastImportButtonPinchState.current) {
+        const isPinching = gesture?.isPinching || false;
+        
+        // Trigger on pinch transition (from not pinching to pinching)
+        if (isPinching && !lastImportButtonPinchState.current) {
+          console.log('Import button pinched!');
           fileInputRef.current?.click();
         }
-        isPinching = gesture?.isPinching || false;
+        
+        if (isPinching) anyPinching = true;
       }
     });
     
     setIsImportButtonHovered(isHovering);
-    lastImportButtonPinchState.current = isPinching;
+    lastImportButtonPinchState.current = anyPinching;
   }, [handPositions, gestureStates, isTracking]);
 
   // Hand gesture detection for restart button
@@ -200,7 +205,7 @@ const Index = () => {
 
     const buttonRect = restartButtonRef.current.getBoundingClientRect();
     let isHovering = false;
-    let isPinching = false;
+    let anyPinching = false;
     
     handPositions.forEach((handPos, handIndex) => {
       const handX = handPos.x * window.innerWidth;
@@ -211,15 +216,20 @@ const Index = () => {
       if (isInBounds) {
         isHovering = true;
         const gesture = gestureStates[handIndex];
-        if (gesture?.isPinching && !lastRestartButtonPinchState.current) {
+        const isPinching = gesture?.isPinching || false;
+        
+        // Trigger on pinch transition (from not pinching to pinching)
+        if (isPinching && !lastRestartButtonPinchState.current) {
+          console.log('Restart button pinched!');
           handleRestart();
         }
-        isPinching = gesture?.isPinching || false;
+        
+        if (isPinching) anyPinching = true;
       }
     });
     
     setIsRestartButtonHovered(isHovering);
-    lastRestartButtonPinchState.current = isPinching;
+    lastRestartButtonPinchState.current = anyPinching;
   }, [handPositions, gestureStates, isTracking, handleRestart]);
 
   useEffect(() => {
