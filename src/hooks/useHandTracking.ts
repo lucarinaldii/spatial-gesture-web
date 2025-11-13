@@ -104,6 +104,12 @@ export const useHandTracking = () => {
   const startCamera = useCallback(async () => {
     try {
       console.log('🎥 Starting camera...');
+      
+      if (!videoRef.current) {
+        console.error('❌ Video element not found!');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -112,27 +118,30 @@ export const useHandTracking = () => {
         },
       });
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        
-        // Wait for video to load and play
-        await new Promise<void>((resolve) => {
-          const onCanPlay = () => {
+      videoRef.current.srcObject = stream;
+      
+      // Wait for video metadata and play
+      await videoRef.current.play();
+      
+      // Wait for video to have valid dimensions
+      await new Promise<void>((resolve) => {
+        const checkVideo = () => {
+          if (videoRef.current && 
+              videoRef.current.videoWidth > 0 && 
+              videoRef.current.videoHeight > 0) {
             console.log('✓ Video ready:', {
-              width: videoRef.current?.videoWidth,
-              height: videoRef.current?.videoHeight,
+              width: videoRef.current.videoWidth,
+              height: videoRef.current.videoHeight,
             });
             resolve();
-          };
-          
-          if (videoRef.current) {
-            videoRef.current.addEventListener('canplay', onCanPlay, { once: true });
-            videoRef.current.play().catch(console.error);
+          } else {
+            requestAnimationFrame(checkVideo);
           }
-        });
-        
-        processFrame();
-      }
+        };
+        checkVideo();
+      });
+      
+      processFrame();
     } catch (error) {
       console.error('Error accessing camera:', error);
     }

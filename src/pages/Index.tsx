@@ -12,12 +12,15 @@ const Index = () => {
   const { toast } = useToast();
 
   const handleStartTracking = async () => {
-    await startCamera();
     setIsTracking(true);
-    toast({
-      title: "Hand Tracking Active",
-      description: "Move your hand to control the cursor. Pinch to click!",
-    });
+    // Wait for React to render the video element
+    setTimeout(async () => {
+      await startCamera();
+      toast({
+        title: "Hand Tracking Active",
+        description: "Move your hand to control the cursor. Pinch to click!",
+      });
+    }, 100);
   };
 
   const handleCardInteract = (cardName: string) => {
@@ -32,14 +35,6 @@ const Index = () => {
       {/* Cosmic background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background" />
       
-      {/* Video feed (offscreen for initialization) */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="fixed -left-[9999px] w-[1px] h-[1px]"
-      />
 
       {/* Main content */}
       <div className="relative z-10">
