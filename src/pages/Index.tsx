@@ -163,12 +163,31 @@ const Index = () => {
             );
             
             const baseDistance = baseDistanceRef.current.get(card0.id);
+            const baseAngle = baseAngleRef.current.get(card0.id);
+            const currentAngle = Math.atan2(hand2Y - hand1Y, hand2X - hand1X) * (180 / Math.PI);
+            
             if (!baseDistance) {
               baseDistanceRef.current.set(card0.id, distance);
+              baseAngleRef.current.set(card0.id, currentAngle);
             } else {
+              // Scale
               const scaleFactor = distance / baseDistance;
               const newScale = Math.max(0.5, Math.min(3, scaleFactor));
               scaleUpdate = { id: card0.id, scale: newScale };
+              
+              // 3D Rotation on all axes
+              const angleDiff = currentAngle - (baseAngle || currentAngle);
+              const verticalOffset = hand2Y - hand1Y;
+              const horizontalOffset = hand2X - hand1X;
+              
+              cardUpdates.set(card0.id, {
+                ...(cardUpdates.get(card0.id) || {}),
+                rotation: {
+                  x: Math.max(-60, Math.min(60, verticalOffset * 3)),    // Forward/backward tilt
+                  y: Math.max(-60, Math.min(60, horizontalOffset * -3)), // Left/right tilt
+                  z: angleDiff                                            // Spin
+                }
+              });
             }
             
             // Update position to midpoint between hands
