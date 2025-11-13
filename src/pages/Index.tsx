@@ -697,12 +697,18 @@ const Index = () => {
       if (objectUpdates.size > 0) setObjects(prev => prev.map(obj => { 
         const u = objectUpdates.get(obj.id); 
         if (!u) return obj;
+        
+        // Ensure position and velocity always have valid values
+        const newPosition = u.position || obj.position || { x: 50, y: 50 };
+        const newRotation = u.rotation || obj.rotation || { x: 0, y: 0, z: 0 };
+        const newVelocity = obj.velocity || { x: 0, y: 0 };
+        
         return { 
           ...obj, 
           ...u, 
-          position: u.position || obj.position, 
-          rotation: u.rotation || obj.rotation,
-          velocity: obj.velocity || { x: 0, y: 0 }
+          position: newPosition, 
+          rotation: newRotation,
+          velocity: newVelocity
         };
       }));
     };
