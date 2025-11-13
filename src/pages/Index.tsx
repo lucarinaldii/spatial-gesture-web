@@ -261,17 +261,16 @@ const Index = () => {
               const newScale = Math.max(0.5, Math.min(3, scaleFactor));
               scaleUpdate = { id: card0.id, scale: newScale };
               
-              // 3D Rotation on all axes
-              const angleDiff = currentAngle - (baseAngle || currentAngle);
-              const verticalOffset = hand2Y - hand1Y;
-              const horizontalOffset = hand2X - hand1X;
+              // Rotate around Y-axis (vertical) based on distance change
+              const distanceChange = distance - baseDistance;
+              const yRotation = Math.max(-180, Math.min(180, distanceChange * 2));
               
               cardUpdates.set(card0.id, {
                 ...(cardUpdates.get(card0.id) || {}),
                 rotation: {
-                  x: Math.max(-60, Math.min(60, verticalOffset * 3)),    // Forward/backward tilt
-                  y: Math.max(-60, Math.min(60, horizontalOffset * -3)), // Left/right tilt
-                  z: angleDiff                                            // Spin
+                  x: 0,          // No X tilt
+                  y: yRotation,  // Rotate around vertical axis based on zoom
+                  z: 0           // No Z spin
                 }
               });
             }
