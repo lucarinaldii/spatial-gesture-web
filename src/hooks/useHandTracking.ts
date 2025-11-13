@@ -25,10 +25,15 @@ export const useHandTracking = () => {
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
   const animationFrameRef = useRef<number>();
   const lastPositionsRef = useRef<HandPosition[]>([]);
+  const lastPinchStatesRef = useRef<boolean[]>([false, false]); // Track previous pinch states
   
   // Smoothing parameters - increased for more stability
   const SMOOTHING_FACTOR = 0.5; // Higher = more responsive, lower = smoother
   const MOVEMENT_THRESHOLD = 0.008; // Increased deadzone for stability
+  
+  // Pinch detection with hysteresis to prevent jitter
+  const PINCH_THRESHOLD_ENTER = 0.04; // Distance to enter pinch state
+  const PINCH_THRESHOLD_EXIT = 0.06; // Distance to exit pinch state (larger = more stable)
 
   const calculateDistance = (point1: any, point2: any) => {
     const dx = point1.x - point2.x;
@@ -75,10 +80,16 @@ export const useHandTracking = () => {
         
         // Calculate pinch distance
         const pinchDistance = calculateDistance(indexTip, thumbTip);
-        const pinchThreshold = 0.05;
         
-        const isPinching = pinchDistance < pinchThreshold;
-        const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / pinchThreshold)));
+        // Hysteresis for stable pinch detection
+        const wasPinching = lastPinchStatesRef.current[i] || false;
+        const threshold = wasPinching ? PINCH_THRESHOLD_EXIT : PINCH_THRESHOLD_ENTER;
+        const isPinching = pinchDistance < threshold;
+        
+        // Update pinch state history
+        lastPinchStatesRef.current[i] = isPinching;
+        
+        const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / PINCH_THRESHOLD_ENTER)));
         
         // Create raw position (mirrored for natural movement)
         const rawPosition: HandPosition = {
@@ -109,6 +120,7 @@ export const useHandTracking = () => {
       setGestureStates([]);
       setLandmarks(null);
       lastPositionsRef.current = [];
+      lastPinchStatesRef.current = [false, false]; // Reset pinch states when no hands detected
     }
   }, []);
 
