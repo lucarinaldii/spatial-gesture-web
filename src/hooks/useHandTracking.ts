@@ -26,9 +26,9 @@ export const useHandTracking = () => {
   const animationFrameRef = useRef<number>();
   const lastPositionsRef = useRef<HandPosition[]>([]);
   
-  // Smoothing parameters
-  const SMOOTHING_FACTOR = 0.3; // Lower = smoother but more lag
-  const MOVEMENT_THRESHOLD = 0.005; // Minimum movement to register
+  // Smoothing parameters - increased for more stability
+  const SMOOTHING_FACTOR = 0.5; // Higher = more responsive, lower = smoother
+  const MOVEMENT_THRESHOLD = 0.008; // Increased deadzone for stability
 
   const calculateDistance = (point1: any, point2: any) => {
     const dx = point1.x - point2.x;

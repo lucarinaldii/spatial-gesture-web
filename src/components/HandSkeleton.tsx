@@ -6,13 +6,11 @@ interface HandSkeletonProps {
   videoHeight: number;
 }
 
+// Only draw key connections for performance
 const HAND_CONNECTIONS = [
   [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
   [0, 5], [5, 6], [6, 7], [7, 8], // Index
-  [0, 9], [9, 10], [10, 11], [11, 12], // Middle
-  [0, 13], [13, 14], [14, 15], [15, 16], // Ring
-  [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
-  [5, 9], [9, 13], [13, 17], // Palm
+  [5, 9], [9, 13], [13, 17], [17, 0], // Palm outline
 ];
 
 const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps) => {
@@ -47,10 +45,10 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     landmarks.forEach((hand: any) => {
       console.log('Hand has', hand.length, 'landmarks');
       
-      // Draw connections with cyan glow - MUCH THICKER
+      // Draw connections with cyan glow - optimized thickness
       ctx.strokeStyle = '#00D9FF';
-      ctx.lineWidth = 6;
-      ctx.shadowBlur = 20;
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 12;
       ctx.shadowColor = '#00D9FF';
 
       HAND_CONNECTIONS.forEach(([start, end]) => {
@@ -63,14 +61,16 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         ctx.stroke();
       });
 
-      // Draw landmark points with purple glow - MUCH LARGER
+      // Draw only key landmark points - optimized count
       ctx.shadowColor = '#FF44DD';
-      ctx.shadowBlur = 30;
+      ctx.shadowBlur = 20;
       
-      hand.forEach((landmark: any, index: number) => {
-        // Make fingertips larger and brighter
-        const isFingertip = [4, 8, 12, 16, 20].includes(index);
-        const radius = isFingertip ? 15 : 10;
+      // Only draw fingertips and palm base for performance
+      const keyPoints = [0, 4, 8]; // Palm base, thumb tip, index tip
+      keyPoints.forEach((index: number) => {
+        const landmark = hand[index];
+        const isFingertip = [4, 8].includes(index);
+        const radius = isFingertip ? 12 : 8;
         
         ctx.fillStyle = isFingertip ? '#FF44DD' : '#B644FF';
         ctx.beginPath();
