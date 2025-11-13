@@ -77,19 +77,33 @@ export const useHandTracking = () => {
   const processFrame = useCallback(async () => {
     if (!videoRef.current || !handLandmarkerRef.current) return;
 
-    const startTimeMs = performance.now();
-    const results = await handLandmarkerRef.current.detectForVideo(
-      videoRef.current,
-      startTimeMs
-    );
+    // Check if video is ready and has valid dimensions
+    if (videoRef.current.readyState < 2 || 
+        videoRef.current.videoWidth === 0 || 
+        videoRef.current.videoHeight === 0) {
+      console.log('Video not ready yet, skipping frame');
+      animationFrameRef.current = requestAnimationFrame(processFrame);
+      return;
+    }
 
-    detectGestures(results);
+    try {
+      const startTimeMs = performance.now();
+      const results = await handLandmarkerRef.current.detectForVideo(
+        videoRef.current,
+        startTimeMs
+      );
+
+      detectGestures(results);
+    } catch (error) {
+      console.error('Error processing frame:', error);
+    }
     
     animationFrameRef.current = requestAnimationFrame(processFrame);
   }, [detectGestures]);
 
   const startCamera = useCallback(async () => {
     try {
+      console.log('🎥 Starting camera...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -100,9 +114,27 @@ export const useHandTracking = () => {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.addEventListener('loadeddata', () => {
-          processFrame();
-        });
+        
+        // Wait for video to be fully loaded with valid dimensions
+        const waitForVideo = () => {
+          if (videoRef.current && 
+              videoRef.current.readyState >= 2 && 
+              videoRef.current.videoWidth > 0 && 
+              videoRef.current.videoHeight > 0) {
+            console.log('✓ Video ready:', {
+              width: videoRef.current.videoWidth,
+              height: videoRef.current.videoHeight,
+              readyState: videoRef.current.readyState
+            });
+            processFrame();
+          } else {
+            console.log('Waiting for video to be ready...');
+            setTimeout(waitForVideo, 100);
+          }
+        };
+        
+        videoRef.current.addEventListener('loadedmetadata', waitForVideo);
+        videoRef.current.play();
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
