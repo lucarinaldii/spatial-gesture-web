@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
 import HandCursor from '@/components/HandCursor';
@@ -23,7 +23,7 @@ const Index = () => {
       id: '1',
       title: 'Spatial Card 1',
       description: 'Hover with your hand and pinch to drag',
-      position: { x: 20, y: 30 },
+      position: { x: 20, y: 35 },
     },
     {
       id: '2',
@@ -35,7 +35,7 @@ const Index = () => {
       id: '3',
       title: 'Spatial Card 3',
       description: 'Point and pinch for seamless interaction',
-      position: { x: 80, y: 30 },
+      position: { x: 80, y: 35 },
     },
   ]);
   
@@ -44,7 +44,9 @@ const Index = () => {
     offsetX: number;
     offsetY: number;
   } | null>(null);
-  const [wasPinching, setWasPinching] = useState(false);
+  
+  const lastPinchRef = useRef(false);
+  const animationFrameRef = useRef<number>();
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -58,73 +60,85 @@ const Index = () => {
     }, 200);
   };
 
-  // Handle dragging logic
+  // Smooth dragging with RAF for performance
   useEffect(() => {
-    if (!handPosition) return;
+    if (!handPosition) {
+      if (grabbedCard) {
+        setGrabbedCard(null);
+      }
+      lastPinchRef.current = false;
+      return;
+    }
 
-    const isPinching = gestureState.isPinching;
-    const handX = handPosition.x * 100; // Convert to percentage
-    const handY = handPosition.y * 100;
+    const updateDrag = () => {
+      const isPinching = gestureState.isPinching;
+      const handX = handPosition.x * 100;
+      const handY = handPosition.y * 100;
 
-    // Pinch started - grab card if hovering over one
-    if (isPinching && !wasPinching && !grabbedCard) {
-      const cardUnderHand = cards.find((card) => {
-        const cardWidth = 300; // Approximate card width in px
-        const cardHeight = 200; // Approximate card height in px
-        const cardLeft = (card.position.x * window.innerWidth) / 100;
-        const cardTop = (card.position.y * window.innerHeight) / 100;
-        const handPxX = (handX * window.innerWidth) / 100;
-        const handPxY = (handY * window.innerHeight) / 100;
+      // Start pinch - grab card
+      if (isPinching && !lastPinchRef.current) {
+        const cardWidth = 16; // ~256px / window width in percentage
+        const cardHeight = 12; // approximate
         
-        return (
-          handPxX >= cardLeft &&
-          handPxX <= cardLeft + cardWidth &&
-          handPxY >= cardTop &&
-          handPxY <= cardTop + cardHeight
-        );
-      });
-
-      if (cardUnderHand) {
-        setGrabbedCard({
-          id: cardUnderHand.id,
-          offsetX: handX - cardUnderHand.position.x,
-          offsetY: handY - cardUnderHand.position.y,
+        const hoveredCard = cards.find((card) => {
+          const dx = Math.abs(handX - card.position.x);
+          const dy = Math.abs(handY - card.position.y);
+          return dx < cardWidth && dy < cardHeight;
         });
+
+        if (hoveredCard) {
+          setGrabbedCard({
+            id: hoveredCard.id,
+            offsetX: handX - hoveredCard.position.x,
+            offsetY: handY - hoveredCard.position.y,
+          });
+          toast({
+            title: "Card Grabbed!",
+            description: `Holding ${hoveredCard.title}`,
+            duration: 1500,
+          });
+        }
+      }
+
+      // Continue pinch - update position
+      if (isPinching && grabbedCard) {
+        const newX = Math.max(5, Math.min(95, handX - grabbedCard.offsetX));
+        const newY = Math.max(5, Math.min(90, handY - grabbedCard.offsetY));
+        
+        setCards((prev) =>
+          prev.map((card) =>
+            card.id === grabbedCard.id
+              ? { ...card, position: { x: newX, y: newY } }
+              : card
+          )
+        );
+      }
+
+      // Release pinch - drop card
+      if (!isPinching && lastPinchRef.current && grabbedCard) {
+        setGrabbedCard(null);
         toast({
-          title: "Card Grabbed!",
-          description: `Holding ${cardUnderHand.title}`,
+          title: "Card Released",
+          description: "Dropped at new position",
+          duration: 1500,
         });
       }
-    }
 
-    // Pinch held - update card position
-    if (isPinching && grabbedCard) {
-      setCards((prevCards) =>
-        prevCards.map((card) =>
-          card.id === grabbedCard.id
-            ? {
-                ...card,
-                position: {
-                  x: Math.max(0, Math.min(90, handX - grabbedCard.offsetX)),
-                  y: Math.max(0, Math.min(85, handY - grabbedCard.offsetY)),
-                },
-              }
-            : card
-        )
-      );
-    }
+      lastPinchRef.current = isPinching;
+    };
 
-    // Pinch released - drop card
-    if (!isPinching && wasPinching && grabbedCard) {
-      toast({
-        title: "Card Released",
-        description: "Card dropped at new position",
-      });
-      setGrabbedCard(null);
+    // Use RAF for smooth updates
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
+    animationFrameRef.current = requestAnimationFrame(updateDrag);
 
-    setWasPinching(isPinching);
-  }, [handPosition, gestureState, grabbedCard, wasPinching, cards, toast]);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [handPosition, gestureState, grabbedCard, cards, toast]);
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">

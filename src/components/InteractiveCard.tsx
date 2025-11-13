@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { HandPosition, GestureState } from '@/hooks/useHandTracking';
 
@@ -12,7 +12,7 @@ interface InteractiveCardProps {
   isBeingDragged?: boolean;
 }
 
-const InteractiveCard = ({
+const InteractiveCard = memo(({
   title,
   description,
   position,
@@ -27,7 +27,7 @@ const InteractiveCard = ({
   const lastPinchState = useRef(false);
 
   useEffect(() => {
-    if (!handPosition || !cardRef.current) {
+    if (!handPosition || !cardRef.current || isBeingDragged) {
       setIsHovered(false);
       return;
     }
@@ -52,38 +52,41 @@ const InteractiveCard = ({
     }
 
     lastPinchState.current = gestureState.isPinching;
-  }, [handPosition, gestureState, onInteract]);
+  }, [handPosition, gestureState, onInteract, isBeingDragged]);
 
   return (
     <div
       ref={cardRef}
-      className="absolute transition-transform duration-300"
+      className="absolute will-change-transform"
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
-        transform: `translate(-50%, -50%) ${isHovered ? 'scale(1.1)' : 'scale(1)'}`,
+        transform: `translate(-50%, -50%) ${isHovered ? 'scale(1.05)' : 'scale(1)'}`,
+        transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
       <Card
         className={`
-          glass-panel p-6 w-64 transition-all duration-300
+          glass-panel p-6 w-64 transition-all duration-200
           ${isHovered ? 'neon-glow border-primary' : 'border-border/30'}
           ${wasClicked ? 'scale-95' : ''}
-          ${isBeingDragged ? 'shadow-2xl scale-110 cursor-grabbing' : 'cursor-pointer'}
+          ${isBeingDragged ? 'shadow-2xl scale-110 ring-2 ring-primary' : ''}
         `}
       >
         <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
         <p className="text-sm text-muted-foreground">{description}</p>
         
-        {isHovered && (
+        {(isHovered || isBeingDragged) && (
           <div className="mt-3 text-xs font-mono text-primary flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            {gestureState.isPinching ? (isBeingDragged ? 'DRAGGING...' : 'CLICKING...') : 'PINCH TO GRAB'}
+            {isBeingDragged ? 'DRAGGING...' : gestureState.isPinching ? 'GRABBING...' : 'PINCH TO GRAB'}
           </div>
         )}
       </Card>
     </div>
   );
-};
+});
+
+InteractiveCard.displayName = 'InteractiveCard';
 
 export default InteractiveCard;
