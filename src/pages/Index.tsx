@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
 import HandSkeleton from '@/components/HandSkeleton';
+import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, RotateCcw } from 'lucide-react';
@@ -836,7 +837,12 @@ const Index = () => {
                 return <InteractiveObject key={obj.id} id={obj.id} type={obj.type} title={obj.title} description={obj.description} fileUrl={obj.fileUrl} position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} rotation={obj.rotation} zIndex={obj.zIndex} handPosition={handIndex !== undefined ? handPositions[handIndex] : null} gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} onInteract={() => {}} isBeingDragged={isBeingDragged} scale={objectScales.get(obj.id) || 1} isMerging={isMerging} isSplitting={isSplitting} />;
               })}
             </div>
-            {videoRef.current && <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />}
+            {videoRef.current && (
+              <>
+                <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />
+                <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />
+              </>
+            )}
           </div>
         )}
       </div>
