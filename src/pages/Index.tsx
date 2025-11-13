@@ -79,6 +79,7 @@ const Index = () => {
   const canvasDragStartRef = useRef<{ x: number; y: number } | null>(null);
   const canvasZoomBaseDistanceRef = useRef<number | null>(null);
   const handVelocityHistoryRef = useRef<Map<number, Array<{ x: number; y: number; timestamp: number }>>>(new Map());
+  const touchedObjects = useRef<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -114,6 +115,7 @@ const Index = () => {
   const handleRestart = useCallback(() => {
     // Clear all refs and state
     setGrabbedObjects(new Map());
+    touchedObjects.current.clear();
     baseDistanceRef.current.clear();
     baseAngleRef.current.clear();
     handVelocityHistoryRef.current.clear();
@@ -245,13 +247,38 @@ const Index = () => {
   useEffect(() => {
     if (handPositions.length === 0) {
       if (grabbedObjects.size > 0) setGrabbedObjects(new Map());
+      if (touchedObjects.current.size > 0) {
+        // Release touched objects with inertia
+        touchedObjects.current.forEach((touched, handIndex) => {
+          const history = handVelocityHistoryRef.current.get(handIndex) || [];
+          let velocityX = 0, velocityY = 0;
+          if (history.length >= 2) {
+            const recent = history[history.length - 1];
+            const previous = history[0];
+            const timeDelta = (recent.timestamp - previous.timestamp) / 1000;
+            if (timeDelta > 0) {
+              velocityX = (recent.x - previous.x) / timeDelta * 0.016;
+              velocityY = (recent.y - previous.y) / timeDelta * 0.016;
+            }
+          }
+          setObjects(prev => prev.map(obj => obj.id === touched.id ? { 
+            ...obj, 
+            isPhysicsEnabled: true, 
+            velocity: { x: velocityX, y: velocityY } 
+          } : obj));
+        });
+        touchedObjects.current.clear();
+      }
       lastPinchStates.current.clear();
+      handVelocityHistoryRef.current.clear();
       return;
     }
 
     const updateDrag = () => {
       const newGrabbedObjects = new Map(grabbedObjects);
+      const newTouchedObjects = new Map(touchedObjects.current);
       let hasChanges = false;
+      let hasTouchChanges = false;
       const objectUpdates = new Map<string, { position?: { x: number; y: number }, zIndex?: number, rotation?: { x: number; y: number; z: number } }>();
       let scaleUpdate: { id: string; scale: number } | null = null;
 
@@ -262,6 +289,12 @@ const Index = () => {
         const handX = handPos.x * 100;
         const handY = handPos.y * 100;
         const wasPinching = lastPinchStates.current.get(handIndex) || false;
+        
+        // Index finger proximity detection for touch dragging
+        const indexFingerTip = gesture.fingers.index.tipPosition;
+        const fingerX = indexFingerTip.x * 100;
+        const fingerY = indexFingerTip.y * 100;
+        const TOUCH_THRESHOLD = 10; // Distance threshold for "touching"
 
         // Track hand velocity history for inertia calculation
         const now = Date.now();
@@ -269,11 +302,100 @@ const Index = () => {
           handVelocityHistoryRef.current.set(handIndex, []);
         }
         const history = handVelocityHistoryRef.current.get(handIndex)!;
-        history.push({ x: handX, y: handY, timestamp: now });
+        history.push({ x: fingerX, y: fingerY, timestamp: now });
         // Keep only last 5 frames (about 83ms at 60fps)
         if (history.length > 5) history.shift();
 
+        // Touch dragging with index finger (when not pinching)
+        if (!isPinching) {
+          const wasTouching = newTouchedObjects.has(handIndex);
+          const targetObject = objects.find((obj) => {
+            const adjustedX = obj.position.x + canvasOffset.x;
+            const adjustedY = obj.position.y + canvasOffset.y;
+            return Math.abs(fingerX - adjustedX) < TOUCH_THRESHOLD && Math.abs(fingerY - adjustedY) < TOUCH_THRESHOLD;
+          });
+
+          if (targetObject) {
+            if (!wasTouching) {
+              // Start touching
+              const adjustedX = targetObject.position.x + canvasOffset.x;
+              const adjustedY = targetObject.position.y + canvasOffset.y;
+              newTouchedObjects.set(handIndex, { 
+                id: targetObject.id, 
+                offsetX: fingerX - adjustedX, 
+                offsetY: fingerY - adjustedY 
+              });
+              hasTouchChanges = true;
+              maxZIndexRef.current += 1;
+              objectUpdates.set(targetObject.id, { 
+                ...(objectUpdates.get(targetObject.id) || {}), 
+                zIndex: maxZIndexRef.current 
+              });
+              setObjects(prev => prev.map(obj => 
+                obj.id === targetObject.id ? { 
+                  ...obj, 
+                  isPhysicsEnabled: false, 
+                  velocity: { x: 0, y: 0 } 
+                } : obj
+              ));
+            } else {
+              // Continue touching - move object with finger
+              const touched = newTouchedObjects.get(handIndex);
+              if (touched) {
+                objectUpdates.set(touched.id, { 
+                  ...(objectUpdates.get(touched.id) || {}), 
+                  position: { 
+                    x: Math.max(5, Math.min(95, fingerX - touched.offsetX)) - canvasOffset.x, 
+                    y: Math.max(5, Math.min(90, fingerY - touched.offsetY)) - canvasOffset.y 
+                  } 
+                });
+              }
+            }
+          } else if (wasTouching) {
+            // Release touched object
+            const touched = newTouchedObjects.get(handIndex);
+            if (touched) {
+              newTouchedObjects.delete(handIndex);
+              hasTouchChanges = true;
+              
+              // Calculate release velocity
+              let velocityX = 0, velocityY = 0;
+              if (history.length >= 2) {
+                const recent = history[history.length - 1];
+                const previous = history[0];
+                const timeDelta = (recent.timestamp - previous.timestamp) / 1000;
+                if (timeDelta > 0) {
+                  velocityX = (recent.x - previous.x) / timeDelta * 0.016;
+                  velocityY = (recent.y - previous.y) / timeDelta * 0.016;
+                }
+              }
+              
+              setObjects(prev => prev.map(obj => obj.id === touched.id ? { 
+                ...obj, 
+                isPhysicsEnabled: true, 
+                velocity: { x: velocityX, y: velocityY } 
+              } : obj));
+              
+              handVelocityHistoryRef.current.delete(handIndex);
+            }
+          }
+        }
+
         if (isPinching && !wasPinching) {
+          // Release any touched objects when pinching starts
+          if (newTouchedObjects.has(handIndex)) {
+            const touched = newTouchedObjects.get(handIndex);
+            if (touched) {
+              newTouchedObjects.delete(handIndex);
+              hasTouchChanges = true;
+              setObjects(prev => prev.map(obj => obj.id === touched.id ? { 
+                ...obj, 
+                isPhysicsEnabled: true, 
+                velocity: { x: 0, y: 0 } 
+              } : obj));
+            }
+          }
+          
           const targetObject = objects.find((obj) => {
             const adjustedX = obj.position.x + canvasOffset.x;
             const adjustedY = obj.position.y + canvasOffset.y;
@@ -384,6 +506,7 @@ const Index = () => {
       });
 
       if (hasChanges) setGrabbedObjects(newGrabbedObjects);
+      if (hasTouchChanges) touchedObjects.current = newTouchedObjects;
       if (scaleUpdate) setObjectScales(prev => { const n = new Map(prev); n.set(scaleUpdate.id, scaleUpdate.scale); return n; });
       if (objectUpdates.size > 0) setObjects(prev => prev.map(obj => { 
         const u = objectUpdates.get(obj.id); 
