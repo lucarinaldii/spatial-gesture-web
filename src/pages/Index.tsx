@@ -336,12 +336,45 @@ const Index = () => {
     const physicsLoop = () => {
       setObjects(prev => prev.map(obj => {
         if (!obj.isPhysicsEnabled) return obj;
-        const newVelocity = { x: obj.velocity.x * 0.98, y: obj.velocity.y + 0.2 };
-        let newPosition = { x: obj.position.x + newVelocity.x, y: obj.position.y + newVelocity.y };
-        if (newPosition.y >= 85) { newPosition.y = 85; newVelocity.y = -newVelocity.y * 0.6; if (Math.abs(newVelocity.y) < 0.5) newVelocity.y = 0; }
-        if (newPosition.x <= 5 || newPosition.x >= 95) { newPosition.x = Math.max(5, Math.min(95, newPosition.x)); newVelocity.x = -newVelocity.x * 0.6; }
-        const isSettled = Math.abs(newVelocity.y) < 0.1 && Math.abs(newVelocity.x) < 0.1 && Math.abs(newPosition.y - 85) < 1;
-        return { ...obj, position: newPosition, velocity: newVelocity, isPhysicsEnabled: !isSettled };
+        
+        // Space-like floating with very gentle drift
+        const DRIFT_DAMPING = 0.96; // High damping for slow, smooth movement
+        const GENTLE_DRIFT = 0.03; // Very small random drift
+        
+        // Add tiny random drift for floating effect
+        const driftX = (Math.random() - 0.5) * GENTLE_DRIFT;
+        const driftY = (Math.random() - 0.5) * GENTLE_DRIFT;
+        
+        const newVelocity = { 
+          x: obj.velocity.x * DRIFT_DAMPING + driftX, 
+          y: obj.velocity.y * DRIFT_DAMPING + driftY
+        };
+        
+        let newPosition = { 
+          x: obj.position.x + newVelocity.x, 
+          y: obj.position.y + newVelocity.y 
+        };
+        
+        // Soft boundary bounce
+        if (newPosition.x <= 5 || newPosition.x >= 95) { 
+          newPosition.x = Math.max(5, Math.min(95, newPosition.x)); 
+          newVelocity.x = -newVelocity.x * 0.5;
+        }
+        
+        if (newPosition.y <= 5 || newPosition.y >= 85) { 
+          newPosition.y = Math.max(5, Math.min(85, newPosition.y)); 
+          newVelocity.y = -newVelocity.y * 0.5;
+        }
+        
+        // Stop physics when velocity is very low (settled)
+        const isSettled = Math.abs(newVelocity.y) < 0.01 && Math.abs(newVelocity.x) < 0.01;
+        
+        return { 
+          ...obj, 
+          position: newPosition, 
+          velocity: newVelocity, 
+          isPhysicsEnabled: !isSettled 
+        };
       }));
     };
     const intervalId = setInterval(physicsLoop, 1000 / 60);
@@ -382,17 +415,17 @@ const Index = () => {
                 onClick={handleRestart} 
                 size="lg" 
                 variant="destructive"
-                className={`neon-glow transition-all duration-200 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+                className={`neon-glow transition-all duration-200 text-lg px-6 py-6 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
-                <RotateCcw className="w-5 h-5 mr-2" />Restart
+                <RotateCcw className="w-6 h-6 mr-2" />Restart
               </Button>
               <Button 
                 ref={importButtonRef}
                 onClick={() => fileInputRef.current?.click()} 
                 size="lg" 
-                className={`neon-glow transition-all duration-200 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+                className={`neon-glow transition-all duration-200 text-lg px-6 py-6 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
-                <Plus className="w-5 h-5 mr-2" />Import File
+                <Plus className="w-6 h-6 mr-2" />Import File
               </Button>
             </div>
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
