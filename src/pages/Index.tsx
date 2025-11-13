@@ -74,33 +74,33 @@ const Index = () => {
         setGrabbedCards(new Map());
       }
       lastPinchStates.current.clear();
-      baseDistanceRef.current = null;
       return;
     }
 
-    // Calculate zoom from two-hand distance
-    if (handPositions.length === 2) {
-      const hand1X = handPositions[0].x * 100;
-      const hand1Y = handPositions[0].y * 100;
-      const hand2X = handPositions[1].x * 100;
-      const hand2Y = handPositions[1].y * 100;
-      
-      const distance = Math.sqrt(
-        Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2)
-      );
-      
-      if (baseDistanceRef.current === null) {
-        baseDistanceRef.current = distance;
-      }
-      
-      const zoomFactor = distance / baseDistanceRef.current;
-      const newZoom = Math.max(0.5, Math.min(3, zoomFactor));
-      setZoomLevel(newZoom);
-    } else {
-      baseDistanceRef.current = null;
-    }
-
     const updateDrag = () => {
+      // Calculate zoom from two-hand distance
+      if (handPositions.length === 2) {
+        const hand1X = handPositions[0].x * 100;
+        const hand1Y = handPositions[0].y * 100;
+        const hand2X = handPositions[1].x * 100;
+        const hand2Y = handPositions[1].y * 100;
+        
+        const distance = Math.sqrt(
+          Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2)
+        );
+        
+        if (baseDistanceRef.current === null) {
+          baseDistanceRef.current = distance;
+        }
+        
+        const zoomFactor = distance / baseDistanceRef.current;
+        const newZoom = Math.max(0.5, Math.min(3, zoomFactor));
+        setZoomLevel(newZoom);
+      } else if (handPositions.length !== 2 && baseDistanceRef.current !== null) {
+        // Reset base distance when switching away from 2 hands
+        baseDistanceRef.current = null;
+      }
+
       const newGrabbedCards = new Map(grabbedCards);
       let hasChanges = false;
 
