@@ -112,6 +112,15 @@ const Index = () => {
   };
 
   const handleRestart = useCallback(() => {
+    // Clear all refs and state
+    setGrabbedObjects(new Map());
+    baseDistanceRef.current.clear();
+    baseAngleRef.current.clear();
+    handVelocityHistoryRef.current.clear();
+    lastPinchStates.current.clear();
+    canvasDragStartRef.current = null;
+    canvasZoomBaseDistanceRef.current = null;
+    
     // Reset to initial cards
     setObjects([
       {
