@@ -28,76 +28,77 @@ const HandCursor = ({ position, gestureState }: HandCursorProps) => {
     >
       <div
         className={`relative -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ${
-          gestureState.isPinching ? 'scale-90' : 'scale-100'
+          gestureState.isPinching ? 'scale-110' : 'scale-130'
         }`}
       >
         {/* Hand Silhouette SVG */}
         <svg
-          width="80"
-          height="80"
+          width="104"
+          height="104"
           viewBox="0 0 100 100"
-          className={`transition-all duration-200 ${
-            gestureState.isPinching
-              ? 'drop-shadow-[0_0_20px_hsl(var(--secondary))]'
-              : 'drop-shadow-[0_0_15px_hsl(var(--primary))]'
-          }`}
+          className="transition-all duration-200"
           style={{
             filter: gestureState.isPinching 
-              ? 'drop-shadow(0 0 20px hsl(var(--secondary)))' 
-              : 'drop-shadow(0 0 15px hsl(var(--primary)))'
+              ? 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.6))' 
+              : 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.4))'
           }}
         >
           {gestureState.isPinching ? (
-            // Closed/Grabbing Hand
-            <g fill={`hsl(var(--secondary))`} opacity="0.9">
-              {/* Palm */}
-              <ellipse cx="50" cy="60" rx="20" ry="25" />
+            // Closed/Grabbing Fist
+            <g fill="white" opacity="0.95">
+              {/* Palm base */}
+              <rect x="35" y="50" width="30" height="35" rx="8" />
               
-              {/* Thumb (curved in) */}
-              <path d="M 35 55 Q 30 50 28 45 Q 27 42 29 40 Q 31 38 34 40 Q 36 42 35 45 Q 34 50 35 55 Z" />
+              {/* Thumb (wrapped around) */}
+              <ellipse cx="30" cy="60" rx="8" ry="15" transform="rotate(-20 30 60)" />
               
-              {/* Index finger (curled) */}
-              <path d="M 45 40 Q 43 35 43 30 Q 43 27 45 26 Q 47 25 49 27 Q 50 29 50 32 Q 50 37 48 40 Z" />
+              {/* Curled fingers on top */}
+              <ellipse cx="42" cy="45" rx="6" ry="12" />
+              <ellipse cx="50" cy="43" rx="6" ry="13" />
+              <ellipse cx="58" cy="45" rx="6" ry="12" />
+              <ellipse cx="65" cy="48" rx="5" ry="10" />
               
-              {/* Middle finger (curled) */}
-              <path d="M 52 38 Q 51 33 51 28 Q 51 25 53 24 Q 55 23 57 25 Q 58 27 58 30 Q 58 35 56 38 Z" />
-              
-              {/* Ring finger (curled) */}
-              <path d="M 60 40 Q 59 35 59 31 Q 59 28 61 27 Q 63 26 65 28 Q 66 30 66 33 Q 66 37 64 40 Z" />
-              
-              {/* Pinky (curled) */}
-              <path d="M 68 45 Q 67 41 67 38 Q 67 36 69 35 Q 71 34 73 36 Q 74 38 74 40 Q 74 43 72 45 Z" />
+              {/* Knuckles definition */}
+              <rect x="38" y="50" width="5" height="8" rx="2" opacity="0.3" />
+              <rect x="47" y="50" width="5" height="8" rx="2" opacity="0.3" />
+              <rect x="56" y="50" width="5" height="8" rx="2" opacity="0.3" />
             </g>
           ) : (
-            // Open Hand
-            <g fill={`hsl(var(--primary))`} opacity="0.85">
-              {/* Palm */}
-              <ellipse cx="50" cy="65" rx="22" ry="28" />
+            // Open Flat Hand
+            <g fill="white" opacity="0.9">
+              {/* Palm - wider and flatter */}
+              <path d="M 32 85 L 32 55 Q 32 50 37 50 L 63 50 Q 68 50 68 55 L 68 85 Q 68 90 63 90 L 37 90 Q 32 90 32 85 Z" />
               
-              {/* Thumb */}
-              <path d="M 30 60 Q 20 55 15 45 Q 12 40 13 35 Q 14 30 18 28 Q 22 26 26 30 Q 28 33 28 38 Q 28 48 30 60 Z" />
+              {/* Thumb - angled outward */}
+              <path d="M 32 65 L 25 62 Q 18 60 14 55 Q 12 52 12 48 Q 12 44 15 42 Q 18 40 22 42 L 30 50 Q 32 52 32 55 Z" />
               
-              {/* Index finger */}
-              <path d="M 42 45 Q 40 30 40 15 Q 40 10 43 8 Q 46 6 49 8 Q 52 10 52 15 Q 52 30 50 45 Z" />
+              {/* Index finger - straight and long */}
+              <rect x="36" y="15" width="8" height="40" rx="4" />
               
-              {/* Middle finger */}
-              <path d="M 50 43 Q 49 28 49 10 Q 49 5 52 3 Q 55 1 58 3 Q 61 5 61 10 Q 61 28 60 43 Z" />
+              {/* Middle finger - longest */}
+              <rect x="46" y="10" width="8" height="45" rx="4" />
               
               {/* Ring finger */}
-              <path d="M 58 45 Q 57 30 57 18 Q 57 13 60 11 Q 63 9 66 11 Q 69 13 69 18 Q 69 30 68 45 Z" />
+              <rect x="56" y="15" width="8" height="40" rx="4" />
               
-              {/* Pinky */}
-              <path d="M 66 50 Q 65 38 65 28 Q 65 24 68 22 Q 71 20 74 22 Q 77 24 77 28 Q 77 38 76 50 Z" />
+              {/* Pinky - shortest */}
+              <rect x="66" y="22" width="7" height="33" rx="3.5" />
+              
+              {/* Finger gaps/webbing for realism */}
+              <ellipse cx="40" cy="52" rx="3" ry="4" opacity="0.2" />
+              <ellipse cx="50" cy="52" rx="3" ry="4" opacity="0.2" />
+              <ellipse cx="60" cy="52" rx="3" ry="4" opacity="0.2" />
+              <ellipse cx="69" cy="53" rx="2.5" ry="3" opacity="0.2" />
             </g>
           )}
         </svg>
 
         {/* Hand label */}
         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
-          <div className={`text-xs font-mono ${
-            gestureState.isPinching ? 'text-secondary' : 'text-primary'
+          <div className={`text-xs font-mono font-bold ${
+            gestureState.isPinching ? 'text-white' : 'text-white/70'
           }`}>
-            {gestureState.handIndex === 0 ? 'LEFT' : 'RIGHT'}
+            {gestureState.handIndex === 0 ? 'L' : 'R'}
           </div>
         </div>
       </div>
