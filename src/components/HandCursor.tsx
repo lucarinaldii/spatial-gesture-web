@@ -40,7 +40,8 @@ const HandCursor = ({ position, gestureState }: HandCursorProps) => {
           style={{
             filter: gestureState.isPinching 
               ? 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.6))' 
-              : 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.4))'
+              : 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.4))',
+            transform: gestureState.handIndex === 1 ? 'scaleX(-1)' : undefined
           }}
         >
           {gestureState.isPinching ? (

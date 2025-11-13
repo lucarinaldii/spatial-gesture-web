@@ -6,11 +6,10 @@ interface HandSkeletonProps {
   videoHeight: number;
 }
 
-// Only draw key connections for performance
+// Only draw essential connections for performance
 const HAND_CONNECTIONS = [
-  [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
-  [0, 5], [5, 6], [6, 7], [7, 8], // Index
-  [5, 9], [9, 13], [13, 17], [17, 0], // Palm outline
+  [0, 5], [5, 8], // Index finger simplified
+  [0, 17], // Palm base to pinky base
 ];
 
 const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps) => {
@@ -45,10 +44,10 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     landmarks.forEach((hand: any) => {
       console.log('Hand has', hand.length, 'landmarks');
       
-      // Draw connections with cyan glow - optimized thickness
+      // Draw connections with cyan glow - minimal for performance
       ctx.strokeStyle = '#00D9FF';
-      ctx.lineWidth = 4;
-      ctx.shadowBlur = 12;
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 10;
       ctx.shadowColor = '#00D9FF';
 
       HAND_CONNECTIONS.forEach(([start, end]) => {
@@ -61,28 +60,22 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         ctx.stroke();
       });
 
-      // Draw only key landmark points - optimized count
+      // Draw only essential points - index tip for performance
       ctx.shadowColor = '#FF44DD';
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 15;
       
-      // Only draw fingertips and palm base for performance
-      const keyPoints = [0, 4, 8]; // Palm base, thumb tip, index tip
-      keyPoints.forEach((index: number) => {
-        const landmark = hand[index];
-        const isFingertip = [4, 8].includes(index);
-        const radius = isFingertip ? 12 : 8;
-        
-        ctx.fillStyle = isFingertip ? '#FF44DD' : '#B644FF';
-        ctx.beginPath();
-        ctx.arc(
-          landmark.x * canvas.width,
-          landmark.y * canvas.height,
-          radius,
-          0,
-          2 * Math.PI
-        );
-        ctx.fill();
-      });
+      // Only index tip
+      const indexTip = hand[8];
+      ctx.fillStyle = '#FF44DD';
+      ctx.beginPath();
+      ctx.arc(
+        indexTip.x * canvas.width,
+        indexTip.y * canvas.height,
+        10,
+        0,
+        2 * Math.PI
+      );
+      ctx.fill();
     });
     
     ctx.restore();
