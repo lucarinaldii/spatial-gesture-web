@@ -81,6 +81,9 @@ const Index = () => {
   const handVelocityHistoryRef = useRef<Map<number, Array<{ x: number; y: number; timestamp: number }>>>(new Map());
   const touchedObjects = useRef<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
   const previousZPositionRef = useRef<Map<number, number>>(new Map());
+  const [mergingCards, setMergingCards] = useState<Set<string>>(new Set());
+  const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
+  const splitDistanceRef = useRef<Map<string, number>>(new Map());
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -481,18 +484,152 @@ const Index = () => {
               canvasDragStartRef.current = { x: handX, y: handY };
             }
           } else if (obj0 && obj1 && obj0.id === obj1.id && handPositions.length === 2) {
+            // Two hands grabbing the same card - check for splitting
             const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
             const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
             const distance = Math.sqrt(Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2));
-            if (!baseDistanceRef.current.has(obj0.id)) baseDistanceRef.current.set(obj0.id, distance);
-            else {
-              scaleUpdate = { id: obj0.id, scale: Math.max(0.5, Math.min(2, distance / baseDistanceRef.current.get(obj0.id)!)) };
-              const angle = Math.atan2(hand2Y - hand1Y, hand2X - hand1X) * (180 / Math.PI);
-              if (!baseAngleRef.current.has(obj0.id)) baseAngleRef.current.set(obj0.id, angle);
-              else objectUpdates.set(obj0.id, { ...(objectUpdates.get(obj0.id) || {}), rotation: { x: 0, y: angle - baseAngleRef.current.get(obj0.id)!, z: 0 } });
-              const avgHandX = (hand1X + hand2X) / 2, avgHandY = (hand1Y + hand2Y) / 2;
-              const avgOffsetX = (obj0.offsetX + obj1.offsetX) / 2, avgOffsetY = (obj0.offsetY + obj1.offsetY) / 2;
-              objectUpdates.set(obj0.id, { ...(objectUpdates.get(obj0.id) || {}), position: { x: Math.max(5, Math.min(95, avgHandX - avgOffsetX)) - canvasOffset.x, y: Math.max(5, Math.min(90, avgHandY - avgOffsetY)) - canvasOffset.y } });
+            
+            // Track initial distance for split detection
+            if (!splitDistanceRef.current.has(obj0.id)) {
+              splitDistanceRef.current.set(obj0.id, distance);
+            }
+            
+            const initialDistance = splitDistanceRef.current.get(obj0.id)!;
+            const SPLIT_THRESHOLD = 15; // Distance increase needed to trigger split
+            
+            if (distance > initialDistance + SPLIT_THRESHOLD && !splittingCards.has(obj0.id)) {
+              // Split the card into two
+              const currentObj = objects.find(o => o.id === obj0.id);
+              if (currentObj) {
+                setSplittingCards(prev => new Set(prev).add(obj0.id));
+                
+                // Create two new cards from the split
+                maxZIndexRef.current += 2;
+                const newCard1 = {
+                  ...currentObj,
+                  id: Date.now().toString(),
+                  position: { x: hand1X - canvasOffset.x, y: hand1Y - canvasOffset.y },
+                  zIndex: maxZIndexRef.current - 1,
+                  title: currentObj.title ? currentObj.title + ' (A)' : 'Split Card A',
+                };
+                const newCard2 = {
+                  ...currentObj,
+                  id: (Date.now() + 1).toString(),
+                  position: { x: hand2X - canvasOffset.x, y: hand2Y - canvasOffset.y },
+                  zIndex: maxZIndexRef.current,
+                  title: currentObj.title ? currentObj.title + ' (B)' : 'Split Card B',
+                };
+                
+                // Remove original card and add split cards
+                setObjects(prev => [...prev.filter(o => o.id !== obj0.id), newCard1, newCard2]);
+                
+                // Update grabbed objects to point to new cards
+                newGrabbedObjects.set(0, { id: newCard1.id, offsetX: 0, offsetY: 0 });
+                newGrabbedObjects.set(1, { id: newCard2.id, offsetX: 0, offsetY: 0 });
+                hasChanges = true;
+                
+                splitDistanceRef.current.delete(obj0.id);
+                baseDistanceRef.current.delete(obj0.id);
+                baseAngleRef.current.delete(obj0.id);
+                
+                setTimeout(() => {
+                  setSplittingCards(prev => {
+                    const next = new Set(prev);
+                    next.delete(obj0.id);
+                    return next;
+                  });
+                }, 500);
+                
+                toast({ title: "Card split!", description: "Card divided into two" });
+              }
+            } else {
+              // Normal two-hand manipulation (scale and rotate)
+              if (!baseDistanceRef.current.has(obj0.id)) baseDistanceRef.current.set(obj0.id, distance);
+              else {
+                scaleUpdate = { id: obj0.id, scale: Math.max(0.5, Math.min(2, distance / baseDistanceRef.current.get(obj0.id)!)) };
+                const angle = Math.atan2(hand2Y - hand1Y, hand2X - hand1X) * (180 / Math.PI);
+                if (!baseAngleRef.current.has(obj0.id)) baseAngleRef.current.set(obj0.id, angle);
+                else objectUpdates.set(obj0.id, { ...(objectUpdates.get(obj0.id) || {}), rotation: { x: 0, y: angle - baseAngleRef.current.get(obj0.id)!, z: 0 } });
+                const avgHandX = (hand1X + hand2X) / 2, avgHandY = (hand1Y + hand2Y) / 2;
+                const avgOffsetX = (obj0.offsetX + obj1.offsetX) / 2, avgOffsetY = (obj0.offsetY + obj1.offsetY) / 2;
+                objectUpdates.set(obj0.id, { ...(objectUpdates.get(obj0.id) || {}), position: { x: Math.max(5, Math.min(95, avgHandX - avgOffsetX)) - canvasOffset.x, y: Math.max(5, Math.min(90, avgHandY - avgOffsetY)) - canvasOffset.y } });
+              }
+            }
+          } else if (obj0 && obj1 && obj0.id !== obj1.id && handPositions.length === 2) {
+            // Two hands grabbing different cards - check for merging
+            const card1 = objects.find(o => o.id === obj0.id);
+            const card2 = objects.find(o => o.id === obj1.id);
+            
+            if (card1 && card2) {
+              const pos1X = card1.position.x + canvasOffset.x;
+              const pos1Y = card1.position.y + canvasOffset.y;
+              const pos2X = card2.position.x + canvasOffset.x;
+              const pos2Y = card2.position.y + canvasOffset.y;
+              const distance = Math.sqrt(Math.pow(pos2X - pos1X, 2) + Math.pow(pos2Y - pos1Y, 2));
+              
+              const MERGE_THRESHOLD = 15; // Distance to trigger merge
+              
+              if (distance < MERGE_THRESHOLD && !mergingCards.has(obj0.id) && !mergingCards.has(obj1.id)) {
+                // Merge the two cards
+                setMergingCards(prev => new Set([...prev, obj0.id, obj1.id]));
+                
+                maxZIndexRef.current += 1;
+                const mergedCard = {
+                  ...card1,
+                  id: Date.now().toString(),
+                  position: {
+                    x: (card1.position.x + card2.position.x) / 2,
+                    y: (card1.position.y + card2.position.y) / 2,
+                  },
+                  zIndex: maxZIndexRef.current,
+                  title: `${card1.title || 'Card'} + ${card2.title || 'Card'}`,
+                  description: 'Merged card',
+                };
+                
+                // Remove both cards and add merged card
+                setObjects(prev => [...prev.filter(o => o.id !== obj0.id && o.id !== obj1.id), mergedCard]);
+                
+                // Clear grabbed objects
+                newGrabbedObjects.delete(0);
+                newGrabbedObjects.delete(1);
+                hasChanges = true;
+                
+                setTimeout(() => {
+                  setMergingCards(prev => {
+                    const next = new Set(prev);
+                    next.delete(obj0.id);
+                    next.delete(obj1.id);
+                    return next;
+                  });
+                }, 500);
+                
+                toast({ title: "Cards merged!", description: "Two cards combined into one" });
+              } else {
+                // Move both cards independently
+                const grabbed0 = newGrabbedObjects.get(0);
+                const grabbed1 = newGrabbedObjects.get(1);
+                const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
+                const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
+                
+                if (grabbed0) {
+                  objectUpdates.set(grabbed0.id, { 
+                    ...(objectUpdates.get(grabbed0.id) || {}), 
+                    position: { 
+                      x: Math.max(5, Math.min(95, hand1X - grabbed0.offsetX)) - canvasOffset.x, 
+                      y: Math.max(5, Math.min(90, hand1Y - grabbed0.offsetY)) - canvasOffset.y 
+                    } 
+                  });
+                }
+                if (grabbed1) {
+                  objectUpdates.set(grabbed1.id, { 
+                    ...(objectUpdates.get(grabbed1.id) || {}), 
+                    position: { 
+                      x: Math.max(5, Math.min(95, hand2X - grabbed1.offsetX)) - canvasOffset.x, 
+                      y: Math.max(5, Math.min(90, hand2Y - grabbed1.offsetY)) - canvasOffset.y 
+                    } 
+                  });
+                }
+              }
             }
           } else {
             const grabbed = newGrabbedObjects.get(handIndex);
@@ -508,6 +645,7 @@ const Index = () => {
             if (!Array.from(newGrabbedObjects.values()).some(g => g.id === grabbed.id)) {
               baseDistanceRef.current.delete(grabbed.id);
               baseAngleRef.current.delete(grabbed.id);
+              splitDistanceRef.current.delete(grabbed.id);
               
               // Calculate release velocity from hand movement history
               const history = handVelocityHistoryRef.current.get(handIndex) || [];
@@ -643,7 +781,9 @@ const Index = () => {
                   <ul className="space-y-2 text-muted-foreground">
                     <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-primary" /><span><strong className="text-primary">Point:</strong> Move your index finger to control the cursor</span></li>
                     <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-secondary" /><span><strong className="text-secondary">Pinch:</strong> Touch thumb and index finger to click</span></li>
-                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-accent" /><span><strong className="text-accent">Hover:</strong> Point at cards to see interactions</span></li>
+                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-accent" /><span><strong className="text-accent">Touch Drag:</strong> Point with closed fist and move closer to drag cards</span></li>
+                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-primary" /><span><strong className="text-primary">Merge:</strong> Pinch two cards and bring them close together</span></li>
+                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-secondary" /><span><strong className="text-secondary">Split:</strong> Pinch one card with both hands and pull apart</span></li>
                   </ul>
                 </div>
                 <Button onClick={handleStartTracking} disabled={!isReady} size="lg" className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -681,7 +821,9 @@ const Index = () => {
               {objects.sort((a, b) => a.zIndex - b.zIndex).map((obj) => {
                 const isBeingDragged = Array.from(grabbedObjects.values()).some(g => g.id === obj.id);
                 const handIndex = Array.from(grabbedObjects.entries()).find(([_, g]) => g.id === obj.id)?.[0];
-                return <InteractiveObject key={obj.id} id={obj.id} type={obj.type} title={obj.title} description={obj.description} fileUrl={obj.fileUrl} position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} rotation={obj.rotation} zIndex={obj.zIndex} handPosition={handIndex !== undefined ? handPositions[handIndex] : null} gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} onInteract={() => {}} isBeingDragged={isBeingDragged} scale={objectScales.get(obj.id) || 1} />;
+                const isMerging = mergingCards.has(obj.id);
+                const isSplitting = splittingCards.has(obj.id);
+                return <InteractiveObject key={obj.id} id={obj.id} type={obj.type} title={obj.title} description={obj.description} fileUrl={obj.fileUrl} position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} rotation={obj.rotation} zIndex={obj.zIndex} handPosition={handIndex !== undefined ? handPositions[handIndex] : null} gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} onInteract={() => {}} isBeingDragged={isBeingDragged} scale={objectScales.get(obj.id) || 1} isMerging={isMerging} isSplitting={isSplitting} />;
               })}
             </div>
             {videoRef.current && <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />}

@@ -24,6 +24,8 @@ interface InteractiveObjectProps {
   onInteract: () => void;
   isBeingDragged?: boolean;
   scale?: number;
+  isMerging?: boolean;
+  isSplitting?: boolean;
 }
 
 const Model3D = ({ url }: { url: string }) => {
@@ -45,6 +47,8 @@ const InteractiveObject = memo(({
   onInteract,
   isBeingDragged = false,
   scale = 1,
+  isMerging = false,
+  isSplitting = false,
 }: InteractiveObjectProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
@@ -158,11 +162,12 @@ const InteractiveObject = memo(({
     >
       <div
         ref={objectRef}
-        className="will-change-transform"
+        className={`will-change-transform ${isMerging ? 'animate-scale-out' : ''} ${isSplitting ? 'animate-scale-out' : ''}`}
         style={{
           transform: `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
           transformStyle: 'preserve-3d',
           transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          opacity: isMerging || isSplitting ? 0.5 : 1,
         }}
       >
         <Card
@@ -172,6 +177,8 @@ const InteractiveObject = memo(({
             ${isHovered ? 'border-primary' : 'border-border/30'}
             ${wasClicked ? 'scale-95' : ''}
             ${isBeingDragged ? 'scale-110 ring-2 ring-primary' : ''}
+            ${isMerging ? 'ring-4 ring-accent animate-pulse' : ''}
+            ${isSplitting ? 'ring-4 ring-secondary animate-pulse' : ''}
           `}
           style={{
             backfaceVisibility: 'hidden',
