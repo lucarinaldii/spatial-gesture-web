@@ -420,14 +420,14 @@ const Index = () => {
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
             {/* Bottom center buttons */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-3">
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-6">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
               <Button 
                 ref={restartButtonRef}
                 onClick={handleRestart} 
                 size="lg" 
                 variant="destructive"
-                className={`neon-glow transition-all duration-200 text-lg px-6 py-6 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+                className={`rounded-full neon-glow transition-all duration-200 text-lg px-8 py-8 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
                 <RotateCcw className="w-6 h-6 mr-2" />Restart
               </Button>
@@ -435,7 +435,7 @@ const Index = () => {
                 ref={importButtonRef}
                 onClick={() => fileInputRef.current?.click()} 
                 size="lg" 
-                className={`neon-glow transition-all duration-200 text-lg px-6 py-6 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+                className={`rounded-full neon-glow transition-all duration-200 text-lg px-8 py-8 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
                 <Plus className="w-6 h-6 mr-2" />Import File
               </Button>
