@@ -98,7 +98,7 @@ const HandCursor = ({ position, gestureState }: HandCursorProps) => {
           <div className={`text-xs font-mono font-bold ${
             gestureState.isPinching ? 'text-white' : 'text-white/70'
           }`}>
-            {gestureState.handIndex === 0 ? 'L' : 'R'}
+            {gestureState.handIndex === 0 ? 'R' : 'L'}
           </div>
         </div>
       </div>

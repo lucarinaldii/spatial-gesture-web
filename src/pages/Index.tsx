@@ -50,10 +50,12 @@ const Index = () => {
   }>>(new Map());
   
   const [cardScales, setCardScales] = useState<Map<string, number>>(new Map());
+  const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
   const lastPinchStates = useRef<Map<number, boolean>>(new Map());
   const animationFrameRef = useRef<number>();
   const maxZIndexRef = useRef(3);
   const baseDistanceRef = useRef<Map<string, number>>(new Map());
+  const canvasDragStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -89,7 +91,7 @@ const Index = () => {
         const handY = handPos.y * 100;
         const wasPinching = lastPinchStates.current.get(handIndex) || false;
 
-        // Start pinch - grab card
+        // Start pinch - grab card or canvas
         if (isPinching && !wasPinching) {
           const cardWidth = 16;
           const cardHeight = 12;
@@ -115,6 +117,11 @@ const Index = () => {
               ...(cardUpdates.get(targetCard.id) || {}),
               zIndex: maxZIndexRef.current 
             });
+          } else {
+            // No card found - start canvas drag
+            if (!canvasDragStartRef.current) {
+              canvasDragStartRef.current = { x: handX, y: handY };
+            }
           }
         }
 
@@ -123,8 +130,20 @@ const Index = () => {
           const card0 = newGrabbedCards.get(0);
           const card1 = newGrabbedCards.get(1);
           
+          // Check if dragging canvas (no cards grabbed)
+          if (newGrabbedCards.size === 0 && canvasDragStartRef.current) {
+            const deltaX = handX - canvasDragStartRef.current.x;
+            const deltaY = handY - canvasDragStartRef.current.y;
+            
+            setCanvasOffset(prev => ({
+              x: prev.x + deltaX,
+              y: prev.y + deltaY
+            }));
+            
+            canvasDragStartRef.current = { x: handX, y: handY };
+          }
           // Both hands on same card = scale mode
-          if (card0 && card1 && card0.id === card1.id && handPositions.length === 2) {
+          else if (card0 && card1 && card0.id === card1.id && handPositions.length === 2) {
             const hand1X = handPositions[0].x * 100;
             const hand1Y = handPositions[0].y * 100;
             const hand2X = handPositions[1].x * 100;
@@ -168,7 +187,7 @@ const Index = () => {
           }
         }
 
-        // Release pinch - drop card
+        // Release pinch - drop card or canvas
         if (!isPinching && wasPinching) {
           const grabbed = newGrabbedCards.get(handIndex);
           if (grabbed) {
@@ -180,6 +199,9 @@ const Index = () => {
             if (!otherHandHolding) {
               baseDistanceRef.current.delete(grabbed.id);
             }
+          } else {
+            // Release canvas drag
+            canvasDragStartRef.current = null;
           }
         }
 
@@ -315,12 +337,18 @@ const Index = () => {
                 const handPos = handIndex !== undefined ? handPositions[handIndex] : null;
                 const gesture = handIndex !== undefined ? gestureStates[handIndex] : null;
                 
+                // Apply canvas offset to card position
+                const adjustedPosition = {
+                  x: card.position.x + canvasOffset.x,
+                  y: card.position.y + canvasOffset.y
+                };
+                
                 return (
                   <InteractiveCard
                     key={card.id}
                     title={card.title}
                     description={card.description}
-                    position={card.position}
+                    position={adjustedPosition}
                     zIndex={card.zIndex}
                     handPosition={handPos}
                     gestureState={gesture || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0 }}
