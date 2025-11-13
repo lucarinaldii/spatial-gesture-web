@@ -295,6 +295,16 @@ const Index = () => {
         const fingerX = indexFingerTip.x * 100;
         const fingerY = indexFingerTip.y * 100;
         const TOUCH_THRESHOLD = 10; // Distance threshold for "touching"
+        
+        // Check if only index finger is extended (pointing gesture)
+        const isPointing = gesture.fingers.index.isExtended &&
+                          !gesture.fingers.middle.isExtended &&
+                          !gesture.fingers.ring.isExtended &&
+                          !gesture.fingers.pinky.isExtended;
+        
+        // Check if hand is parallel to camera (index finger pointing forward)
+        // Lower z value means closer to camera (pointing forward)
+        const isHandParallel = indexFingerTip.z < -0.05;
 
         // Track hand velocity history for inertia calculation
         const now = Date.now();
@@ -306,8 +316,8 @@ const Index = () => {
         // Keep only last 5 frames (about 83ms at 60fps)
         if (history.length > 5) history.shift();
 
-        // Touch dragging with index finger (when not pinching)
-        if (!isPinching) {
+        // Touch dragging with index finger (when not pinching, only index extended, hand parallel)
+        if (!isPinching && isPointing && isHandParallel) {
           const wasTouching = newTouchedObjects.has(handIndex);
           const targetObject = objects.find((obj) => {
             const adjustedX = obj.position.x + canvasOffset.x;
@@ -352,7 +362,7 @@ const Index = () => {
               }
             }
           } else if (wasTouching) {
-            // Release touched object
+            // Release touched object (moved away from object)
             const touched = newTouchedObjects.get(handIndex);
             if (touched) {
               newTouchedObjects.delete(handIndex);
@@ -378,6 +388,33 @@ const Index = () => {
               
               handVelocityHistoryRef.current.delete(handIndex);
             }
+          }
+        } else if (newTouchedObjects.has(handIndex)) {
+          // Release touched object if hand gesture changed (fingers extended or not parallel anymore)
+          const touched = newTouchedObjects.get(handIndex);
+          if (touched) {
+            newTouchedObjects.delete(handIndex);
+            hasTouchChanges = true;
+            
+            // Calculate release velocity
+            let velocityX = 0, velocityY = 0;
+            if (history.length >= 2) {
+              const recent = history[history.length - 1];
+              const previous = history[0];
+              const timeDelta = (recent.timestamp - previous.timestamp) / 1000;
+              if (timeDelta > 0) {
+                velocityX = (recent.x - previous.x) / timeDelta * 0.016;
+                velocityY = (recent.y - previous.y) / timeDelta * 0.016;
+              }
+            }
+            
+            setObjects(prev => prev.map(obj => obj.id === touched.id ? { 
+              ...obj, 
+              isPhysicsEnabled: true, 
+              velocity: { x: velocityX, y: velocityY } 
+            } : obj));
+            
+            handVelocityHistoryRef.current.delete(handIndex);
           }
         }
 
