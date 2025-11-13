@@ -6,10 +6,20 @@ interface HandSkeletonProps {
   videoHeight: number;
 }
 
-// Only draw essential connections for performance
+// Complete hand skeleton connections (all fingers)
 const HAND_CONNECTIONS = [
-  [0, 5], [5, 8], // Index finger simplified
-  [0, 17], // Palm base to pinky base
+  // Thumb
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  // Index finger
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  // Middle finger
+  [0, 9], [9, 10], [10, 11], [11, 12],
+  // Ring finger
+  [0, 13], [13, 14], [14, 15], [15, 16],
+  // Pinky
+  [0, 17], [17, 18], [18, 19], [19, 20],
+  // Palm connections
+  [5, 9], [9, 13], [13, 17],
 ];
 
 const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps) => {
@@ -60,18 +70,35 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         ctx.stroke();
       });
 
-      // Draw only essential points - index tip for performance
+      // Draw all fingertip landmarks
       ctx.shadowColor = '#FF44DD';
       ctx.shadowBlur = 15;
-      
-      // Only index tip
-      const indexTip = hand[8];
       ctx.fillStyle = '#FF44DD';
+      
+      // Draw all fingertips: Thumb(4), Index(8), Middle(12), Ring(16), Pinky(20)
+      const fingertips = [4, 8, 12, 16, 20];
+      fingertips.forEach(tipIndex => {
+        const tip = hand[tipIndex];
+        ctx.beginPath();
+        ctx.arc(
+          tip.x * canvas.width,
+          tip.y * canvas.height,
+          8,
+          0,
+          2 * Math.PI
+        );
+        ctx.fill();
+      });
+
+      // Draw wrist with different color
+      ctx.shadowColor = '#00FF88';
+      ctx.fillStyle = '#00FF88';
+      const wrist = hand[0];
       ctx.beginPath();
       ctx.arc(
-        indexTip.x * canvas.width,
-        indexTip.y * canvas.height,
-        10,
+        wrist.x * canvas.width,
+        wrist.y * canvas.height,
+        6,
         0,
         2 * Math.PI
       );

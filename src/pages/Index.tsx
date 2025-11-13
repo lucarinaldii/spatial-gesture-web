@@ -412,7 +412,19 @@ const Index = () => {
                       rotation={card.rotation}
                       zIndex={card.zIndex}
                       handPosition={handPos}
-                      gestureState={gesture || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0 }}
+                      gestureState={gesture || { 
+                        isPinching: false, 
+                        isPointing: false, 
+                        pinchStrength: 0, 
+                        handIndex: 0,
+                        fingers: {
+                          thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
+                          index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
+                          middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
+                          ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
+                          pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }
+                        }
+                      }}
                       onInteract={() => {}}
                       isBeingDragged={isBeingDragged}
                       scale={cardScales.get(card.id) || 1}
@@ -426,7 +438,19 @@ const Index = () => {
               <HandCursor
                 key={index}
                 position={pos}
-                gestureState={gestureStates[index] || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: index }}
+                gestureState={gestureStates[index] || { 
+                  isPinching: false, 
+                  isPointing: false, 
+                  pinchStrength: 0, 
+                  handIndex: index,
+                  fingers: {
+                    thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
+                    index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
+                    middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
+                    ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } },
+                    pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }
+                  }
+                }}
               />
             ))}
           </div>
