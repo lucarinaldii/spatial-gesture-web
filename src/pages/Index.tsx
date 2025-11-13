@@ -55,12 +55,14 @@ const Index = () => {
   
   const [cardScales, setCardScales] = useState<Map<string, number>>(new Map());
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
+  const [canvasZoom, setCanvasZoom] = useState(1);
   const lastPinchStates = useRef<Map<number, boolean>>(new Map());
   const animationFrameRef = useRef<number>();
   const maxZIndexRef = useRef(3);
   const baseDistanceRef = useRef<Map<string, number>>(new Map());
   const baseAngleRef = useRef<Map<string, number>>(new Map());
   const canvasDragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const canvasZoomBaseDistanceRef = useRef<number | null>(null);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -139,17 +141,57 @@ const Index = () => {
           const card0 = newGrabbedCards.get(0);
           const card1 = newGrabbedCards.get(1);
           
-          // Check if dragging canvas (no cards grabbed)
-          if (newGrabbedCards.size === 0 && canvasDragStartRef.current) {
-            const deltaX = handX - canvasDragStartRef.current.x;
-            const deltaY = handY - canvasDragStartRef.current.y;
-            
-            setCanvasOffset(prev => ({
-              x: prev.x + deltaX,
-              y: prev.y + deltaY
-            }));
-            
-            canvasDragStartRef.current = { x: handX, y: handY };
+          // Check if dragging/zooming canvas (no cards grabbed)
+          if (newGrabbedCards.size === 0) {
+            // Two hands = zoom canvas
+            if (handPositions.length === 2) {
+              const hand1X = handPositions[0].x * 100;
+              const hand1Y = handPositions[0].y * 100;
+              const hand2X = handPositions[1].x * 100;
+              const hand2Y = handPositions[1].y * 100;
+              
+              const distance = Math.sqrt(
+                Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2)
+              );
+              
+              if (!canvasZoomBaseDistanceRef.current) {
+                canvasZoomBaseDistanceRef.current = distance;
+              } else {
+                const zoomFactor = distance / canvasZoomBaseDistanceRef.current;
+                const newZoom = Math.max(0.5, Math.min(3, zoomFactor));
+                setCanvasZoom(newZoom);
+              }
+              
+              // Also update position to midpoint
+              const midX = (hand1X + hand2X) / 2;
+              const midY = (hand1Y + hand2Y) / 2;
+              
+              if (!canvasDragStartRef.current) {
+                canvasDragStartRef.current = { x: midX, y: midY };
+              } else {
+                const deltaX = midX - canvasDragStartRef.current.x;
+                const deltaY = midY - canvasDragStartRef.current.y;
+                
+                setCanvasOffset(prev => ({
+                  x: prev.x + deltaX,
+                  y: prev.y + deltaY
+                }));
+                
+                canvasDragStartRef.current = { x: midX, y: midY };
+              }
+            }
+            // One hand = drag canvas
+            else if (canvasDragStartRef.current) {
+              const deltaX = handX - canvasDragStartRef.current.x;
+              const deltaY = handY - canvasDragStartRef.current.y;
+              
+              setCanvasOffset(prev => ({
+                x: prev.x + deltaX,
+                y: prev.y + deltaY
+              }));
+              
+              canvasDragStartRef.current = { x: handX, y: handY };
+            }
           }
           // Both hands on same card = scale mode
           else if (card0 && card1 && card0.id === card1.id && handPositions.length === 2) {
@@ -229,8 +271,9 @@ const Index = () => {
               baseAngleRef.current.delete(grabbed.id);
             }
           } else {
-            // Release canvas drag
+            // Release canvas drag/zoom
             canvasDragStartRef.current = null;
+            canvasZoomBaseDistanceRef.current = null;
           }
         }
 
@@ -337,37 +380,46 @@ const Index = () => {
               className="fixed -left-[9999px] opacity-0 pointer-events-none"
             />
             
-            {/* Interactive draggable cards with z-index */}
-            {cards
-              .sort((a, b) => a.zIndex - b.zIndex)
-              .map((card) => {
-                const isBeingDragged = Array.from(grabbedCards.values()).some(g => g.id === card.id);
-                const handIndex = Array.from(grabbedCards.entries()).find(([_, g]) => g.id === card.id)?.[0];
-                const handPos = handIndex !== undefined ? handPositions[handIndex] : null;
-                const gesture = handIndex !== undefined ? gestureStates[handIndex] : null;
-                
-                // Apply canvas offset to card position
-                const adjustedPosition = {
-                  x: card.position.x + canvasOffset.x,
-                  y: card.position.y + canvasOffset.y
-                };
-                
-                return (
-                  <InteractiveCard
-                    key={card.id}
-                    title={card.title}
-                    description={card.description}
-                    position={adjustedPosition}
-                    rotation={card.rotation}
-                    zIndex={card.zIndex}
-                    handPosition={handPos}
-                    gestureState={gesture || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0 }}
-                    onInteract={() => {}}
-                    isBeingDragged={isBeingDragged}
-                    scale={cardScales.get(card.id) || 1}
-                  />
-                );
-              })}
+            {/* Zoomable canvas container */}
+            <div 
+              className="absolute inset-0 origin-center transition-transform duration-200"
+              style={{
+                transform: `scale(${canvasZoom})`,
+                willChange: 'transform',
+              }}
+            >
+              {/* Interactive draggable cards with z-index */}
+              {cards
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((card) => {
+                  const isBeingDragged = Array.from(grabbedCards.values()).some(g => g.id === card.id);
+                  const handIndex = Array.from(grabbedCards.entries()).find(([_, g]) => g.id === card.id)?.[0];
+                  const handPos = handIndex !== undefined ? handPositions[handIndex] : null;
+                  const gesture = handIndex !== undefined ? gestureStates[handIndex] : null;
+                  
+                  // Apply canvas offset to card position
+                  const adjustedPosition = {
+                    x: card.position.x + canvasOffset.x,
+                    y: card.position.y + canvasOffset.y
+                  };
+                  
+                  return (
+                    <InteractiveCard
+                      key={card.id}
+                      title={card.title}
+                      description={card.description}
+                      position={adjustedPosition}
+                      rotation={card.rotation}
+                      zIndex={card.zIndex}
+                      handPosition={handPos}
+                      gestureState={gesture || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0 }}
+                      onInteract={() => {}}
+                      isBeingDragged={isBeingDragged}
+                      scale={cardScales.get(card.id) || 1}
+                    />
+                  );
+                })}
+            </div>
 
             {/* Hand cursors for each hand */}
             {handPositions.map((pos, index) => (
