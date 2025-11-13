@@ -49,9 +49,11 @@ const Index = () => {
     offsetY: number;
   }>>(new Map());
   
+  const [zoomLevel, setZoomLevel] = useState(1);
   const lastPinchStates = useRef<Map<number, boolean>>(new Map());
   const animationFrameRef = useRef<number>();
   const maxZIndexRef = useRef(3);
+  const baseDistanceRef = useRef<number | null>(null);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -72,7 +74,30 @@ const Index = () => {
         setGrabbedCards(new Map());
       }
       lastPinchStates.current.clear();
+      baseDistanceRef.current = null;
       return;
+    }
+
+    // Calculate zoom from two-hand distance
+    if (handPositions.length === 2) {
+      const hand1X = handPositions[0].x * 100;
+      const hand1Y = handPositions[0].y * 100;
+      const hand2X = handPositions[1].x * 100;
+      const hand2Y = handPositions[1].y * 100;
+      
+      const distance = Math.sqrt(
+        Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2)
+      );
+      
+      if (baseDistanceRef.current === null) {
+        baseDistanceRef.current = distance;
+      }
+      
+      const zoomFactor = distance / baseDistanceRef.current;
+      const newZoom = Math.max(0.5, Math.min(3, zoomFactor));
+      setZoomLevel(newZoom);
+    } else {
+      baseDistanceRef.current = null;
     }
 
     const updateDrag = () => {
@@ -278,6 +303,7 @@ const Index = () => {
                     gestureState={gesture || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0 }}
                     onInteract={() => {}}
                     isBeingDragged={isBeingDragged}
+                    zoomLevel={zoomLevel}
                   />
                 );
               })}
@@ -285,7 +311,9 @@ const Index = () => {
             {/* Center info */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-full border border-primary/30">
               <p className="text-sm font-mono text-muted-foreground">
-                {gestureStates.some(g => g.isPinching) ? (
+                {handPositions.length === 2 ? (
+                  <span className="text-accent">🔍 Zoom: {(zoomLevel * 100).toFixed(0)}% - Spread hands to zoom</span>
+                ) : gestureStates.some(g => g.isPinching) ? (
                   <span className="text-secondary">🤏 Pinching - {gestureStates.filter(g => g.isPinching).length} hand(s) active</span>
                 ) : handPositions.length > 0 ? (
                   <span className="text-primary">👆 {handPositions.length} hand(s) detected - Pinch to grab cards</span>

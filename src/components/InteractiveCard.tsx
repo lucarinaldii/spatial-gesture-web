@@ -11,6 +11,7 @@ interface InteractiveCardProps {
   gestureState: GestureState;
   onInteract: () => void;
   isBeingDragged?: boolean;
+  zoomLevel?: number;
 }
 
 const InteractiveCard = memo(({
@@ -22,6 +23,7 @@ const InteractiveCard = memo(({
   gestureState,
   onInteract,
   isBeingDragged = false,
+  zoomLevel = 1,
 }: InteractiveCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
@@ -63,7 +65,7 @@ const InteractiveCard = memo(({
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
-        transform: `translate(-50%, -50%) ${isHovered ? 'scale(1.05)' : 'scale(1)'}`,
+        transform: `translate(-50%, -50%) scale(${zoomLevel * (isHovered ? 1.05 : 1)})`,
         transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex,
       }}
