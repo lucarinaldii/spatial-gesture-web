@@ -62,29 +62,38 @@ const InteractiveCard = memo(({
 
   return (
     <div
-      ref={cardRef}
-      className="absolute will-change-transform"
+      className="absolute"
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
-        transform: `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
-        transformStyle: 'preserve-3d',
-        perspective: '1000px',
-        transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        perspective: '1200px',
         zIndex,
       }}
     >
-      <Card
-        className={`
-          glass-panel p-6 w-64 transition-all duration-200
-          ${isHovered ? 'border-primary' : 'border-border/30'}
-          ${wasClicked ? 'scale-95' : ''}
-          ${isBeingDragged ? 'scale-110 ring-2 ring-primary' : ''}
-        `}
+      <div
+        ref={cardRef}
+        className="will-change-transform"
+        style={{
+          transform: `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
+          transformStyle: 'preserve-3d',
+          transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
       >
-        <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </Card>
+        <Card
+          className={`
+            glass-panel p-6 w-64 transition-all duration-200
+            ${isHovered ? 'border-primary' : 'border-border/30'}
+            ${wasClicked ? 'scale-95' : ''}
+            ${isBeingDragged ? 'scale-110 ring-2 ring-primary' : ''}
+          `}
+          style={{
+            backfaceVisibility: 'hidden',
+          }}
+        >
+          <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </Card>
+      </div>
     </div>
   );
 });
