@@ -54,9 +54,9 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     landmarks.forEach((hand: any) => {
       console.log('Hand has', hand.length, 'landmarks');
       
-      // Draw connections with white opaque
+      // Draw connections with white opaque (thinner lines)
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5;
       ctx.shadowBlur = 0;
       ctx.shadowColor = 'transparent';
 
@@ -70,7 +70,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         ctx.stroke();
       });
 
-      // Draw all fingertip landmarks
+      // Draw all fingertip landmarks (smaller)
       ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       
@@ -82,21 +82,21 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         ctx.arc(
           tip.x * canvas.width,
           tip.y * canvas.height,
-          4,
+          3,
           0,
           2 * Math.PI
         );
         ctx.fill();
       });
 
-      // Draw wrist
+      // Draw wrist (smaller)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       const wrist = hand[0];
       ctx.beginPath();
       ctx.arc(
         wrist.x * canvas.width,
         wrist.y * canvas.height,
-        4,
+        3,
         0,
         2 * Math.PI
       );
