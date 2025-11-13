@@ -54,11 +54,11 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     landmarks.forEach((hand: any) => {
       console.log('Hand has', hand.length, 'landmarks');
       
-      // Draw connections with cyan glow - minimal for performance
-      ctx.strokeStyle = '#00D9FF';
-      ctx.lineWidth = 3;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = '#00D9FF';
+      // Draw connections with white opaque
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
 
       HAND_CONNECTIONS.forEach(([start, end]) => {
         const startPoint = hand[start];
@@ -71,9 +71,8 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
       });
 
       // Draw all fingertip landmarks
-      ctx.shadowColor = '#FF44DD';
-      ctx.shadowBlur = 15;
-      ctx.fillStyle = '#FF44DD';
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       
       // Draw all fingertips: Thumb(4), Index(8), Middle(12), Ring(16), Pinky(20)
       const fingertips = [4, 8, 12, 16, 20];
@@ -83,22 +82,21 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         ctx.arc(
           tip.x * canvas.width,
           tip.y * canvas.height,
-          8,
+          4,
           0,
           2 * Math.PI
         );
         ctx.fill();
       });
 
-      // Draw wrist with different color
-      ctx.shadowColor = '#00FF88';
-      ctx.fillStyle = '#00FF88';
+      // Draw wrist
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       const wrist = hand[0];
       ctx.beginPath();
       ctx.arc(
         wrist.x * canvas.width,
         wrist.y * canvas.height,
-        6,
+        4,
         0,
         2 * Math.PI
       );
