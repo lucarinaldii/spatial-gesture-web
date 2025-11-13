@@ -8,11 +8,23 @@ export interface HandPosition {
   handIndex: number; // 0 or 1 for left/right hand
 }
 
+export interface FingerState {
+  isExtended: boolean;
+  tipPosition: { x: number; y: number; z: number };
+}
+
 export interface GestureState {
   isPinching: boolean;
   isPointing: boolean;
   pinchStrength: number;
   handIndex: number;
+  fingers: {
+    thumb: FingerState;
+    index: FingerState;
+    middle: FingerState;
+    ring: FingerState;
+    pinky: FingerState;
+  };
 }
 
 export const useHandTracking = () => {
@@ -102,12 +114,41 @@ export const useHandTracking = () => {
         // Apply smoothing
         const smoothedPosition = smoothPosition(rawPosition, lastPositionsRef.current[i]);
         
+        // Detect individual finger states
+        const isFingerExtended = (tipIndex: number, baseIndex: number) => {
+          const tip = hand[tipIndex];
+          const base = hand[baseIndex];
+          return tip.y < base.y - 0.05; // Finger is extended if tip is above base
+        };
+
         newPositions.push(smoothedPosition);
         newGestures.push({
           isPinching,
-          isPointing: true,
+          isPointing: !isPinching,
           pinchStrength,
           handIndex: i,
+          fingers: {
+            thumb: {
+              isExtended: isFingerExtended(4, 2),
+              tipPosition: { x: 1 - hand[4].x, y: hand[4].y, z: hand[4].z || 0 }
+            },
+            index: {
+              isExtended: isFingerExtended(8, 5),
+              tipPosition: { x: 1 - hand[8].x, y: hand[8].y, z: hand[8].z || 0 }
+            },
+            middle: {
+              isExtended: isFingerExtended(12, 9),
+              tipPosition: { x: 1 - hand[12].x, y: hand[12].y, z: hand[12].z || 0 }
+            },
+            ring: {
+              isExtended: isFingerExtended(16, 13),
+              tipPosition: { x: 1 - hand[16].x, y: hand[16].y, z: hand[16].z || 0 }
+            },
+            pinky: {
+              isExtended: isFingerExtended(20, 17),
+              tipPosition: { x: 1 - hand[20].x, y: hand[20].y, z: hand[20].z || 0 }
+            }
+          }
         });
       }
       
