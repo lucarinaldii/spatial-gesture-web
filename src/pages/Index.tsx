@@ -511,20 +511,34 @@ const Index = () => {
                 setSplittingCards(prev => new Set(prev).add(obj0.id));
                 
                 // Create two new cards from the split
-                maxZIndexRef.current += 2;
-                const newCard1 = {
+                // Ensure we have valid default values for all properties
+                const safeCurrentObj = {
                   ...currentObj,
+                  position: currentObj.position || { x: 50, y: 50 },
+                  rotation: currentObj.rotation || { x: 0, y: 0, z: 0 },
+                  velocity: currentObj.velocity || { x: 0, y: 0 }
+                };
+                
+                maxZIndexRef.current += 2;
+                const newCard1: ObjectData = {
+                  ...safeCurrentObj,
                   id: Date.now().toString(),
                   position: { x: hand1X - canvasOffset.x, y: hand1Y - canvasOffset.y },
                   zIndex: maxZIndexRef.current - 1,
-                  title: currentObj.title ? currentObj.title + ' (A)' : 'Split Card A',
+                  title: safeCurrentObj.title ? safeCurrentObj.title + ' (A)' : 'Split Card A',
+                  velocity: { x: 0, y: 0 },
+                  rotation: { x: 0, y: 0, z: 0 },
+                  isPhysicsEnabled: false
                 };
-                const newCard2 = {
-                  ...currentObj,
+                const newCard2: ObjectData = {
+                  ...safeCurrentObj,
                   id: (Date.now() + 1).toString(),
                   position: { x: hand2X - canvasOffset.x, y: hand2Y - canvasOffset.y },
                   zIndex: maxZIndexRef.current,
-                  title: currentObj.title ? currentObj.title + ' (B)' : 'Split Card B',
+                  title: safeCurrentObj.title ? safeCurrentObj.title + ' (B)' : 'Split Card B',
+                  velocity: { x: 0, y: 0 },
+                  rotation: { x: 0, y: 0, z: 0 },
+                  isPhysicsEnabled: false
                 };
                 
                 // Remove original card and add split cards
