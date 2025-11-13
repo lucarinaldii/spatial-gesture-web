@@ -560,7 +560,7 @@ const Index = () => {
             const card1 = objects.find(o => o.id === obj0.id);
             const card2 = objects.find(o => o.id === obj1.id);
             
-            if (card1 && card2) {
+            if (card1 && card2 && card1.position && card2.position) {
               const pos1X = card1.position.x + canvasOffset.x;
               const pos1Y = card1.position.y + canvasOffset.y;
               const pos2X = card2.position.x + canvasOffset.x;
@@ -574,16 +574,20 @@ const Index = () => {
                 setMergingCards(prev => new Set([...prev, obj0.id, obj1.id]));
                 
                 maxZIndexRef.current += 1;
-                const mergedCard = {
-                  ...card1,
+                const mergedCard: ObjectData = {
                   id: Date.now().toString(),
+                  type: card1.type,
+                  title: `${card1.title || 'Card'} + ${card2.title || 'Card'}`,
+                  description: 'Merged card',
+                  fileUrl: card1.fileUrl,
                   position: {
                     x: (card1.position.x + card2.position.x) / 2,
                     y: (card1.position.y + card2.position.y) / 2,
                   },
                   zIndex: maxZIndexRef.current,
-                  title: `${card1.title || 'Card'} + ${card2.title || 'Card'}`,
-                  description: 'Merged card',
+                  rotation: { x: 0, y: 0, z: 0 },
+                  velocity: { x: 0, y: 0 },
+                  isPhysicsEnabled: false,
                 };
                 
                 // Remove both cards and add merged card
