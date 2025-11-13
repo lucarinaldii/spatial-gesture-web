@@ -48,7 +48,7 @@ export const useHandTracking = () => {
       
       // Calculate pinch distance
       const pinchDistance = calculateDistance(indexTip, thumbTip);
-      const pinchThreshold = 0.05; // Adjust this value for sensitivity
+      const pinchThreshold = 0.05;
       
       const isPinching = pinchDistance < pinchThreshold;
       const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / pinchThreshold)));
@@ -74,28 +74,23 @@ export const useHandTracking = () => {
     }
   }, []);
 
-  const processFrame = useCallback(async () => {
-    if (!videoRef.current || !handLandmarkerRef.current) return;
-
-    // Check if video is ready and has valid dimensions
-    if (videoRef.current.readyState < 2 || 
-        videoRef.current.videoWidth === 0 || 
-        videoRef.current.videoHeight === 0) {
-      console.log('Video not ready yet, skipping frame');
-      animationFrameRef.current = requestAnimationFrame(processFrame);
+  const processFrame = useCallback(() => {
+    if (!videoRef.current || !handLandmarkerRef.current) {
       return;
     }
 
-    try {
-      const startTimeMs = performance.now();
-      const results = await handLandmarkerRef.current.detectForVideo(
-        videoRef.current,
-        startTimeMs
-      );
-
-      detectGestures(results);
-    } catch (error) {
-      console.error('Error processing frame:', error);
+    // Only process if video is ready
+    if (videoRef.current.readyState >= 2) {
+      try {
+        const startTimeMs = performance.now();
+        const results = handLandmarkerRef.current.detectForVideo(
+          videoRef.current,
+          startTimeMs
+        );
+        detectGestures(results);
+      } catch (error) {
+        console.error('Error processing frame:', error);
+      }
     }
     
     animationFrameRef.current = requestAnimationFrame(processFrame);
@@ -120,27 +115,25 @@ export const useHandTracking = () => {
 
       videoRef.current.srcObject = stream;
       
-      // Wait for video metadata and play
-      await videoRef.current.play();
-      
-      // Wait for video to have valid dimensions
+      // Wait for video to be loaded and ready
       await new Promise<void>((resolve) => {
-        const checkVideo = () => {
-          if (videoRef.current && 
-              videoRef.current.videoWidth > 0 && 
-              videoRef.current.videoHeight > 0) {
-            console.log('✓ Video ready:', {
-              width: videoRef.current.videoWidth,
-              height: videoRef.current.videoHeight,
-            });
-            resolve();
-          } else {
-            requestAnimationFrame(checkVideo);
-          }
+        if (!videoRef.current) return;
+        
+        const onLoadedData = () => {
+          console.log('✓ Video loaded:', {
+            width: videoRef.current?.videoWidth,
+            height: videoRef.current?.videoHeight,
+            readyState: videoRef.current?.readyState
+          });
+          resolve();
         };
-        checkVideo();
+        
+        videoRef.current.addEventListener('loadeddata', onLoadedData, { once: true });
+        videoRef.current.play();
       });
       
+      // Start processing frames
+      console.log('✓ Starting frame processing...');
       processFrame();
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -152,6 +145,7 @@ export const useHandTracking = () => {
 
     const initHandTracking = async () => {
       try {
+        console.log('🔧 Initializing MediaPipe...');
         const vision = await FilesetResolver.forVisionTasks(
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
         );
@@ -171,6 +165,7 @@ export const useHandTracking = () => {
         if (mounted) {
           handLandmarkerRef.current = handLandmarker;
           setIsReady(true);
+          console.log('✓ MediaPipe ready!');
         }
       } catch (error) {
         console.error('Error initializing hand tracking:', error);

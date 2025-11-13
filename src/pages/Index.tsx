@@ -90,11 +90,15 @@ const Index = () => {
                   muted
                   className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
                 />
-                <HandSkeleton
-                  landmarks={landmarks}
-                  videoWidth={window.innerWidth}
-                  videoHeight={window.innerHeight}
-                />
+                
+                {/* Hand skeleton overlay */}
+                {landmarks && videoRef.current && videoRef.current.videoWidth > 0 && (
+                  <HandSkeleton
+                    landmarks={landmarks}
+                    videoWidth={videoRef.current.videoWidth}
+                    videoHeight={videoRef.current.videoHeight}
+                  />
+                )}
               
               </div>
               
