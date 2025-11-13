@@ -38,9 +38,11 @@ export const useHandTracking = () => {
   const animationFrameRef = useRef<number>();
   const lastPositionsRef = useRef<HandPosition[]>([]);
   const lastPinchStatesRef = useRef<boolean[]>([false, false]); // Track previous pinch states
+  const lastLandmarksRef = useRef<any>(null); // Store previous landmarks for smoothing
   
-  // Smoothing parameters - increased for more stability
+  // Smoothing parameters - adjusted for natural movements
   const SMOOTHING_FACTOR = 0.5; // Higher = more responsive, lower = smoother
+  const LANDMARK_SMOOTHING = 0.7; // Smoothing for landmark positions (higher = smoother)
   const MOVEMENT_THRESHOLD = 0.008; // Increased deadzone for stability
   
   // Pinch detection with hysteresis to prevent jitter
@@ -75,14 +77,39 @@ export const useHandTracking = () => {
     };
   };
 
+  const smoothLandmarks = (newLandmarks: any, previousLandmarks: any) => {
+    if (!previousLandmarks || previousLandmarks.length !== newLandmarks.length) {
+      return newLandmarks;
+    }
+    
+    return newLandmarks.map((hand: any, handIndex: number) => {
+      if (!previousLandmarks[handIndex]) return hand;
+      
+      return hand.map((landmark: any, landmarkIndex: number) => {
+        const prev = previousLandmarks[handIndex][landmarkIndex];
+        if (!prev) return landmark;
+        
+        return {
+          x: prev.x + (landmark.x - prev.x) * LANDMARK_SMOOTHING,
+          y: prev.y + (landmark.y - prev.y) * LANDMARK_SMOOTHING,
+          z: prev.z + (landmark.z - prev.z) * LANDMARK_SMOOTHING,
+        };
+      });
+    });
+  };
+
   const detectGestures = useCallback((result: HandLandmarkerResult) => {
     if (result.landmarks && result.landmarks.length > 0) {
+      // Apply smoothing to landmarks
+      const smoothedLandmarks = smoothLandmarks(result.landmarks, lastLandmarksRef.current);
+      lastLandmarksRef.current = smoothedLandmarks;
+      
       const newPositions: HandPosition[] = [];
       const newGestures: GestureState[] = [];
       
       // Process each detected hand (up to 2)
-      for (let i = 0; i < Math.min(result.landmarks.length, 2); i++) {
-        const hand = result.landmarks[i];
+      for (let i = 0; i < Math.min(smoothedLandmarks.length, 2); i++) {
+        const hand = smoothedLandmarks[i];
         
         // Index finger tip (landmark 8)
         const indexTip = hand[8];
@@ -155,8 +182,9 @@ export const useHandTracking = () => {
       lastPositionsRef.current = newPositions;
       setHandPositions(newPositions);
       setGestureStates(newGestures);
-      setLandmarks(result.landmarks);
+      setLandmarks(smoothedLandmarks);
     } else {
+      lastLandmarksRef.current = null;
       setHandPositions([]);
       setGestureStates([]);
       setLandmarks(null);
