@@ -115,26 +115,23 @@ export const useHandTracking = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         
-        // Wait for video to be fully loaded with valid dimensions
-        const waitForVideo = () => {
-          if (videoRef.current && 
-              videoRef.current.readyState >= 2 && 
-              videoRef.current.videoWidth > 0 && 
-              videoRef.current.videoHeight > 0) {
+        // Wait for video to load and play
+        await new Promise<void>((resolve) => {
+          const onCanPlay = () => {
             console.log('✓ Video ready:', {
-              width: videoRef.current.videoWidth,
-              height: videoRef.current.videoHeight,
-              readyState: videoRef.current.readyState
+              width: videoRef.current?.videoWidth,
+              height: videoRef.current?.videoHeight,
             });
-            processFrame();
-          } else {
-            console.log('Waiting for video to be ready...');
-            setTimeout(waitForVideo, 100);
+            resolve();
+          };
+          
+          if (videoRef.current) {
+            videoRef.current.addEventListener('canplay', onCanPlay, { once: true });
+            videoRef.current.play().catch(console.error);
           }
-        };
+        });
         
-        videoRef.current.addEventListener('loadedmetadata', waitForVideo);
-        videoRef.current.play();
+        processFrame();
       }
     } catch (error) {
       console.error('Error accessing camera:', error);

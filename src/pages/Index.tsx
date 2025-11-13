@@ -32,13 +32,13 @@ const Index = () => {
       {/* Cosmic background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background" />
       
-      {/* Video feed (hidden) */}
+      {/* Video feed (offscreen for initialization) */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        className="hidden"
+        className="fixed -left-[9999px] w-[1px] h-[1px]"
       />
 
       {/* Main content */}
@@ -85,20 +85,20 @@ const Index = () => {
           </div>
         ) : (
           <div className="relative min-h-screen">
-            {/* Large video preview with skeleton overlay - taking most of screen */}
-            <div className="fixed inset-4 glass-panel overflow-hidden rounded-lg border border-primary/30 z-40 max-w-[90vw] max-h-[90vh] m-auto">
+            {/* Fullscreen video preview with skeleton overlay */}
+            <div className="fixed inset-0 z-40 bg-black">
               <div className="relative w-full h-full">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className="absolute inset-0 w-full h-full object-contain scale-x-[-1]"
+                  className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
                 />
                 <HandSkeleton
                   landmarks={landmarks}
-                  videoWidth={1280}
-                  videoHeight={720}
+                  videoWidth={window.innerWidth}
+                  videoHeight={window.innerHeight}
                 />
               
               </div>
