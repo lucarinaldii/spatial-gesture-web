@@ -4,7 +4,7 @@ import { useHandTracking } from '@/hooks/useHandTracking';
 import HandSkeleton from '@/components/HandSkeleton';
 import InteractiveObject from '@/components/InteractiveObject';
 import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { Plus, RotateCcw } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -62,13 +62,16 @@ const Index = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importButtonRef = useRef<HTMLButtonElement>(null);
+  const restartButtonRef = useRef<HTMLButtonElement>(null);
   const [grabbedObjects, setGrabbedObjects] = useState<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
   const [objectScales, setObjectScales] = useState<Map<string, number>>(new Map());
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
   const [canvasZoom, setCanvasZoom] = useState(1);
-  const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const [isImportButtonHovered, setIsImportButtonHovered] = useState(false);
+  const [isRestartButtonHovered, setIsRestartButtonHovered] = useState(false);
   const lastPinchStates = useRef<Map<number, boolean>>(new Map());
-  const lastButtonPinchState = useRef(false);
+  const lastImportButtonPinchState = useRef(false);
+  const lastRestartButtonPinchState = useRef(false);
   const animationFrameRef = useRef<number>();
   const maxZIndexRef = useRef(3);
   const baseDistanceRef = useRef<Map<string, number>>(new Map());
@@ -107,42 +110,116 @@ const Index = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleRestart = () => {
+    // Reset to initial cards
+    setObjects([
+      {
+        id: '1',
+        type: 'card',
+        title: 'Spatial Card 1',
+        description: 'Hover with your hand and pinch to drag',
+        position: { x: 20, y: 35 },
+        zIndex: 1,
+        rotation: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0 },
+        isPhysicsEnabled: false,
+      },
+      {
+        id: '2',
+        type: 'card',
+        title: 'Spatial Card 2',
+        description: 'Experience natural gesture controls',
+        position: { x: 50, y: 50 },
+        zIndex: 2,
+        rotation: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0 },
+        isPhysicsEnabled: false,
+      },
+      {
+        id: '3',
+        type: 'card',
+        title: 'Spatial Card 3',
+        description: 'Point and pinch for seamless interaction',
+        position: { x: 80, y: 35 },
+        zIndex: 3,
+        rotation: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0 },
+        isPhysicsEnabled: false,
+      },
+    ]);
+    
+    // Reset canvas
+    setCanvasOffset({ x: 0, y: 0 });
+    setCanvasZoom(1);
+    setObjectScales(new Map());
+    setGrabbedObjects(new Map());
+    maxZIndexRef.current = 3;
+    baseDistanceRef.current.clear();
+    baseAngleRef.current.clear();
+    
+    toast({ title: "Session restarted", description: "Canvas and objects reset" });
+  };
+
   // Hand gesture detection for import button
   useEffect(() => {
     if (!importButtonRef.current || handPositions.length === 0 || !isTracking) {
-      setIsButtonHovered(false);
+      setIsImportButtonHovered(false);
       return;
     }
 
     const buttonRect = importButtonRef.current.getBoundingClientRect();
-    
-    // Check if any hand is hovering over the button
     let isHovering = false;
     let isPinching = false;
     
     handPositions.forEach((handPos, handIndex) => {
       const handX = handPos.x * window.innerWidth;
       const handY = handPos.y * window.innerHeight;
-      
       const isInBounds = handX >= buttonRect.left && handX <= buttonRect.right &&
                         handY >= buttonRect.top && handY <= buttonRect.bottom;
       
       if (isInBounds) {
         isHovering = true;
         const gesture = gestureStates[handIndex];
-        if (gesture?.isPinching) {
-          isPinching = true;
-          
-          // Trigger click on pinch
-          if (!lastButtonPinchState.current) {
-            fileInputRef.current?.click();
-          }
+        if (gesture?.isPinching && !lastImportButtonPinchState.current) {
+          fileInputRef.current?.click();
         }
+        isPinching = gesture?.isPinching || false;
       }
     });
     
-    setIsButtonHovered(isHovering);
-    lastButtonPinchState.current = isPinching;
+    setIsImportButtonHovered(isHovering);
+    lastImportButtonPinchState.current = isPinching;
+  }, [handPositions, gestureStates, isTracking]);
+
+  // Hand gesture detection for restart button
+  useEffect(() => {
+    if (!restartButtonRef.current || handPositions.length === 0 || !isTracking) {
+      setIsRestartButtonHovered(false);
+      return;
+    }
+
+    const buttonRect = restartButtonRef.current.getBoundingClientRect();
+    let isHovering = false;
+    let isPinching = false;
+    
+    handPositions.forEach((handPos, handIndex) => {
+      const handX = handPos.x * window.innerWidth;
+      const handY = handPos.y * window.innerHeight;
+      const isInBounds = handX >= buttonRect.left && handX <= buttonRect.right &&
+                        handY >= buttonRect.top && handY <= buttonRect.bottom;
+      
+      if (isInBounds) {
+        isHovering = true;
+        const gesture = gestureStates[handIndex];
+        if (gesture?.isPinching && !lastRestartButtonPinchState.current) {
+          handleRestart();
+        }
+        isPinching = gesture?.isPinching || false;
+      }
+    });
+    
+    setIsRestartButtonHovered(isHovering);
+    lastRestartButtonPinchState.current = isPinching;
   }, [handPositions, gestureStates, isTracking]);
 
   useEffect(() => {
@@ -259,7 +336,7 @@ const Index = () => {
     const physicsLoop = () => {
       setObjects(prev => prev.map(obj => {
         if (!obj.isPhysicsEnabled) return obj;
-        const newVelocity = { x: obj.velocity.x * 0.98, y: obj.velocity.y + 0.5 };
+        const newVelocity = { x: obj.velocity.x * 0.98, y: obj.velocity.y + 0.2 };
         let newPosition = { x: obj.position.x + newVelocity.x, y: obj.position.y + newVelocity.y };
         if (newPosition.y >= 85) { newPosition.y = 85; newVelocity.y = -newVelocity.y * 0.6; if (Math.abs(newVelocity.y) < 0.5) newVelocity.y = 0; }
         if (newPosition.x <= 5 || newPosition.x >= 95) { newPosition.x = Math.max(5, Math.min(95, newPosition.x)); newVelocity.x = -newVelocity.x * 0.6; }
@@ -298,13 +375,22 @@ const Index = () => {
         ) : (
           <div className="relative min-h-screen">
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
-            <div className="fixed top-4 right-4 z-50">
+            <div className="fixed top-4 right-4 z-50 flex gap-3">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
+              <Button 
+                ref={restartButtonRef}
+                onClick={handleRestart} 
+                size="lg" 
+                variant="destructive"
+                className={`neon-glow transition-all duration-200 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+              >
+                <RotateCcw className="w-5 h-5 mr-2" />Restart
+              </Button>
               <Button 
                 ref={importButtonRef}
                 onClick={() => fileInputRef.current?.click()} 
                 size="lg" 
-                className={`neon-glow transition-all duration-200 ${isButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+                className={`neon-glow transition-all duration-200 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
                 <Plus className="w-5 h-5 mr-2" />Import File
               </Button>
