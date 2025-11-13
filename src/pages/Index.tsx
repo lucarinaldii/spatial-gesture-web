@@ -311,27 +311,6 @@ const Index = () => {
               className="fixed -left-[9999px] opacity-0 pointer-events-none"
             />
             
-            {/* Status indicator */}
-            <div className="fixed top-4 left-4 glass-panel px-4 py-3 rounded-lg z-50">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${handPositions.length > 0 ? 'bg-primary' : 'bg-muted'} animate-pulse`} />
-                  <span className="text-sm font-mono text-foreground font-bold">
-                    {handPositions.length > 0 
-                      ? `${handPositions.length} HAND${handPositions.length > 1 ? 'S' : ''} DETECTED ✓` 
-                      : 'NO HANDS - SHOW YOUR HANDS'}
-                  </span>
-                </div>
-                {landmarks && landmarks.length > 0 && (
-                  <div className="text-xs font-mono text-primary">
-                    {landmarks.map((_: any, i: number) => (
-                      <div key={i}>Hand {i + 1}: {landmarks[i]?.length || 0} points</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Interactive draggable cards with z-index */}
             {cards
               .sort((a, b) => a.zIndex - b.zIndex)
@@ -362,29 +341,6 @@ const Index = () => {
                   />
                 );
               })}
-
-            {/* Center info */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-full border border-primary/30">
-              <p className="text-sm font-mono text-muted-foreground">
-                {(() => {
-                  const bothGrabbingSame = handPositions.length === 2 && 
-                    gestureStates.every(g => g.isPinching) &&
-                    grabbedCards.get(0)?.id === grabbedCards.get(1)?.id &&
-                    grabbedCards.get(0);
-                  
-                  if (bothGrabbingSame) {
-                    const scale = cardScales.get(bothGrabbingSame.id) || 1;
-                    return <span className="text-accent">🔍 Scaling: {(scale * 100).toFixed(0)}% - Spread/close hands</span>;
-                  } else if (gestureStates.some(g => g.isPinching)) {
-                    return <span className="text-secondary">🤏 Pinching - {gestureStates.filter(g => g.isPinching).length} hand(s) active</span>;
-                  } else if (handPositions.length > 0) {
-                    return <span className="text-primary">👆 {handPositions.length} hand(s) detected - Pinch to grab cards</span>;
-                  } else {
-                    return <span>🖐️ Show your hands to the camera</span>;
-                  }
-                })()}
-              </p>
-            </div>
 
             {/* Hand cursors for each hand */}
             {handPositions.map((pos, index) => (
