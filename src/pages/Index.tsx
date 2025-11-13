@@ -385,7 +385,17 @@ const Index = () => {
 
       if (hasChanges) setGrabbedObjects(newGrabbedObjects);
       if (scaleUpdate) setObjectScales(prev => { const n = new Map(prev); n.set(scaleUpdate.id, scaleUpdate.scale); return n; });
-      if (objectUpdates.size > 0) setObjects(prev => prev.map(obj => { const u = objectUpdates.get(obj.id); return u ? { ...obj, ...u, position: u.position || obj.position, rotation: u.rotation || obj.rotation } : obj; }));
+      if (objectUpdates.size > 0) setObjects(prev => prev.map(obj => { 
+        const u = objectUpdates.get(obj.id); 
+        if (!u) return obj;
+        return { 
+          ...obj, 
+          ...u, 
+          position: u.position || obj.position, 
+          rotation: u.rotation || obj.rotation,
+          velocity: obj.velocity || { x: 0, y: 0 }
+        };
+      }));
     };
 
     animationFrameRef.current = requestAnimationFrame(updateDrag);
@@ -396,6 +406,16 @@ const Index = () => {
     const physicsLoop = () => {
       setObjects(prev => prev.map(obj => {
         if (!obj.isPhysicsEnabled) return obj;
+        
+        // Safety check: ensure position and velocity exist
+        if (!obj.position || !obj.velocity) {
+          return {
+            ...obj,
+            position: obj.position || { x: 50, y: 50 },
+            velocity: obj.velocity || { x: 0, y: 0 },
+            isPhysicsEnabled: false
+          };
+        }
         
         // Space-like floating with momentum and gentle drift
         const DRIFT_DAMPING = 0.985; // Less damping for more inertia
