@@ -16,80 +16,130 @@ interface HandModelProps {
   handIndex: number;
 }
 
-// Create a finger segment (bone) between two landmarks
-function FingerSegment({ start, end, radius = 0.2, color = "#8b5cf6" }: { 
+// Create a smooth finger segment using capsule-like geometry
+function SmoothFingerSegment({ start, end, startRadius = 0.35, endRadius = 0.3 }: { 
   start: THREE.Vector3; 
   end: THREE.Vector3; 
-  radius?: number;
-  color?: string;
+  startRadius?: number;
+  endRadius?: number;
 }) {
   const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
   const distance = start.distanceTo(end);
   const direction = new THREE.Vector3().subVectors(end, start).normalize();
   
-  // Calculate rotation to align cylinder with bone direction
   const quaternion = new THREE.Quaternion();
   quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
   
   return (
-    <mesh position={midpoint} quaternion={quaternion}>
-      <cylinderGeometry args={[radius, radius, distance, 12]} />
-      <meshStandardMaterial 
-        color={color}
-        roughness={0.4}
-        metalness={0.3}
-        emissive={color}
-        emissiveIntensity={0.2}
-      />
-    </mesh>
+    <group>
+      {/* Main finger segment - tapered cylinder */}
+      <mesh position={midpoint} quaternion={quaternion}>
+        <cylinderGeometry args={[endRadius, startRadius, distance, 16, 1, false]} />
+        <meshStandardMaterial 
+          color="#ffd4b8"
+          roughness={0.6}
+          metalness={0.1}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      
+      {/* Smooth caps at both ends */}
+      <mesh position={start}>
+        <sphereGeometry args={[startRadius, 16, 16]} />
+        <meshStandardMaterial 
+          color="#ffd4b8"
+          roughness={0.6}
+          metalness={0.1}
+        />
+      </mesh>
+      <mesh position={end}>
+        <sphereGeometry args={[endRadius, 16, 16]} />
+        <meshStandardMaterial 
+          color="#ffd4b8"
+          roughness={0.6}
+          metalness={0.1}
+        />
+      </mesh>
+    </group>
   );
 }
 
-// Create a joint (sphere) at a landmark
-function Joint({ position, radius = 0.25, color = "#9333ea" }: {
-  position: THREE.Vector3;
-  radius?: number;
-  color?: string;
-}) {
+// Create palm surface connecting all finger bases
+function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
+  const geometry = new THREE.BufferGeometry();
+  
+  // Create palm surface vertices
+  const wrist = vectors[0];
+  const thumbBase = vectors[1];
+  const indexBase = vectors[5];
+  const middleBase = vectors[9];
+  const ringBase = vectors[13];
+  const pinkyBase = vectors[17];
+  
+  // Define palm triangles to create a smooth surface
+  const vertices = new Float32Array([
+    // Palm center area
+    ...wrist.toArray(), ...thumbBase.toArray(), ...indexBase.toArray(),
+    ...wrist.toArray(), ...indexBase.toArray(), ...middleBase.toArray(),
+    ...wrist.toArray(), ...middleBase.toArray(), ...ringBase.toArray(),
+    ...wrist.toArray(), ...ringBase.toArray(), ...pinkyBase.toArray(),
+    
+    // Finger base connections
+    ...indexBase.toArray(), ...middleBase.toArray(), ...ringBase.toArray(),
+    ...indexBase.toArray(), ...ringBase.toArray(), ...pinkyBase.toArray(),
+  ]);
+  
+  geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals();
+  
   return (
-    <mesh position={position}>
-      <sphereGeometry args={[radius, 16, 16]} />
+    <mesh geometry={geometry}>
       <meshStandardMaterial 
-        color={color}
-        roughness={0.4}
-        metalness={0.3}
-        emissive={color}
-        emissiveIntensity={0.3}
+        color="#ffcba4"
+        roughness={0.65}
+        metalness={0.05}
+        side={THREE.DoubleSide}
       />
     </mesh>
   );
 }
 
-// Animated hand with finger tracking
-function AnimatedHandModel({ landmarks, handIndex }: HandModelProps) {
+// Smooth, realistic hand model
+function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   
-  // Convert all landmarks to 3D vectors
   const vectors = landmarks.map(lm => landmarkToVector3(lm, 10));
   
-  // Define finger chains with their landmark indices
   const fingers = [
-    { name: 'thumb', indices: [1, 2, 3, 4], color: '#a855f7' },
-    { name: 'index', indices: [5, 6, 7, 8], color: '#8b5cf6' },
-    { name: 'middle', indices: [9, 10, 11, 12], color: '#7c3aed' },
-    { name: 'ring', indices: [13, 14, 15, 16], color: '#6d28d9' },
-    { name: 'pinky', indices: [17, 18, 19, 20], color: '#5b21b6' },
-  ];
-  
-  // Palm connections
-  const palmConnections = [
-    [0, 5], [0, 17], [5, 9], [9, 13], [13, 17]
+    { 
+      name: 'thumb', 
+      indices: [1, 2, 3, 4],
+      radii: [[0.45, 0.42], [0.42, 0.38], [0.38, 0.35]]
+    },
+    { 
+      name: 'index', 
+      indices: [5, 6, 7, 8],
+      radii: [[0.40, 0.37], [0.37, 0.33], [0.33, 0.28]]
+    },
+    { 
+      name: 'middle', 
+      indices: [9, 10, 11, 12],
+      radii: [[0.42, 0.39], [0.39, 0.35], [0.35, 0.30]]
+    },
+    { 
+      name: 'ring', 
+      indices: [13, 14, 15, 16],
+      radii: [[0.38, 0.35], [0.35, 0.31], [0.31, 0.27]]
+    },
+    { 
+      name: 'pinky', 
+      indices: [17, 18, 19, 20],
+      radii: [[0.35, 0.32], [0.32, 0.28], [0.28, 0.24]]
+    },
   ];
   
   useFrame(() => {
     if (!groupRef.current) return;
-    
-    // Offset for second hand
     if (handIndex === 1) {
       groupRef.current.position.x = 5;
     }
@@ -97,67 +147,56 @@ function AnimatedHandModel({ landmarks, handIndex }: HandModelProps) {
   
   return (
     <group ref={groupRef}>
-      {/* Render palm connections */}
-      {palmConnections.map(([startIdx, endIdx], index) => (
-        <FingerSegment
-          key={`palm-${index}`}
-          start={vectors[startIdx]}
-          end={vectors[endIdx]}
-          radius={0.25}
-          color="#7c3aed"
-        />
-      ))}
+      {/* Palm surface */}
+      <PalmMesh vectors={vectors} />
       
-      {/* Render each finger */}
+      {/* Connection from wrist to finger bases (thick palm connections) */}
+      <SmoothFingerSegment start={vectors[0]} end={vectors[1]} startRadius={0.6} endRadius={0.5} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[5]} startRadius={0.55} endRadius={0.45} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[9]} startRadius={0.55} endRadius={0.45} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[13]} startRadius={0.52} endRadius={0.42} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[17]} startRadius={0.48} endRadius={0.38} />
+      
+      {/* Render each finger with smooth segments */}
       {fingers.map((finger) => (
         <group key={finger.name}>
-          {/* Connection from wrist to finger base */}
-          <FingerSegment
-            start={vectors[0]}
-            end={vectors[finger.indices[0]]}
-            radius={0.22}
-            color={finger.color}
-          />
-          
-          {/* Finger segments */}
           {finger.indices.map((landmarkIdx, segmentIdx) => {
             if (segmentIdx === finger.indices.length - 1) return null;
             const nextIdx = finger.indices[segmentIdx + 1];
-            const isTip = segmentIdx === finger.indices.length - 2;
+            const [startRadius, endRadius] = finger.radii[segmentIdx];
             
             return (
-              <group key={`${finger.name}-segment-${segmentIdx}`}>
-                <FingerSegment
-                  start={vectors[landmarkIdx]}
-                  end={vectors[nextIdx]}
-                  radius={isTip ? 0.18 : 0.2}
-                  color={finger.color}
-                />
-                <Joint 
-                  position={vectors[landmarkIdx]} 
-                  radius={isTip ? 0.22 : 0.25}
-                  color={finger.color}
-                />
-              </group>
+              <SmoothFingerSegment
+                key={`${finger.name}-segment-${segmentIdx}`}
+                start={vectors[landmarkIdx]}
+                end={vectors[nextIdx]}
+                startRadius={startRadius}
+                endRadius={endRadius}
+              />
             );
           })}
           
-          {/* Fingertip joint */}
-          <Joint 
-            position={vectors[finger.indices[finger.indices.length - 1]]} 
-            radius={0.3}
-            color="#a855f7"
-          />
+          {/* Fingertip - extra smooth */}
+          <mesh position={vectors[finger.indices[finger.indices.length - 1]]}>
+            <sphereGeometry args={[finger.radii[finger.radii.length - 1][1], 20, 20]} />
+            <meshStandardMaterial 
+              color="#ffd4b8"
+              roughness={0.7}
+              metalness={0.05}
+            />
+          </mesh>
         </group>
       ))}
       
-      {/* Wrist joint */}
-      <Joint position={vectors[0]} radius={0.35} color="#8b5cf6" />
-      
-      {/* Palm base joints */}
-      {[5, 9, 13, 17].map(idx => (
-        <Joint key={`palm-joint-${idx}`} position={vectors[idx]} radius={0.28} color="#7c3aed" />
-      ))}
+      {/* Wrist base */}
+      <mesh position={vectors[0]}>
+        <sphereGeometry args={[0.65, 20, 20]} />
+        <meshStandardMaterial 
+          color="#ffcba4"
+          roughness={0.65}
+          metalness={0.05}
+        />
+      </mesh>
     </group>
   );
 }
@@ -186,17 +225,16 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
       >
         <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
         
-        {/* Lighting for depth */}
-        <ambientLight intensity={0.9} />
-        <directionalLight position={[10, 10, 8]} intensity={1.2} castShadow />
-        <directionalLight position={[-10, -10, -5]} intensity={0.6} />
-        <pointLight position={[0, 0, 15]} intensity={0.8} color="#a855f7" />
-        <pointLight position={[5, 5, 10]} intensity={0.5} color="#8b5cf6" />
-        <spotLight position={[0, 10, 10]} intensity={0.5} angle={0.5} penumbra={0.5} color="#9333ea" />
+        {/* Soft, natural lighting for skin-like appearance */}
+        <ambientLight intensity={1.2} />
+        <directionalLight position={[5, 10, 8]} intensity={0.8} color="#fff5e6" />
+        <directionalLight position={[-5, -5, -8]} intensity={0.4} color="#ffeedd" />
+        <pointLight position={[0, 5, 15]} intensity={0.6} color="#ffe4d1" />
+        <hemisphereLight intensity={0.5} groundColor="#d4a574" color="#ffeedd" />
         
         {/* Render each detected hand */}
         {landmarks.map((handLandmarks, index) => (
-          <AnimatedHandModel 
+          <SmoothHandModel 
             key={`hand-${index}`}
             landmarks={handLandmarks}
             handIndex={index}
