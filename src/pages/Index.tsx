@@ -80,6 +80,7 @@ const Index = () => {
   const canvasZoomBaseDistanceRef = useRef<number | null>(null);
   const handVelocityHistoryRef = useRef<Map<number, Array<{ x: number; y: number; timestamp: number }>>>(new Map());
   const touchedObjects = useRef<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
+  const previousZPositionRef = useRef<Map<number, number>>(new Map());
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -119,6 +120,7 @@ const Index = () => {
     baseDistanceRef.current.clear();
     baseAngleRef.current.clear();
     handVelocityHistoryRef.current.clear();
+    previousZPositionRef.current.clear();
     lastPinchStates.current.clear();
     canvasDragStartRef.current = null;
     canvasZoomBaseDistanceRef.current = null;
@@ -305,6 +307,11 @@ const Index = () => {
         // Check if hand is parallel to camera (index finger pointing forward)
         // Lower z value means closer to camera (pointing forward)
         const isHandParallel = indexFingerTip.z < -0.05;
+        
+        // Check if hand is moving closer to camera (z decreasing)
+        const previousZ = previousZPositionRef.current.get(handIndex);
+        const isMovingCloser = previousZ !== undefined ? indexFingerTip.z < previousZ : false;
+        previousZPositionRef.current.set(handIndex, indexFingerTip.z);
 
         // Track hand velocity history for inertia calculation
         const now = Date.now();
@@ -316,8 +323,8 @@ const Index = () => {
         // Keep only last 5 frames (about 83ms at 60fps)
         if (history.length > 5) history.shift();
 
-        // Touch dragging with index finger (when not pinching, only index extended, hand parallel)
-        if (!isPinching && isPointing && isHandParallel) {
+        // Touch dragging with index finger (when not pinching, only index extended, hand parallel and moving closer)
+        if (!isPinching && isPointing && isHandParallel && isMovingCloser) {
           const wasTouching = newTouchedObjects.has(handIndex);
           const targetObject = objects.find((obj) => {
             const adjustedX = obj.position.x + canvasOffset.x;
