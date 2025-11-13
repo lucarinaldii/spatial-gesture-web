@@ -86,22 +86,27 @@ const Index = () => {
         ) : (
           <div className="relative min-h-screen">
             {/* Video preview with skeleton overlay */}
-            <div className="fixed top-4 right-4 w-80 h-60 glass-panel overflow-hidden rounded-lg border border-primary/30 z-50">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover scale-x-[-1]"
-              />
-              <HandSkeleton
-                landmarks={landmarks}
-                videoWidth={320}
-                videoHeight={240}
-              />
+            <div className="fixed top-4 right-4 w-[400px] h-[300px] glass-panel overflow-hidden rounded-lg border border-primary/30 z-50">
+              <div className="relative w-full h-full">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+                  width={400}
+                  height={300}
+                />
+                <HandSkeleton
+                  landmarks={landmarks}
+                  videoWidth={400}
+                  videoHeight={300}
+                />
+              
+              </div>
               
               {/* Status indicator */}
-              <div className="absolute top-2 left-2 glass-panel px-3 py-1 rounded-full">
+              <div className="absolute bottom-2 left-2 glass-panel px-3 py-1 rounded-full z-20">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${handPosition ? 'bg-primary' : 'bg-muted'} animate-pulse`} />
                   <span className="text-xs font-mono text-foreground">

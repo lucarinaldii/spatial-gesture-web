@@ -19,7 +19,16 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (!canvasRef.current || !landmarks) return;
+    if (!canvasRef.current || !landmarks || landmarks.length === 0) {
+      // Clear canvas if no landmarks
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+      }
+      return;
+    }
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -27,14 +36,19 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw connections
-    ctx.strokeStyle = 'hsl(var(--neon-cyan))';
-    ctx.lineWidth = 2;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = 'hsl(var(--neon-cyan))';
+    
+    // Flip context horizontally to match mirrored video
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.translate(-canvas.width, 0);
 
     landmarks.forEach((hand: any) => {
+      // Draw connections with cyan glow
+      ctx.strokeStyle = '#00D9FF';
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#00D9FF';
+
       HAND_CONNECTIONS.forEach(([start, end]) => {
         const startPoint = hand[start];
         const endPoint = hand[end];
@@ -45,21 +59,29 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         ctx.stroke();
       });
 
-      // Draw landmarks
-      ctx.fillStyle = 'hsl(var(--neon-purple))';
-      ctx.shadowColor = 'hsl(var(--neon-purple))';
-      hand.forEach((landmark: any) => {
+      // Draw landmark points with purple glow
+      ctx.shadowColor = '#B644FF';
+      ctx.shadowBlur = 20;
+      
+      hand.forEach((landmark: any, index: number) => {
+        // Make fingertips larger and brighter
+        const isFingertip = [4, 8, 12, 16, 20].includes(index);
+        const radius = isFingertip ? 8 : 5;
+        
+        ctx.fillStyle = isFingertip ? '#FF44DD' : '#B644FF';
         ctx.beginPath();
         ctx.arc(
           landmark.x * canvas.width,
           landmark.y * canvas.height,
-          5,
+          radius,
           0,
           2 * Math.PI
         );
         ctx.fill();
       });
     });
+    
+    ctx.restore();
   }, [landmarks, videoWidth, videoHeight]);
 
   return (
@@ -67,7 +89,8 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
       ref={canvasRef}
       width={videoWidth}
       height={videoHeight}
-      className="absolute inset-0 pointer-events-none"
+      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+      style={{ mixBlendMode: 'screen' }}
     />
   );
 };
