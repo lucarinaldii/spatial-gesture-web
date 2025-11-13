@@ -107,9 +107,10 @@ export const useHandTracking = () => {
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
           facingMode: 'user',
+          frameRate: { ideal: 30 }
         },
       });
 
@@ -163,9 +164,9 @@ export const useHandTracking = () => {
           },
           runningMode: 'VIDEO',
           numHands: 1,
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5,
+          minHandDetectionConfidence: 0.3,
+          minHandPresenceConfidence: 0.3,
+          minTrackingConfidence: 0.3,
         });
 
         if (mounted) {

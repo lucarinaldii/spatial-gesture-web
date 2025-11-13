@@ -80,45 +80,29 @@ const Index = () => {
           </div>
         ) : (
           <div className="relative min-h-screen">
-            {/* Video container */}
-            <div className="fixed inset-0 z-40 bg-black">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
-              />
-              
-              {/* Hand skeleton overlay canvas */}
-              {landmarks && videoRef.current && videoRef.current.videoWidth > 0 && (
-                <HandSkeleton
-                  landmarks={landmarks}
-                  videoWidth={videoRef.current.videoWidth}
-                  videoHeight={videoRef.current.videoHeight}
-                />
-              )}
-              
-              {/* Status indicator */}
-              <div className="absolute top-4 left-4 glass-panel px-4 py-3 rounded-lg z-50">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${handPosition ? 'bg-primary' : 'bg-muted'} animate-pulse`} />
-                    <span className="text-sm font-mono text-foreground font-bold">
-                      {handPosition ? 'HAND DETECTED ✓' : 'NO HAND - SHOW YOUR HAND'}
-                    </span>
-                  </div>
-                  {landmarks && landmarks.length > 0 && (
-                    <div className="text-xs font-mono text-primary">
-                      Landmarks: {landmarks[0]?.length || 0} points tracked
-                    </div>
-                  )}
-                  {videoRef.current && (
-                    <div className="text-xs font-mono text-muted-foreground">
-                      Video: {videoRef.current.videoWidth}x{videoRef.current.videoHeight}
-                    </div>
-                  )}
+            {/* Hidden video element for tracking */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="fixed -left-[9999px] opacity-0 pointer-events-none"
+            />
+            
+            {/* Status indicator */}
+            <div className="fixed top-4 left-4 glass-panel px-4 py-3 rounded-lg z-50">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${handPosition ? 'bg-primary' : 'bg-muted'} animate-pulse`} />
+                  <span className="text-sm font-mono text-foreground font-bold">
+                    {handPosition ? 'HAND DETECTED ✓' : 'NO HAND - SHOW YOUR HAND'}
+                  </span>
                 </div>
+                {landmarks && landmarks.length > 0 && (
+                  <div className="text-xs font-mono text-primary">
+                    Landmarks: {landmarks[0]?.length || 0} points tracked
+                  </div>
+                )}
               </div>
             </div>
 
@@ -126,7 +110,7 @@ const Index = () => {
             <InteractiveCard
               title="Spatial Card 1"
               description="Hover with your hand and pinch to interact"
-              position={{ x: 25, y: 40 }}
+              position={{ x: 20, y: 30 }}
               handPosition={handPosition}
               gestureState={gestureState}
               onInteract={() => handleCardInteract('Spatial Card 1')}
@@ -144,7 +128,7 @@ const Index = () => {
             <InteractiveCard
               title="Spatial Card 3"
               description="Point and pinch for seamless interaction"
-              position={{ x: 75, y: 40 }}
+              position={{ x: 80, y: 30 }}
               handPosition={handPosition}
               gestureState={gestureState}
               onInteract={() => handleCardInteract('Spatial Card 3')}
