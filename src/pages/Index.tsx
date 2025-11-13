@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
 import HandCursor from '@/components/HandCursor';
@@ -6,10 +6,45 @@ import HandSkeleton from '@/components/HandSkeleton';
 import InteractiveCard from '@/components/InteractiveCard';
 import { useToast } from '@/hooks/use-toast';
 
+interface CardData {
+  id: string;
+  title: string;
+  description: string;
+  position: { x: number; y: number };
+}
+
 const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
   const { isReady, handPosition, gestureState, landmarks, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
+  
+  const [cards, setCards] = useState<CardData[]>([
+    {
+      id: '1',
+      title: 'Spatial Card 1',
+      description: 'Hover with your hand and pinch to drag',
+      position: { x: 20, y: 30 },
+    },
+    {
+      id: '2',
+      title: 'Spatial Card 2',
+      description: 'Experience natural gesture controls',
+      position: { x: 50, y: 50 },
+    },
+    {
+      id: '3',
+      title: 'Spatial Card 3',
+      description: 'Point and pinch for seamless interaction',
+      position: { x: 80, y: 30 },
+    },
+  ]);
+  
+  const [grabbedCard, setGrabbedCard] = useState<{
+    id: string;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
+  const [wasPinching, setWasPinching] = useState(false);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -23,12 +58,73 @@ const Index = () => {
     }, 200);
   };
 
-  const handleCardInteract = (cardName: string) => {
-    toast({
-      title: "Card Activated!",
-      description: `You clicked on ${cardName}`,
-    });
-  };
+  // Handle dragging logic
+  useEffect(() => {
+    if (!handPosition) return;
+
+    const isPinching = gestureState.isPinching;
+    const handX = handPosition.x * 100; // Convert to percentage
+    const handY = handPosition.y * 100;
+
+    // Pinch started - grab card if hovering over one
+    if (isPinching && !wasPinching && !grabbedCard) {
+      const cardUnderHand = cards.find((card) => {
+        const cardWidth = 300; // Approximate card width in px
+        const cardHeight = 200; // Approximate card height in px
+        const cardLeft = (card.position.x * window.innerWidth) / 100;
+        const cardTop = (card.position.y * window.innerHeight) / 100;
+        const handPxX = (handX * window.innerWidth) / 100;
+        const handPxY = (handY * window.innerHeight) / 100;
+        
+        return (
+          handPxX >= cardLeft &&
+          handPxX <= cardLeft + cardWidth &&
+          handPxY >= cardTop &&
+          handPxY <= cardTop + cardHeight
+        );
+      });
+
+      if (cardUnderHand) {
+        setGrabbedCard({
+          id: cardUnderHand.id,
+          offsetX: handX - cardUnderHand.position.x,
+          offsetY: handY - cardUnderHand.position.y,
+        });
+        toast({
+          title: "Card Grabbed!",
+          description: `Holding ${cardUnderHand.title}`,
+        });
+      }
+    }
+
+    // Pinch held - update card position
+    if (isPinching && grabbedCard) {
+      setCards((prevCards) =>
+        prevCards.map((card) =>
+          card.id === grabbedCard.id
+            ? {
+                ...card,
+                position: {
+                  x: Math.max(0, Math.min(90, handX - grabbedCard.offsetX)),
+                  y: Math.max(0, Math.min(85, handY - grabbedCard.offsetY)),
+                },
+              }
+            : card
+        )
+      );
+    }
+
+    // Pinch released - drop card
+    if (!isPinching && wasPinching && grabbedCard) {
+      toast({
+        title: "Card Released",
+        description: "Card dropped at new position",
+      });
+      setGrabbedCard(null);
+    }
+
+    setWasPinching(isPinching);
+  }, [handPosition, gestureState, grabbedCard, wasPinching, cards, toast]);
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
@@ -106,33 +202,19 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Interactive cards */}
-            <InteractiveCard
-              title="Spatial Card 1"
-              description="Hover with your hand and pinch to interact"
-              position={{ x: 20, y: 30 }}
-              handPosition={handPosition}
-              gestureState={gestureState}
-              onInteract={() => handleCardInteract('Spatial Card 1')}
-            />
-
-            <InteractiveCard
-              title="Spatial Card 2"
-              description="Experience natural gesture controls"
-              position={{ x: 50, y: 50 }}
-              handPosition={handPosition}
-              gestureState={gestureState}
-              onInteract={() => handleCardInteract('Spatial Card 2')}
-            />
-
-            <InteractiveCard
-              title="Spatial Card 3"
-              description="Point and pinch for seamless interaction"
-              position={{ x: 80, y: 30 }}
-              handPosition={handPosition}
-              gestureState={gestureState}
-              onInteract={() => handleCardInteract('Spatial Card 3')}
-            />
+            {/* Interactive draggable cards */}
+            {cards.map((card) => (
+              <InteractiveCard
+                key={card.id}
+                title={card.title}
+                description={card.description}
+                position={card.position}
+                handPosition={handPosition}
+                gestureState={gestureState}
+                onInteract={() => {}}
+                isBeingDragged={grabbedCard?.id === card.id}
+              />
+            ))}
 
             {/* Center info */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-full border border-primary/30">

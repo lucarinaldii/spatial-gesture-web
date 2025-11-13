@@ -9,6 +9,7 @@ interface InteractiveCardProps {
   handPosition: HandPosition | null;
   gestureState: GestureState;
   onInteract: () => void;
+  isBeingDragged?: boolean;
 }
 
 const InteractiveCard = ({
@@ -18,6 +19,7 @@ const InteractiveCard = ({
   handPosition,
   gestureState,
   onInteract,
+  isBeingDragged = false,
 }: InteractiveCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
@@ -67,6 +69,7 @@ const InteractiveCard = ({
           glass-panel p-6 w-64 transition-all duration-300
           ${isHovered ? 'neon-glow border-primary' : 'border-border/30'}
           ${wasClicked ? 'scale-95' : ''}
+          ${isBeingDragged ? 'shadow-2xl scale-110 cursor-grabbing' : 'cursor-pointer'}
         `}
       >
         <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
@@ -75,7 +78,7 @@ const InteractiveCard = ({
         {isHovered && (
           <div className="mt-3 text-xs font-mono text-primary flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            {gestureState.isPinching ? 'CLICKING...' : 'PINCH TO CLICK'}
+            {gestureState.isPinching ? (isBeingDragged ? 'DRAGGING...' : 'CLICKING...') : 'PINCH TO GRAB'}
           </div>
         )}
       </Card>

@@ -53,9 +53,9 @@ export const useHandTracking = () => {
       const isPinching = pinchDistance < pinchThreshold;
       const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / pinchThreshold)));
       
-      // Update hand position (index finger tip)
+      // Update hand position (index finger tip) - mirror x coordinate
       setHandPosition({
-        x: indexTip.x,
+        x: 1 - indexTip.x, // Mirror horizontally for natural movement
         y: indexTip.y,
         z: indexTip.z || 0,
       });
