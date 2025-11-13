@@ -78,8 +78,12 @@ const Index = () => {
     }
 
     const updateDrag = () => {
-      // Calculate zoom from two-hand distance
-      if (handPositions.length === 2) {
+      // Calculate zoom from two-hand distance ONLY when neither hand is pinching
+      const bothHandsOpen = handPositions.length === 2 && 
+        !gestureStates[0]?.isPinching && 
+        !gestureStates[1]?.isPinching;
+      
+      if (bothHandsOpen) {
         const hand1X = handPositions[0].x * 100;
         const hand1Y = handPositions[0].y * 100;
         const hand2X = handPositions[1].x * 100;
@@ -96,8 +100,8 @@ const Index = () => {
         const zoomFactor = distance / baseDistanceRef.current;
         const newZoom = Math.max(0.5, Math.min(3, zoomFactor));
         setZoomLevel(newZoom);
-      } else if (handPositions.length !== 2 && baseDistanceRef.current !== null) {
-        // Reset base distance when switching away from 2 hands
+      } else if (!bothHandsOpen && baseDistanceRef.current !== null) {
+        // Reset base distance when not in zoom mode
         baseDistanceRef.current = null;
       }
 
@@ -311,8 +315,8 @@ const Index = () => {
             {/* Center info */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-full border border-primary/30">
               <p className="text-sm font-mono text-muted-foreground">
-                {handPositions.length === 2 ? (
-                  <span className="text-accent">🔍 Zoom: {(zoomLevel * 100).toFixed(0)}% - Spread hands to zoom</span>
+                {handPositions.length === 2 && !gestureStates.some(g => g.isPinching) ? (
+                  <span className="text-accent">🔍 Zoom: {(zoomLevel * 100).toFixed(0)}% - Spread/close hands to zoom</span>
                 ) : gestureStates.some(g => g.isPinching) ? (
                   <span className="text-secondary">🤏 Pinching - {gestureStates.filter(g => g.isPinching).length} hand(s) active</span>
                 ) : handPositions.length > 0 ? (
