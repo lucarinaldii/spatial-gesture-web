@@ -49,11 +49,11 @@ const Index = () => {
     offsetY: number;
   }>>(new Map());
   
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [cardScales, setCardScales] = useState<Map<string, number>>(new Map());
   const lastPinchStates = useRef<Map<number, boolean>>(new Map());
   const animationFrameRef = useRef<number>();
   const maxZIndexRef = useRef(3);
-  const baseDistanceRef = useRef<number | null>(null);
+  const baseDistanceRef = useRef<Map<string, number>>(new Map());
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -78,31 +78,35 @@ const Index = () => {
     }
 
     const updateDrag = () => {
-      // Calculate zoom from two-hand distance ONLY when neither hand is pinching
-      const bothHandsOpen = handPositions.length === 2 && 
-        !gestureStates[0]?.isPinching && 
-        !gestureStates[1]?.isPinching;
+      // Check if both hands are pinching the same card
+      const bothHandsPinching = handPositions.length === 2 && 
+        gestureStates[0]?.isPinching && 
+        gestureStates[1]?.isPinching;
       
-      if (bothHandsOpen) {
-        const hand1X = handPositions[0].x * 100;
-        const hand1Y = handPositions[0].y * 100;
-        const hand2X = handPositions[1].x * 100;
-        const hand2Y = handPositions[1].y * 100;
+      if (bothHandsPinching) {
+        const card0 = grabbedCards.get(0);
+        const card1 = grabbedCards.get(1);
         
-        const distance = Math.sqrt(
-          Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2)
-        );
-        
-        if (baseDistanceRef.current === null) {
-          baseDistanceRef.current = distance;
+        // If both hands are grabbing the same card, calculate scale
+        if (card0 && card1 && card0.id === card1.id) {
+          const hand1X = handPositions[0].x * 100;
+          const hand1Y = handPositions[0].y * 100;
+          const hand2X = handPositions[1].x * 100;
+          const hand2Y = handPositions[1].y * 100;
+          
+          const distance = Math.sqrt(
+            Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2)
+          );
+          
+          const baseDistance = baseDistanceRef.current.get(card0.id);
+          if (!baseDistance) {
+            baseDistanceRef.current.set(card0.id, distance);
+          } else {
+            const scaleFactor = distance / baseDistance;
+            const newScale = Math.max(0.5, Math.min(3, scaleFactor));
+            setCardScales(prev => new Map(prev).set(card0.id, newScale));
+          }
         }
-        
-        const zoomFactor = distance / baseDistanceRef.current;
-        const newZoom = Math.max(0.5, Math.min(3, zoomFactor));
-        setZoomLevel(newZoom);
-      } else if (!bothHandsOpen && baseDistanceRef.current !== null) {
-        // Reset base distance when not in zoom mode
-        baseDistanceRef.current = null;
       }
 
       const newGrabbedCards = new Map(grabbedCards);
@@ -179,6 +183,13 @@ const Index = () => {
           if (grabbed) {
             newGrabbedCards.delete(handIndex);
             hasChanges = true;
+            
+            // Reset base distance for this card if no other hand is holding it
+            const otherHandHolding = Array.from(newGrabbedCards.values()).some(g => g.id === grabbed.id);
+            if (!otherHandHolding) {
+              baseDistanceRef.current.delete(grabbed.id);
+            }
+            
             toast({
               title: "Card Released",
               description: `Hand ${handIndex + 1} dropped card`,
@@ -307,7 +318,7 @@ const Index = () => {
                     gestureState={gesture || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0 }}
                     onInteract={() => {}}
                     isBeingDragged={isBeingDragged}
-                    zoomLevel={zoomLevel}
+                    scale={cardScales.get(card.id) || 1}
                   />
                 );
               })}
@@ -315,15 +326,23 @@ const Index = () => {
             {/* Center info */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-full border border-primary/30">
               <p className="text-sm font-mono text-muted-foreground">
-                {handPositions.length === 2 && !gestureStates.some(g => g.isPinching) ? (
-                  <span className="text-accent">🔍 Zoom: {(zoomLevel * 100).toFixed(0)}% - Spread/close hands to zoom</span>
-                ) : gestureStates.some(g => g.isPinching) ? (
-                  <span className="text-secondary">🤏 Pinching - {gestureStates.filter(g => g.isPinching).length} hand(s) active</span>
-                ) : handPositions.length > 0 ? (
-                  <span className="text-primary">👆 {handPositions.length} hand(s) detected - Pinch to grab cards</span>
-                ) : (
-                  <span>🖐️ Show your hands to the camera</span>
-                )}
+                {(() => {
+                  const bothGrabbingSame = handPositions.length === 2 && 
+                    gestureStates.every(g => g.isPinching) &&
+                    grabbedCards.get(0)?.id === grabbedCards.get(1)?.id &&
+                    grabbedCards.get(0);
+                  
+                  if (bothGrabbingSame) {
+                    const scale = cardScales.get(bothGrabbingSame.id) || 1;
+                    return <span className="text-accent">🔍 Scaling: {(scale * 100).toFixed(0)}% - Spread/close hands</span>;
+                  } else if (gestureStates.some(g => g.isPinching)) {
+                    return <span className="text-secondary">🤏 Pinching - {gestureStates.filter(g => g.isPinching).length} hand(s) active</span>;
+                  } else if (handPositions.length > 0) {
+                    return <span className="text-primary">👆 {handPositions.length} hand(s) detected - Pinch to grab cards</span>;
+                  } else {
+                    return <span>🖐️ Show your hands to the camera</span>;
+                  }
+                })()}
               </p>
             </div>
 
