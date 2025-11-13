@@ -96,18 +96,22 @@ const Index = () => {
           const cardWidth = 16;
           const cardHeight = 12;
           
-          // Find card under hand (allow multiple hands on same card)
+          // Find card under hand - account for canvas offset
           const targetCard = cards.find((card) => {
-            const dx = Math.abs(handX - card.position.x);
-            const dy = Math.abs(handY - card.position.y);
+            const adjustedX = card.position.x + canvasOffset.x;
+            const adjustedY = card.position.y + canvasOffset.y;
+            const dx = Math.abs(handX - adjustedX);
+            const dy = Math.abs(handY - adjustedY);
             return dx < cardWidth && dy < cardHeight;
           });
 
           if (targetCard) {
+            const adjustedX = targetCard.position.x + canvasOffset.x;
+            const adjustedY = targetCard.position.y + canvasOffset.y;
             newGrabbedCards.set(handIndex, {
               id: targetCard.id,
-              offsetX: handX - targetCard.position.x,
-              offsetY: handY - targetCard.position.y,
+              offsetX: handX - adjustedX,
+              offsetY: handY - adjustedY,
             });
             hasChanges = true;
             
@@ -165,8 +169,8 @@ const Index = () => {
             // Update position to midpoint between hands
             const midX = (hand1X + hand2X) / 2;
             const midY = (hand1Y + hand2Y) / 2;
-            const newX = Math.max(5, Math.min(95, midX));
-            const newY = Math.max(5, Math.min(90, midY));
+            const newX = Math.max(5, Math.min(95, midX)) - canvasOffset.x;
+            const newY = Math.max(5, Math.min(90, midY)) - canvasOffset.y;
             
             cardUpdates.set(card0.id, {
               ...(cardUpdates.get(card0.id) || {}),
@@ -176,8 +180,8 @@ const Index = () => {
             // Single hand drag mode
             const grabbed = newGrabbedCards.get(handIndex);
             if (grabbed) {
-              const newX = Math.max(5, Math.min(95, handX - grabbed.offsetX));
-              const newY = Math.max(5, Math.min(90, handY - grabbed.offsetY));
+              const newX = Math.max(5, Math.min(95, handX - grabbed.offsetX)) - canvasOffset.x;
+              const newY = Math.max(5, Math.min(90, handY - grabbed.offsetY)) - canvasOffset.y;
               
               cardUpdates.set(grabbed.id, {
                 ...(cardUpdates.get(grabbed.id) || {}),
