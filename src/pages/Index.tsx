@@ -76,6 +76,8 @@ const Index = () => {
     const updateDrag = () => {
       const newGrabbedCards = new Map(grabbedCards);
       let hasChanges = false;
+      const cardUpdates = new Map<string, { position?: { x: number; y: number }, zIndex?: number }>();
+      let scaleUpdate: { id: string; scale: number } | null = null;
 
       // Process each hand
       handPositions.forEach((handPos, handIndex) => {
@@ -109,11 +111,10 @@ const Index = () => {
             
             // Bring card to front
             maxZIndexRef.current += 1;
-            setCards(prev => prev.map(card =>
-              card.id === targetCard.id
-                ? { ...card, zIndex: maxZIndexRef.current }
-                : card
-            ));
+            cardUpdates.set(targetCard.id, { 
+              ...(cardUpdates.get(targetCard.id) || {}),
+              zIndex: maxZIndexRef.current 
+            });
           }
         }
 
@@ -139,7 +140,7 @@ const Index = () => {
             } else {
               const scaleFactor = distance / baseDistance;
               const newScale = Math.max(0.5, Math.min(3, scaleFactor));
-              setCardScales(prev => new Map(prev).set(card0.id, newScale));
+              scaleUpdate = { id: card0.id, scale: newScale };
             }
             
             // Update position to midpoint between hands
@@ -148,13 +149,10 @@ const Index = () => {
             const newX = Math.max(5, Math.min(95, midX));
             const newY = Math.max(5, Math.min(90, midY));
             
-            setCards(prev =>
-              prev.map(card =>
-                card.id === card0.id
-                  ? { ...card, position: { x: newX, y: newY } }
-                  : card
-              )
-            );
+            cardUpdates.set(card0.id, {
+              ...(cardUpdates.get(card0.id) || {}),
+              position: { x: newX, y: newY }
+            });
           } else {
             // Single hand drag mode
             const grabbed = newGrabbedCards.get(handIndex);
@@ -162,13 +160,10 @@ const Index = () => {
               const newX = Math.max(5, Math.min(95, handX - grabbed.offsetX));
               const newY = Math.max(5, Math.min(90, handY - grabbed.offsetY));
               
-              setCards(prev =>
-                prev.map(card =>
-                  card.id === grabbed.id
-                    ? { ...card, position: { x: newX, y: newY } }
-                    : card
-                )
-              );
+              cardUpdates.set(grabbed.id, {
+                ...(cardUpdates.get(grabbed.id) || {}),
+                position: { x: newX, y: newY }
+              });
             }
           }
         }
@@ -191,8 +186,31 @@ const Index = () => {
         lastPinchStates.current.set(handIndex, isPinching);
       });
 
+      // Batch all updates together to avoid multiple re-renders
       if (hasChanges) {
         setGrabbedCards(newGrabbedCards);
+      }
+
+      if (scaleUpdate) {
+        setCardScales(prev => {
+          const newScales = new Map(prev);
+          newScales.set(scaleUpdate.id, scaleUpdate.scale);
+          return newScales;
+        });
+      }
+
+      if (cardUpdates.size > 0) {
+        setCards(prev =>
+          prev.map(card => {
+            const update = cardUpdates.get(card.id);
+            if (!update) return card;
+            return {
+              ...card,
+              ...(update.position && { position: update.position }),
+              ...(update.zIndex !== undefined && { zIndex: update.zIndex }),
+            };
+          })
+        );
       }
     };
 
