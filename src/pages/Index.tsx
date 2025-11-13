@@ -78,6 +78,7 @@ const Index = () => {
   const baseAngleRef = useRef<Map<string, number>>(new Map());
   const canvasDragStartRef = useRef<{ x: number; y: number } | null>(null);
   const canvasZoomBaseDistanceRef = useRef<number | null>(null);
+  const handVelocityHistoryRef = useRef<Map<number, Array<{ x: number; y: number; timestamp: number }>>>(new Map());
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -253,6 +254,16 @@ const Index = () => {
         const handY = handPos.y * 100;
         const wasPinching = lastPinchStates.current.get(handIndex) || false;
 
+        // Track hand velocity history for inertia calculation
+        const now = Date.now();
+        if (!handVelocityHistoryRef.current.has(handIndex)) {
+          handVelocityHistoryRef.current.set(handIndex, []);
+        }
+        const history = handVelocityHistoryRef.current.get(handIndex)!;
+        history.push({ x: handX, y: handY, timestamp: now });
+        // Keep only last 5 frames (about 83ms at 60fps)
+        if (history.length > 5) history.shift();
+
         if (isPinching && !wasPinching) {
           const targetObject = objects.find((obj) => {
             const adjustedX = obj.position.x + canvasOffset.x;
@@ -322,7 +333,37 @@ const Index = () => {
             if (!Array.from(newGrabbedObjects.values()).some(g => g.id === grabbed.id)) {
               baseDistanceRef.current.delete(grabbed.id);
               baseAngleRef.current.delete(grabbed.id);
-              setObjects(prev => prev.map(obj => obj.id === grabbed.id ? { ...obj, isPhysicsEnabled: true, velocity: { x: 0, y: 0 } } : obj));
+              
+              // Calculate release velocity from hand movement history
+              const history = handVelocityHistoryRef.current.get(handIndex) || [];
+              let velocityX = 0;
+              let velocityY = 0;
+              
+              if (history.length >= 2) {
+                const recent = history[history.length - 1];
+                const previous = history[0];
+                const timeDelta = (recent.timestamp - previous.timestamp) / 1000; // Convert to seconds
+                
+                if (timeDelta > 0) {
+                  // Calculate velocity in percentage points per second
+                  velocityX = (recent.x - previous.x) / timeDelta;
+                  velocityY = (recent.y - previous.y) / timeDelta;
+                  
+                  // Scale down velocity for smoother motion (multiply by frame time)
+                  const VELOCITY_SCALE = 0.016; // Assume 60fps frame time
+                  velocityX *= VELOCITY_SCALE;
+                  velocityY *= VELOCITY_SCALE;
+                }
+              }
+              
+              setObjects(prev => prev.map(obj => obj.id === grabbed.id ? { 
+                ...obj, 
+                isPhysicsEnabled: true, 
+                velocity: { x: velocityX, y: velocityY } 
+              } : obj));
+              
+              // Clear velocity history for this hand
+              handVelocityHistoryRef.current.delete(handIndex);
             }
           }
           if (newGrabbedObjects.size === 0) {
@@ -347,8 +388,8 @@ const Index = () => {
       setObjects(prev => prev.map(obj => {
         if (!obj.isPhysicsEnabled) return obj;
         
-        // Space-like floating with very gentle drift
-        const DRIFT_DAMPING = 0.96; // High damping for slow, smooth movement
+        // Space-like floating with momentum and gentle drift
+        const DRIFT_DAMPING = 0.985; // Less damping for more inertia
         const GENTLE_DRIFT = 0.03; // Very small random drift
         
         // Add tiny random drift for floating effect
