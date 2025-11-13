@@ -62,6 +62,7 @@ const Index = () => {
   const baseAngleRef = useRef<Map<string, number>>(new Map());
   const canvasDragStartRef = useRef<{ x: number; y: number } | null>(null);
   const canvasZoomBaseDistanceRef = useRef<number | null>(null);
+  const openHandsPanRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -78,6 +79,7 @@ const Index = () => {
         setGrabbedCards(new Map());
       }
       lastPinchStates.current.clear();
+      openHandsPanRef.current = null;
       return;
     }
 
@@ -86,6 +88,49 @@ const Index = () => {
       let hasChanges = false;
       const cardUpdates = new Map<string, { position?: { x: number; y: number }, zIndex?: number, rotation?: { x: number; y: number; z: number } }>();
       let scaleUpdate: { id: string; scale: number } | null = null;
+
+      // Check if both hands are fully open (all fingers extended)
+      const areBothHandsOpen = handPositions.length === 2 && 
+        gestureStates.length === 2 &&
+        gestureStates.every(gesture => 
+          gesture && 
+          !gesture.isPinching &&
+          gesture.fingers.thumb.isExtended &&
+          gesture.fingers.index.isExtended &&
+          gesture.fingers.middle.isExtended &&
+          gesture.fingers.ring.isExtended &&
+          gesture.fingers.pinky.isExtended
+        );
+
+      // Handle open-hand canvas panning
+      if (areBothHandsOpen) {
+        const hand1X = handPositions[0].x * 100;
+        const hand1Y = handPositions[0].y * 100;
+        const hand2X = handPositions[1].x * 100;
+        const hand2Y = handPositions[1].y * 100;
+        
+        const avgX = (hand1X + hand2X) / 2;
+        const avgY = (hand1Y + hand2Y) / 2;
+        
+        if (!openHandsPanRef.current) {
+          openHandsPanRef.current = { x: avgX, y: avgY };
+        } else {
+          const deltaX = avgX - openHandsPanRef.current.x;
+          const deltaY = avgY - openHandsPanRef.current.y;
+          
+          setCanvasOffset(prev => ({
+            x: prev.x + deltaX,
+            y: prev.y + deltaY
+          }));
+          
+          openHandsPanRef.current = { x: avgX, y: avgY };
+        }
+        
+        // Skip card interaction when both hands are open
+        return;
+      } else {
+        openHandsPanRef.current = null;
+      }
 
       // Process each hand
       handPositions.forEach((handPos, handIndex) => {
