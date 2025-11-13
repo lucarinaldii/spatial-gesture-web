@@ -467,7 +467,9 @@ const Index = () => {
           const obj1 = newGrabbedObjects.get(1);
           
           if (newGrabbedObjects.size === 0) {
+            // Canvas panning and zooming when not grabbing any objects
             if (handPositions.length === 2) {
+              // Two-hand pinch: zoom and pan
               const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
               const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
               const distance = Math.sqrt(Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2));
@@ -479,9 +481,14 @@ const Index = () => {
                 setCanvasOffset(prev => ({ x: prev.x + midX - canvasDragStartRef.current!.x, y: prev.y + midY - canvasDragStartRef.current!.y }));
                 canvasDragStartRef.current = { x: midX, y: midY };
               }
-            } else if (canvasDragStartRef.current) {
-              setCanvasOffset(prev => ({ x: prev.x + handX - canvasDragStartRef.current!.x, y: prev.y + handY - canvasDragStartRef.current!.y }));
-              canvasDragStartRef.current = { x: handX, y: handY };
+            } else if (handPositions.length === 1) {
+              // Single-hand pinch: pan only
+              if (!canvasDragStartRef.current) {
+                canvasDragStartRef.current = { x: handX, y: handY };
+              } else {
+                setCanvasOffset(prev => ({ x: prev.x + handX - canvasDragStartRef.current!.x, y: prev.y + handY - canvasDragStartRef.current!.y }));
+                canvasDragStartRef.current = { x: handX, y: handY };
+              }
             }
           } else if (obj0 && obj1 && obj0.id === obj1.id && handPositions.length === 2) {
             // Two hands grabbing the same card - check for splitting
