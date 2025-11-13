@@ -61,11 +61,14 @@ const Index = () => {
   ]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importButtonRef = useRef<HTMLButtonElement>(null);
   const [grabbedObjects, setGrabbedObjects] = useState<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
   const [objectScales, setObjectScales] = useState<Map<string, number>>(new Map());
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
   const [canvasZoom, setCanvasZoom] = useState(1);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
   const lastPinchStates = useRef<Map<number, boolean>>(new Map());
+  const lastButtonPinchState = useRef(false);
   const animationFrameRef = useRef<number>();
   const maxZIndexRef = useRef(3);
   const baseDistanceRef = useRef<Map<string, number>>(new Map());
@@ -103,6 +106,44 @@ const Index = () => {
     toast({ title: "File imported", description: `${file.name} added to scene` });
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  // Hand gesture detection for import button
+  useEffect(() => {
+    if (!importButtonRef.current || handPositions.length === 0 || !isTracking) {
+      setIsButtonHovered(false);
+      return;
+    }
+
+    const buttonRect = importButtonRef.current.getBoundingClientRect();
+    
+    // Check if any hand is hovering over the button
+    let isHovering = false;
+    let isPinching = false;
+    
+    handPositions.forEach((handPos, handIndex) => {
+      const handX = handPos.x * window.innerWidth;
+      const handY = handPos.y * window.innerHeight;
+      
+      const isInBounds = handX >= buttonRect.left && handX <= buttonRect.right &&
+                        handY >= buttonRect.top && handY <= buttonRect.bottom;
+      
+      if (isInBounds) {
+        isHovering = true;
+        const gesture = gestureStates[handIndex];
+        if (gesture?.isPinching) {
+          isPinching = true;
+          
+          // Trigger click on pinch
+          if (!lastButtonPinchState.current) {
+            fileInputRef.current?.click();
+          }
+        }
+      }
+    });
+    
+    setIsButtonHovered(isHovering);
+    lastButtonPinchState.current = isPinching;
+  }, [handPositions, gestureStates, isTracking]);
 
   useEffect(() => {
     if (handPositions.length === 0) {
@@ -259,7 +300,14 @@ const Index = () => {
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             <div className="fixed top-4 right-4 z-50">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
-              <Button onClick={() => fileInputRef.current?.click()} size="lg" className="neon-glow"><Plus className="w-5 h-5 mr-2" />Import File</Button>
+              <Button 
+                ref={importButtonRef}
+                onClick={() => fileInputRef.current?.click()} 
+                size="lg" 
+                className={`neon-glow transition-all duration-200 ${isButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+              >
+                <Plus className="w-5 h-5 mr-2" />Import File
+              </Button>
             </div>
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
               {objects.sort((a, b) => a.zIndex - b.zIndex).map((obj) => {
