@@ -6,6 +6,7 @@ interface InteractiveCardProps {
   title: string;
   description: string;
   position: { x: number; y: number };
+  zIndex: number;
   handPosition: HandPosition | null;
   gestureState: GestureState;
   onInteract: () => void;
@@ -16,6 +17,7 @@ const InteractiveCard = memo(({
   title,
   description,
   position,
+  zIndex,
   handPosition,
   gestureState,
   onInteract,
@@ -63,6 +65,7 @@ const InteractiveCard = memo(({
         top: `${position.y}%`,
         transform: `translate(-50%, -50%) ${isHovered ? 'scale(1.05)' : 'scale(1)'}`,
         transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex,
       }}
     >
       <Card

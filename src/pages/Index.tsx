@@ -11,11 +11,12 @@ interface CardData {
   title: string;
   description: string;
   position: { x: number; y: number };
+  zIndex: number;
 }
 
 const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
-  const { isReady, handPosition, gestureState, landmarks, videoRef, startCamera } = useHandTracking();
+  const { isReady, handPositions, gestureStates, landmarks, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
   
   const [cards, setCards] = useState<CardData[]>([
@@ -24,29 +25,33 @@ const Index = () => {
       title: 'Spatial Card 1',
       description: 'Hover with your hand and pinch to drag',
       position: { x: 20, y: 35 },
+      zIndex: 1,
     },
     {
       id: '2',
       title: 'Spatial Card 2',
       description: 'Experience natural gesture controls',
       position: { x: 50, y: 50 },
+      zIndex: 2,
     },
     {
       id: '3',
       title: 'Spatial Card 3',
       description: 'Point and pinch for seamless interaction',
       position: { x: 80, y: 35 },
+      zIndex: 3,
     },
   ]);
   
-  const [grabbedCard, setGrabbedCard] = useState<{
+  const [grabbedCards, setGrabbedCards] = useState<Map<number, {
     id: string;
     offsetX: number;
     offsetY: number;
-  } | null>(null);
+  }>>(new Map());
   
-  const lastPinchRef = useRef(false);
+  const lastPinchStates = useRef<Map<number, boolean>>(new Map());
   const animationFrameRef = useRef<number>();
+  const maxZIndexRef = useRef(3);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -60,74 +65,107 @@ const Index = () => {
     }, 200);
   };
 
-  // Smooth dragging with RAF for performance
+  // Multi-hand smooth dragging with RAF
   useEffect(() => {
-    if (!handPosition) {
-      if (grabbedCard) {
-        setGrabbedCard(null);
+    if (handPositions.length === 0) {
+      if (grabbedCards.size > 0) {
+        setGrabbedCards(new Map());
       }
-      lastPinchRef.current = false;
+      lastPinchStates.current.clear();
       return;
     }
 
     const updateDrag = () => {
-      const isPinching = gestureState.isPinching;
-      const handX = handPosition.x * 100;
-      const handY = handPosition.y * 100;
+      const newGrabbedCards = new Map(grabbedCards);
+      let hasChanges = false;
 
-      // Start pinch - grab card
-      if (isPinching && !lastPinchRef.current) {
-        const cardWidth = 16; // ~256px / window width in percentage
-        const cardHeight = 12; // approximate
-        
-        const hoveredCard = cards.find((card) => {
-          const dx = Math.abs(handX - card.position.x);
-          const dy = Math.abs(handY - card.position.y);
-          return dx < cardWidth && dy < cardHeight;
-        });
+      // Process each hand
+      handPositions.forEach((handPos, handIndex) => {
+        const gesture = gestureStates[handIndex];
+        if (!gesture) return;
 
-        if (hoveredCard) {
-          setGrabbedCard({
-            id: hoveredCard.id,
-            offsetX: handX - hoveredCard.position.x,
-            offsetY: handY - hoveredCard.position.y,
-          });
-          toast({
-            title: "Card Grabbed!",
-            description: `Holding ${hoveredCard.title}`,
-            duration: 1500,
-          });
+        const isPinching = gesture.isPinching;
+        const handX = handPos.x * 100;
+        const handY = handPos.y * 100;
+        const wasPinching = lastPinchStates.current.get(handIndex) || false;
+
+        // Start pinch - grab card
+        if (isPinching && !wasPinching) {
+          const cardWidth = 16;
+          const cardHeight = 12;
+          
+          // Find closest card not already grabbed
+          const availableCard = cards
+            .filter(card => !Array.from(newGrabbedCards.values()).some(g => g.id === card.id))
+            .find((card) => {
+              const dx = Math.abs(handX - card.position.x);
+              const dy = Math.abs(handY - card.position.y);
+              return dx < cardWidth && dy < cardHeight;
+            });
+
+          if (availableCard) {
+            newGrabbedCards.set(handIndex, {
+              id: availableCard.id,
+              offsetX: handX - availableCard.position.x,
+              offsetY: handY - availableCard.position.y,
+            });
+            hasChanges = true;
+            
+            // Bring card to front
+            maxZIndexRef.current += 1;
+            setCards(prev => prev.map(card =>
+              card.id === availableCard.id
+                ? { ...card, zIndex: maxZIndexRef.current }
+                : card
+            ));
+            
+            toast({
+              title: "Card Grabbed!",
+              description: `Hand ${handIndex + 1} holding ${availableCard.title}`,
+              duration: 1000,
+            });
+          }
         }
-      }
 
-      // Continue pinch - update position
-      if (isPinching && grabbedCard) {
-        const newX = Math.max(5, Math.min(95, handX - grabbedCard.offsetX));
-        const newY = Math.max(5, Math.min(90, handY - grabbedCard.offsetY));
-        
-        setCards((prev) =>
-          prev.map((card) =>
-            card.id === grabbedCard.id
-              ? { ...card, position: { x: newX, y: newY } }
-              : card
-          )
-        );
-      }
+        // Continue pinch - update position
+        if (isPinching) {
+          const grabbed = newGrabbedCards.get(handIndex);
+          if (grabbed) {
+            const newX = Math.max(5, Math.min(95, handX - grabbed.offsetX));
+            const newY = Math.max(5, Math.min(90, handY - grabbed.offsetY));
+            
+            setCards(prev =>
+              prev.map(card =>
+                card.id === grabbed.id
+                  ? { ...card, position: { x: newX, y: newY } }
+                  : card
+              )
+            );
+          }
+        }
 
-      // Release pinch - drop card
-      if (!isPinching && lastPinchRef.current && grabbedCard) {
-        setGrabbedCard(null);
-        toast({
-          title: "Card Released",
-          description: "Dropped at new position",
-          duration: 1500,
-        });
-      }
+        // Release pinch - drop card
+        if (!isPinching && wasPinching) {
+          const grabbed = newGrabbedCards.get(handIndex);
+          if (grabbed) {
+            newGrabbedCards.delete(handIndex);
+            hasChanges = true;
+            toast({
+              title: "Card Released",
+              description: `Hand ${handIndex + 1} dropped card`,
+              duration: 1000,
+            });
+          }
+        }
 
-      lastPinchRef.current = isPinching;
+        lastPinchStates.current.set(handIndex, isPinching);
+      });
+
+      if (hasChanges) {
+        setGrabbedCards(newGrabbedCards);
+      }
     };
 
-    // Use RAF for smooth updates
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
@@ -138,7 +176,7 @@ const Index = () => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [handPosition, gestureState, grabbedCard, cards, toast]);
+  }, [handPositions, gestureStates, grabbedCards, cards, toast]);
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
@@ -203,48 +241,68 @@ const Index = () => {
             <div className="fixed top-4 left-4 glass-panel px-4 py-3 rounded-lg z-50">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${handPosition ? 'bg-primary' : 'bg-muted'} animate-pulse`} />
+                  <div className={`w-3 h-3 rounded-full ${handPositions.length > 0 ? 'bg-primary' : 'bg-muted'} animate-pulse`} />
                   <span className="text-sm font-mono text-foreground font-bold">
-                    {handPosition ? 'HAND DETECTED ✓' : 'NO HAND - SHOW YOUR HAND'}
+                    {handPositions.length > 0 
+                      ? `${handPositions.length} HAND${handPositions.length > 1 ? 'S' : ''} DETECTED ✓` 
+                      : 'NO HANDS - SHOW YOUR HANDS'}
                   </span>
                 </div>
                 {landmarks && landmarks.length > 0 && (
                   <div className="text-xs font-mono text-primary">
-                    Landmarks: {landmarks[0]?.length || 0} points tracked
+                    {landmarks.map((_: any, i: number) => (
+                      <div key={i}>Hand {i + 1}: {landmarks[i]?.length || 0} points</div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Interactive draggable cards */}
-            {cards.map((card) => (
-              <InteractiveCard
-                key={card.id}
-                title={card.title}
-                description={card.description}
-                position={card.position}
-                handPosition={handPosition}
-                gestureState={gestureState}
-                onInteract={() => {}}
-                isBeingDragged={grabbedCard?.id === card.id}
-              />
-            ))}
+            {/* Interactive draggable cards with z-index */}
+            {cards
+              .sort((a, b) => a.zIndex - b.zIndex)
+              .map((card) => {
+                const isBeingDragged = Array.from(grabbedCards.values()).some(g => g.id === card.id);
+                const handIndex = Array.from(grabbedCards.entries()).find(([_, g]) => g.id === card.id)?.[0];
+                const handPos = handIndex !== undefined ? handPositions[handIndex] : null;
+                const gesture = handIndex !== undefined ? gestureStates[handIndex] : null;
+                
+                return (
+                  <InteractiveCard
+                    key={card.id}
+                    title={card.title}
+                    description={card.description}
+                    position={card.position}
+                    zIndex={card.zIndex}
+                    handPosition={handPos}
+                    gestureState={gesture || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0 }}
+                    onInteract={() => {}}
+                    isBeingDragged={isBeingDragged}
+                  />
+                );
+              })}
 
             {/* Center info */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-full border border-primary/30">
               <p className="text-sm font-mono text-muted-foreground">
-                {gestureState.isPinching ? (
-                  <span className="text-secondary">🤏 Pinching - Click Active</span>
-                ) : handPosition ? (
-                  <span className="text-primary">👆 Pointing - Move to Navigate</span>
+                {gestureStates.some(g => g.isPinching) ? (
+                  <span className="text-secondary">🤏 Pinching - {gestureStates.filter(g => g.isPinching).length} hand(s) active</span>
+                ) : handPositions.length > 0 ? (
+                  <span className="text-primary">👆 {handPositions.length} hand(s) detected - Pinch to grab cards</span>
                 ) : (
-                  <span>🖐️ Show your hand to the camera</span>
+                  <span>🖐️ Show your hands to the camera</span>
                 )}
               </p>
             </div>
 
-            {/* Hand cursor */}
-            <HandCursor position={handPosition} gestureState={gestureState} />
+            {/* Hand cursors for each hand */}
+            {handPositions.map((pos, index) => (
+              <HandCursor
+                key={index}
+                position={pos}
+                gestureState={gestureStates[index] || { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: index }}
+              />
+            ))}
           </div>
         )}
       </div>

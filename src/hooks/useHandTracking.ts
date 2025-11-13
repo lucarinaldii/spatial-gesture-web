@@ -5,27 +5,30 @@ export interface HandPosition {
   x: number;
   y: number;
   z: number;
+  handIndex: number; // 0 or 1 for left/right hand
 }
 
 export interface GestureState {
   isPinching: boolean;
   isPointing: boolean;
   pinchStrength: number;
+  handIndex: number;
 }
 
 export const useHandTracking = () => {
   const [isReady, setIsReady] = useState(false);
-  const [handPosition, setHandPosition] = useState<HandPosition | null>(null);
-  const [gestureState, setGestureState] = useState<GestureState>({
-    isPinching: false,
-    isPointing: true,
-    pinchStrength: 0,
-  });
+  const [handPositions, setHandPositions] = useState<HandPosition[]>([]);
+  const [gestureStates, setGestureStates] = useState<GestureState[]>([]);
   const [landmarks, setLandmarks] = useState<any>(null);
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
   const animationFrameRef = useRef<number>();
+  const lastPositionsRef = useRef<HandPosition[]>([]);
+  
+  // Smoothing parameters
+  const SMOOTHING_FACTOR = 0.3; // Lower = smoother but more lag
+  const MOVEMENT_THRESHOLD = 0.005; // Minimum movement to register
 
   const calculateDistance = (point1: any, point2: any) => {
     const dx = point1.x - point2.x;
@@ -34,43 +37,78 @@ export const useHandTracking = () => {
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
   };
 
+  const smoothPosition = (newPos: HandPosition, lastPos: HandPosition | undefined): HandPosition => {
+    if (!lastPos) return newPos;
+    
+    const dx = newPos.x - lastPos.x;
+    const dy = newPos.y - lastPos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // If movement is too small, don't update (deadzone)
+    if (distance < MOVEMENT_THRESHOLD) {
+      return lastPos;
+    }
+    
+    // Apply smoothing
+    return {
+      x: lastPos.x + dx * SMOOTHING_FACTOR,
+      y: lastPos.y + dy * SMOOTHING_FACTOR,
+      z: lastPos.z + (newPos.z - lastPos.z) * SMOOTHING_FACTOR,
+      handIndex: newPos.handIndex,
+    };
+  };
+
   const detectGestures = useCallback((result: HandLandmarkerResult) => {
     if (result.landmarks && result.landmarks.length > 0) {
-      const hand = result.landmarks[0];
+      const newPositions: HandPosition[] = [];
+      const newGestures: GestureState[] = [];
       
-      console.log('✓ Hand detected! Landmarks:', hand.length);
+      // Process each detected hand (up to 2)
+      for (let i = 0; i < Math.min(result.landmarks.length, 2); i++) {
+        const hand = result.landmarks[i];
+        
+        // Index finger tip (landmark 8)
+        const indexTip = hand[8];
+        
+        // Thumb tip (landmark 4)
+        const thumbTip = hand[4];
+        
+        // Calculate pinch distance
+        const pinchDistance = calculateDistance(indexTip, thumbTip);
+        const pinchThreshold = 0.05;
+        
+        const isPinching = pinchDistance < pinchThreshold;
+        const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / pinchThreshold)));
+        
+        // Create raw position (mirrored for natural movement)
+        const rawPosition: HandPosition = {
+          x: 1 - indexTip.x,
+          y: indexTip.y,
+          z: indexTip.z || 0,
+          handIndex: i,
+        };
+        
+        // Apply smoothing
+        const smoothedPosition = smoothPosition(rawPosition, lastPositionsRef.current[i]);
+        
+        newPositions.push(smoothedPosition);
+        newGestures.push({
+          isPinching,
+          isPointing: true,
+          pinchStrength,
+          handIndex: i,
+        });
+      }
       
-      // Index finger tip (landmark 8)
-      const indexTip = hand[8];
-      
-      // Thumb tip (landmark 4)
-      const thumbTip = hand[4];
-      
-      // Calculate pinch distance
-      const pinchDistance = calculateDistance(indexTip, thumbTip);
-      const pinchThreshold = 0.05;
-      
-      const isPinching = pinchDistance < pinchThreshold;
-      const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / pinchThreshold)));
-      
-      // Update hand position (index finger tip) - mirror x coordinate
-      setHandPosition({
-        x: 1 - indexTip.x, // Mirror horizontally for natural movement
-        y: indexTip.y,
-        z: indexTip.z || 0,
-      });
-
-      setGestureState({
-        isPinching,
-        isPointing: true,
-        pinchStrength,
-      });
-
+      lastPositionsRef.current = newPositions;
+      setHandPositions(newPositions);
+      setGestureStates(newGestures);
       setLandmarks(result.landmarks);
     } else {
-      console.log('✗ No hand detected');
-      setHandPosition(null);
+      setHandPositions([]);
+      setGestureStates([]);
       setLandmarks(null);
+      lastPositionsRef.current = [];
     }
   }, []);
 
@@ -163,7 +201,7 @@ export const useHandTracking = () => {
             delegate: 'GPU',
           },
           runningMode: 'VIDEO',
-          numHands: 1,
+          numHands: 2, // Track up to 2 hands
           minHandDetectionConfidence: 0.3,
           minHandPresenceConfidence: 0.3,
           minTrackingConfidence: 0.3,
@@ -195,8 +233,8 @@ export const useHandTracking = () => {
 
   return {
     isReady,
-    handPosition,
-    gestureState,
+    handPositions,
+    gestureStates,
     landmarks,
     videoRef,
     startCamera,
