@@ -562,10 +562,14 @@ const Index = () => {
             const card2 = objects.find(o => o.id === obj1.id);
             
             if (card1 && card2 && card1.position && card2.position) {
-              const pos1X = card1.position.x + canvasOffset.x;
-              const pos1Y = card1.position.y + canvasOffset.y;
-              const pos2X = card2.position.x + canvasOffset.x;
-              const pos2Y = card2.position.y + canvasOffset.y;
+              // Ensure positions are valid objects with x and y properties
+              const safePos1 = card1.position || { x: 50, y: 50 };
+              const safePos2 = card2.position || { x: 50, y: 50 };
+              
+              const pos1X = safePos1.x + canvasOffset.x;
+              const pos1Y = safePos1.y + canvasOffset.y;
+              const pos2X = safePos2.x + canvasOffset.x;
+              const pos2Y = safePos2.y + canvasOffset.y;
               const distance = Math.sqrt(Math.pow(pos2X - pos1X, 2) + Math.pow(pos2Y - pos1Y, 2));
               
               const MERGE_THRESHOLD = 15; // Distance to trigger merge
@@ -582,8 +586,8 @@ const Index = () => {
                   description: 'Merged card',
                   fileUrl: card1.fileUrl,
                   position: {
-                    x: (card1.position.x + card2.position.x) / 2,
-                    y: (card1.position.y + card2.position.y) / 2,
+                    x: (safePos1.x + safePos2.x) / 2,
+                    y: (safePos1.y + safePos2.y) / 2,
                   },
                   zIndex: maxZIndexRef.current,
                   rotation: { x: 0, y: 0, z: 0 },
@@ -696,13 +700,28 @@ const Index = () => {
       if (hasTouchChanges) touchedObjects.current = newTouchedObjects;
       if (scaleUpdate) setObjectScales(prev => { const n = new Map(prev); n.set(scaleUpdate.id, scaleUpdate.scale); return n; });
       if (objectUpdates.size > 0) setObjects(prev => prev.map(obj => { 
-        const u = objectUpdates.get(obj.id); 
-        if (!u) return obj;
+        const u = objectUpdates.get(obj.id);
         
-        // Ensure position and velocity always have valid values
-        const newPosition = u.position || obj.position || { x: 50, y: 50 };
-        const newRotation = u.rotation || obj.rotation || { x: 0, y: 0, z: 0 };
-        const newVelocity = obj.velocity || { x: 0, y: 0 };
+        // ALWAYS ensure position, rotation, and velocity have valid values
+        // Even for objects without updates, to prevent null reference errors
+        const currentPosition = obj.position || { x: 50, y: 50 };
+        const currentRotation = obj.rotation || { x: 0, y: 0, z: 0 };
+        const currentVelocity = obj.velocity || { x: 0, y: 0 };
+        
+        if (!u) {
+          // No update, but ensure object has valid position/rotation/velocity
+          return {
+            ...obj,
+            position: currentPosition,
+            rotation: currentRotation,
+            velocity: currentVelocity
+          };
+        }
+        
+        // Update exists, merge with guaranteed valid values
+        const newPosition = u.position || currentPosition;
+        const newRotation = u.rotation || currentRotation;
+        const newVelocity = currentVelocity; // Keep existing velocity
         
         return { 
           ...obj, 
