@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
 import HandSkeleton from '@/components/HandSkeleton';
@@ -110,7 +110,7 @@ const Index = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleRestart = () => {
+  const handleRestart = useCallback(() => {
     // Reset to initial cards
     setObjects([
       {
@@ -158,7 +158,7 @@ const Index = () => {
     baseAngleRef.current.clear();
     
     toast({ title: "Session restarted", description: "Canvas and objects reset" });
-  };
+  }, [toast]);
 
   // Hand gesture detection for import button
   useEffect(() => {
@@ -220,7 +220,7 @@ const Index = () => {
     
     setIsRestartButtonHovered(isHovering);
     lastRestartButtonPinchState.current = isPinching;
-  }, [handPositions, gestureStates, isTracking]);
+  }, [handPositions, gestureStates, isTracking, handleRestart]);
 
   useEffect(() => {
     if (handPositions.length === 0) {
@@ -408,7 +408,9 @@ const Index = () => {
         ) : (
           <div className="relative min-h-screen">
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
-            <div className="fixed top-4 right-4 z-50 flex gap-3">
+            
+            {/* Bottom center buttons */}
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-3">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
               <Button 
                 ref={restartButtonRef}
