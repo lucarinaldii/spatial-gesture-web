@@ -55,6 +55,7 @@ const createPlaceholderHandLandmarks = (hand: 'Left' | 'Right') => {
 
 const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
+  const [hasStartedTracking, setHasStartedTracking] = useState(false);
   const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
   
@@ -149,6 +150,7 @@ const Index = () => {
 
   const handleStartTracking = async () => {
     setIsTracking(true);
+    setHasStartedTracking(true);
     setTimeout(async () => { await startCamera(); }, 200);
   };
 
@@ -943,8 +945,8 @@ const Index = () => {
             </div>
             {show3DHand && (
               <>
-                {/* Show placeholder hands when not tracking or no hands detected */}
-                {(!isTracking || !landmarks || landmarks.length === 0) && (
+                {/* Show placeholder hands only before tracking starts */}
+                {!hasStartedTracking && (
                   <div className="fixed top-0 left-0 right-0 pointer-events-none opacity-50 flex flex-col items-center pt-8 animate-float">
                     <div className="relative w-full h-64">
                       <Hand3DModel 
