@@ -89,11 +89,10 @@ const Index = () => {
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [alignmentParams, setAlignmentParams] = useState<AlignmentParams>({
-    skeletonScale: 0.55,
-    hand3DScale: 0.55,
-    hand3DXOffset: 0,
-    hand3DYOffset: 0,
-    hand3DZDepth: 3,
+    scale: 0.55,
+    xOffset: 0,
+    yOffset: 0,
+    zDepth: 3,
     skeletonZDepth: 0.3,
   });
 
