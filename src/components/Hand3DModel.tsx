@@ -238,7 +238,7 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
         }}
         shadows
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
+        <PerspectiveCamera makeDefault position={[0, 0, 15]} fov={63} />
         
         {/* Soft, natural lighting for skin-like appearance with shadows */}
         <ambientLight intensity={0.8} />
