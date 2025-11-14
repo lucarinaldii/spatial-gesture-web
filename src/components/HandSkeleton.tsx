@@ -68,7 +68,10 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
       const scaleFactor = handParams.skeletonScale;
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      ctx.translate(centerX + handParams.skeletonXOffset * 50, centerY + handParams.skeletonYOffset * 50);
+      // Use percentage-based offsets relative to viewport dimensions
+      const xOffset = (handParams.skeletonXOffset / 100) * window.innerWidth;
+      const yOffset = (handParams.skeletonYOffset / 100) * window.innerHeight;
+      ctx.translate(centerX + xOffset, centerY + yOffset);
       ctx.scale(scaleFactor, scaleFactor);
       ctx.translate(-centerX, -centerY);
       

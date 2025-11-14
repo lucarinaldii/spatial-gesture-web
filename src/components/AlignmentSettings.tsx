@@ -68,14 +68,14 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label className="text-xs">X Offset</Label>
-                <span className="text-xs text-muted-foreground font-mono">{params.leftHand.skeletonXOffset.toFixed(2)}</span>
+                <Label className="text-xs">X Offset (%)</Label>
+                <span className="text-xs text-muted-foreground font-mono">{params.leftHand.skeletonXOffset.toFixed(1)}%</span>
               </div>
               <Slider
                 value={[params.leftHand.skeletonXOffset]}
                 onValueChange={([v]) => updateLeftParam('skeletonXOffset', v)}
-                min={-5}
-                max={5}
+                min={-10}
+                max={10}
                 step={0.1}
                 className="w-full"
               />
@@ -83,14 +83,14 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label className="text-xs">Y Offset</Label>
-                <span className="text-xs text-muted-foreground font-mono">{params.leftHand.skeletonYOffset.toFixed(2)}</span>
+                <Label className="text-xs">Y Offset (%)</Label>
+                <span className="text-xs text-muted-foreground font-mono">{params.leftHand.skeletonYOffset.toFixed(1)}%</span>
               </div>
               <Slider
                 value={[params.leftHand.skeletonYOffset]}
                 onValueChange={([v]) => updateLeftParam('skeletonYOffset', v)}
-                min={-5}
-                max={5}
+                min={-10}
+                max={10}
                 step={0.1}
                 className="w-full"
               />
@@ -130,14 +130,14 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label className="text-xs">X Offset</Label>
-                <span className="text-xs text-muted-foreground font-mono">{params.leftHand.hand3DXOffset.toFixed(2)}</span>
+                <Label className="text-xs">X Offset (%)</Label>
+                <span className="text-xs text-muted-foreground font-mono">{params.leftHand.hand3DXOffset.toFixed(1)}%</span>
               </div>
               <Slider
                 value={[params.leftHand.hand3DXOffset]}
                 onValueChange={([v]) => updateLeftParam('hand3DXOffset', v)}
-                min={-5}
-                max={5}
+                min={-15}
+                max={15}
                 step={0.1}
                 className="w-full"
               />
@@ -145,14 +145,14 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label className="text-xs">Y Offset</Label>
-                <span className="text-xs text-muted-foreground font-mono">{params.leftHand.hand3DYOffset.toFixed(2)}</span>
+                <Label className="text-xs">Y Offset (%)</Label>
+                <span className="text-xs text-muted-foreground font-mono">{params.leftHand.hand3DYOffset.toFixed(1)}%</span>
               </div>
               <Slider
                 value={[params.leftHand.hand3DYOffset]}
                 onValueChange={([v]) => updateLeftParam('hand3DYOffset', v)}
-                min={-5}
-                max={5}
+                min={-15}
+                max={15}
                 step={0.1}
                 className="w-full"
               />
@@ -199,14 +199,14 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label className="text-xs">X Offset</Label>
-                <span className="text-xs text-muted-foreground font-mono">{params.rightHand.skeletonXOffset.toFixed(2)}</span>
+                <Label className="text-xs">X Offset (%)</Label>
+                <span className="text-xs text-muted-foreground font-mono">{params.rightHand.skeletonXOffset.toFixed(1)}%</span>
               </div>
               <Slider
                 value={[params.rightHand.skeletonXOffset]}
                 onValueChange={([v]) => updateRightParam('skeletonXOffset', v)}
-                min={-5}
-                max={5}
+                min={-10}
+                max={10}
                 step={0.1}
                 className="w-full"
               />
@@ -214,14 +214,14 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label className="text-xs">Y Offset</Label>
-                <span className="text-xs text-muted-foreground font-mono">{params.rightHand.skeletonYOffset.toFixed(2)}</span>
+                <Label className="text-xs">Y Offset (%)</Label>
+                <span className="text-xs text-muted-foreground font-mono">{params.rightHand.skeletonYOffset.toFixed(1)}%</span>
               </div>
               <Slider
                 value={[params.rightHand.skeletonYOffset]}
                 onValueChange={([v]) => updateRightParam('skeletonYOffset', v)}
-                min={-5}
-                max={5}
+                min={-10}
+                max={10}
                 step={0.1}
                 className="w-full"
               />
@@ -261,14 +261,14 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label className="text-xs">X Offset</Label>
-                <span className="text-xs text-muted-foreground font-mono">{params.rightHand.hand3DXOffset.toFixed(2)}</span>
+                <Label className="text-xs">X Offset (%)</Label>
+                <span className="text-xs text-muted-foreground font-mono">{params.rightHand.hand3DXOffset.toFixed(1)}%</span>
               </div>
               <Slider
                 value={[params.rightHand.hand3DXOffset]}
                 onValueChange={([v]) => updateRightParam('hand3DXOffset', v)}
-                min={-5}
-                max={5}
+                min={-15}
+                max={15}
                 step={0.1}
                 className="w-full"
               />
@@ -276,14 +276,14 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label className="text-xs">Y Offset</Label>
-                <span className="text-xs text-muted-foreground font-mono">{params.rightHand.hand3DYOffset.toFixed(2)}</span>
+                <Label className="text-xs">Y Offset (%)</Label>
+                <span className="text-xs text-muted-foreground font-mono">{params.rightHand.hand3DYOffset.toFixed(1)}%</span>
               </div>
               <Slider
                 value={[params.rightHand.hand3DYOffset]}
                 onValueChange={([v]) => updateRightParam('hand3DYOffset', v)}
-                min={-5}
-                max={5}
+                min={-15}
+                max={15}
                 step={0.1}
                 className="w-full"
               />

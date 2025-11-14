@@ -93,22 +93,22 @@ const Index = () => {
   const defaultAlignmentParams: AlignmentParams = {
     leftHand: {
       skeletonScale: 0.85,
-      skeletonXOffset: -1.0,
-      skeletonYOffset: 0.0,
+      skeletonXOffset: -2.0, // Percentage of viewport width
+      skeletonYOffset: 0.0,  // Percentage of viewport height
       skeletonZDepth: 0.85,
       hand3DScale: 1.25,
-      hand3DXOffset: -0.80,
+      hand3DXOffset: -1.6,   // Percentage-based offset
       hand3DYOffset: 0.0,
       hand3DZDepth: 1.0,
     },
     rightHand: {
       skeletonScale: 0.85,
-      skeletonXOffset: -2.5,
-      skeletonYOffset: 1.8,
+      skeletonXOffset: -5.0, // Percentage of viewport width
+      skeletonYOffset: 3.6,  // Percentage of viewport height
       skeletonZDepth: 0.65,
       hand3DScale: 1.21,
-      hand3DXOffset: 2.70,
-      hand3DYOffset: -1.0,
+      hand3DXOffset: 5.4,    // Percentage-based offset
+      hand3DYOffset: -2.0,
       hand3DZDepth: 1.0,
     },
   };
@@ -894,11 +894,10 @@ const Index = () => {
                   const isLeftHand = thumb.x > pinky.x;
                   const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
                   
-                  // Convert skeleton offset from pixel space to percentage space
-                  // Offset in pixels: skeletonXOffset * 50, skeletonYOffset * 50
-                  // Convert to percentage: (offset / dimension) * 100
-                  const offsetXPercent = (handParams.skeletonXOffset * 50 / window.innerWidth) * 100;
-                  const offsetYPercent = (handParams.skeletonYOffset * 50 / window.innerHeight) * 100;
+                  // Offset is already in percentage, just apply it directly
+                  // Convert from viewport percentage to screen percentage
+                  const offsetXPercent = (handParams.skeletonXOffset / window.innerWidth) * 100;
+                  const offsetYPercent = (handParams.skeletonYOffset / window.innerHeight) * 100;
                   
                   adjustedHandPosition = {
                     ...adjustedHandPosition,

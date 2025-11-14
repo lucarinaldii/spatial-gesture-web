@@ -132,11 +132,14 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, isLeftHand }: 
   // Convert landmarks using hand-specific alignment params
   const vectors = landmarks.map(lm => {
     // Map normalized coordinates (0-1) to screen space
-    // Use hand-specific alignment params
+    // Use hand-specific alignment params with viewport-responsive multiplier
     const scaleFactor = handParams.hand3DScale;
-    // Apply hand-specific positioning with offsets
-    const x = (1 - lm.x - 0.5) * 15 * scaleFactor + handParams.hand3DXOffset;
-    const y = -(lm.y - 0.5) * 15 * scaleFactor + handParams.hand3DYOffset;
+    const baseSize = Math.min(window.innerWidth, window.innerHeight) / 100;
+    // Apply hand-specific positioning with percentage-based offsets
+    const xOffset = (handParams.hand3DXOffset / 100) * window.innerWidth * 0.1;
+    const yOffset = (handParams.hand3DYOffset / 100) * window.innerHeight * 0.1;
+    const x = (1 - lm.x - 0.5) * baseSize * 1.5 * scaleFactor + xOffset;
+    const y = -(lm.y - 0.5) * baseSize * 1.5 * scaleFactor + yOffset;
     const z = -lm.z * handParams.hand3DZDepth;
     return new THREE.Vector3(x, y, z);
   });
