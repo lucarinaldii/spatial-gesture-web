@@ -602,20 +602,36 @@ const Index = () => {
               }
             }
           } else if (obj0 && obj1 && obj0.id === obj1.id && handPositions.length === 2 && handPositions[0] && handPositions[1]) {
-            // Two hands grabbing the same card - check for splitting
+            // Two hands grabbing the same card - zoom based on hand distance
             const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
             const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
             const distance = Math.sqrt(Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2));
+            
+            // Track initial distance for zoom
+            const scaleKey = `${obj0.id}_zoom`;
+            if (!baseDistanceRef.current.has(scaleKey)) {
+              baseDistanceRef.current.set(scaleKey, distance);
+            }
+            
+            const initialDistance = baseDistanceRef.current.get(scaleKey)!;
+            
+            // Calculate scale based on distance change (0.5x to 3x zoom)
+            const scaleFactor = Math.max(0.5, Math.min(3, distance / initialDistance));
+            setObjectScales(prev => {
+              const next = new Map(prev);
+              next.set(obj0.id, scaleFactor);
+              return next;
+            });
             
             // Track initial distance for split detection
             if (!splitDistanceRef.current.has(obj0.id)) {
               splitDistanceRef.current.set(obj0.id, distance);
             }
             
-            const initialDistance = splitDistanceRef.current.get(obj0.id)!;
-            const SPLIT_THRESHOLD = 15; // Distance increase needed to trigger split
+            const splitInitialDistance = splitDistanceRef.current.get(obj0.id)!;
+            const SPLIT_THRESHOLD = 25; // Increased threshold since we have zoom now
             
-            if (distance > initialDistance + SPLIT_THRESHOLD && !splittingCards.has(obj0.id)) {
+            if (distance > splitInitialDistance + SPLIT_THRESHOLD && !splittingCards.has(obj0.id)) {
               // Split the card into two
               const currentObj = objects.find(o => o.id === obj0.id);
               if (currentObj) {
@@ -662,6 +678,7 @@ const Index = () => {
                 
                 splitDistanceRef.current.delete(obj0.id);
                 baseDistanceRef.current.delete(obj0.id);
+                baseDistanceRef.current.delete(`${obj0.id}_zoom`);
                 baseAngleRef.current.delete(obj0.id);
                 
                 setTimeout(() => {
@@ -800,6 +817,7 @@ const Index = () => {
                 newGrabbedObjects.delete(handIndex);
                 hasChanges = true;
                 baseDistanceRef.current.delete(grabbed.id);
+                baseDistanceRef.current.delete(`${grabbed.id}_zoom`);
                 baseAngleRef.current.delete(grabbed.id);
                 splitDistanceRef.current.delete(grabbed.id);
                 handVelocityHistoryRef.current.delete(handIndex);
@@ -812,6 +830,7 @@ const Index = () => {
             hasChanges = true;
             if (!Array.from(newGrabbedObjects.values()).some(g => g.id === grabbed.id)) {
               baseDistanceRef.current.delete(grabbed.id);
+              baseDistanceRef.current.delete(`${grabbed.id}_zoom`);
               baseAngleRef.current.delete(grabbed.id);
               splitDistanceRef.current.delete(grabbed.id);
               
