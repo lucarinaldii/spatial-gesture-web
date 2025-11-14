@@ -44,17 +44,12 @@ interface Hand3DModelProps {
   videoHeight: number;
   alignmentParams: AlignmentParams;
   handedness?: any; // MediaPipe handedness data
-  grabbedObjects?: Map<number, { id: string; offsetX: number; offsetY: number; }>;
-  handPositions?: Array<{ x: number; y: number; z: number }>;
 }
 
 interface HandModelProps {
   landmarks: NormalizedLandmark[];
   handIndex: number;
-  alignmentParams: AlignmentParams;
-  handParams: AlignmentParams['leftHand']; // Use interpolated params
-  isGrabbing?: boolean;
-  handZ?: number;
+  handParams: AlignmentParams['leftHand'];
 }
 
 // Create a smooth finger segment using capsule-like geometry - flatter and more human
@@ -154,73 +149,27 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
 }
 
 // Smooth, realistic hand model
-function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, isGrabbing, handZ }: HandModelProps) {
+function SmoothHandModel({ landmarks, handIndex, handParams }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const baseZRef = useRef<number | null>(null);
-  const currentScaleRef = useRef<number>(1);
-  const targetScaleRef = useRef<number>(1);
-  const releaseTimeRef = useRef<number>(0);
-  const wasGrabbingRef = useRef<boolean>(false);
   
   // Validate all landmarks exist before processing
   if (!landmarks || landmarks.length < 21 || landmarks.some(lm => !lm || lm.x === undefined)) {
     return null;
   }
   
-  // Use provided interpolated params directly
+  // Convert landmarks using hand-specific alignment params (optimized calculation)
+  const scaleFactor = handParams.hand3DScale;
+  const baseSize = Math.min(window.innerWidth, window.innerHeight) / 100;
+  const xOffset = (handParams.hand3DXOffset / 100) * window.innerWidth * 0.1;
+  const yOffset = (handParams.hand3DYOffset / 100) * window.innerHeight * 0.1;
+  const scale = baseSize * 1.5 * scaleFactor;
+  const zDepth = handParams.hand3DZDepth;
   
-  // Calculate inverse scale ONLY when actively grabbing a card
-  let targetScale = 1;
-  if (isGrabbing && handZ !== undefined) {
-    // Store initial z when grabbing starts (first frame of grab)
-    if (!wasGrabbingRef.current) {
-      baseZRef.current = handZ;
-      releaseTimeRef.current = 0;
-      wasGrabbingRef.current = true;
-    }
-    
-    // Calculate inverse scale: closer to camera (more negative z) = smaller hand
-    const zDiff = handZ - (baseZRef.current || handZ);
-    // When zDiff is negative (moving closer to camera), scale decreases
-    // When zDiff is positive (moving away from camera), scale increases
-    targetScale = Math.max(0.2, Math.min(3, 1 + zDiff * 8));
-    targetScaleRef.current = targetScale;
-  } else {
-    // Card released
-    if (wasGrabbingRef.current) {
-      // Start delay timer on first frame after release
-      releaseTimeRef.current = Date.now();
-      wasGrabbingRef.current = false;
-    }
-    
-    // Add 500ms delay before returning to normal size
-    const timeSinceRelease = releaseTimeRef.current > 0 ? Date.now() - releaseTimeRef.current : 0;
-    if (timeSinceRelease > 500) {
-      baseZRef.current = null;
-      releaseTimeRef.current = 0;
-      targetScaleRef.current = 1;
-    }
-    targetScale = targetScaleRef.current;
-  }
-  
-  // Smooth lerp towards target scale (0.15 = smooth transition)
-  const grabScaleFactor = THREE.MathUtils.lerp(currentScaleRef.current, targetScale, 0.15);
-  currentScaleRef.current = grabScaleFactor;
-  
-  // Convert landmarks using hand-specific alignment params
-  const vectors = landmarks.map(lm => {
-    // Map normalized coordinates (0-1) to screen space
-    // Use hand-specific alignment params with viewport-responsive multiplier
-    const scaleFactor = handParams.hand3DScale * grabScaleFactor; // Apply grab scale
-    const baseSize = Math.min(window.innerWidth, window.innerHeight) / 100;
-    // Apply hand-specific positioning with percentage-based offsets
-    const xOffset = (handParams.hand3DXOffset / 100) * window.innerWidth * 0.1;
-    const yOffset = (handParams.hand3DYOffset / 100) * window.innerHeight * 0.1;
-    const x = (1 - lm.x - 0.5) * baseSize * 1.5 * scaleFactor + xOffset;
-    const y = -(lm.y - 0.5) * baseSize * 1.5 * scaleFactor + yOffset;
-    const z = -lm.z * handParams.hand3DZDepth;
-    return new THREE.Vector3(x, y, z);
-  });
+  const vectors = landmarks.map(lm => new THREE.Vector3(
+    (1 - lm.x - 0.5) * scale + xOffset,
+    -(lm.y - 0.5) * scale + yOffset,
+    -lm.z * zDepth
+  ));
   
   const fingers = [
     { 
@@ -319,7 +268,7 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, is
   );
 }
 
-const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams, handedness, grabbedObjects, handPositions }: Hand3DModelProps) {
+const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams, handedness }: Hand3DModelProps) {
   if (!landmarks || landmarks.length === 0) return null;
   
   return (
@@ -379,19 +328,12 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
           // Use proper params for left or right hand
           const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
           
-          // Check if this hand is grabbing an object
-          const isGrabbing = grabbedObjects ? grabbedObjects.has(index) : false;
-          const handZ = handPositions && handPositions[index] ? handPositions[index].z : undefined;
-          
           return (
             <SmoothHandModel 
               key={`hand-${index}`}
               landmarks={handLandmarks}
               handIndex={index}
-              alignmentParams={alignmentParams}
               handParams={handParams}
-              isGrabbing={isGrabbing}
-              handZ={handZ}
             />
           );
         })}

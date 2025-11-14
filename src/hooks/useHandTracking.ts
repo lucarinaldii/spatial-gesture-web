@@ -41,10 +41,10 @@ export const useHandTracking = () => {
   const lastPinchStatesRef = useRef<boolean[]>([false, false]); // Track previous pinch states
   const lastLandmarksRef = useRef<any>(null); // Store previous landmarks for smoothing
   
-  // Smoothing parameters - adjusted for natural movements
-  const SMOOTHING_FACTOR = 0.5; // Higher = more responsive, lower = smoother
-  const LANDMARK_SMOOTHING = 0.7; // Smoothing for landmark positions (higher = smoother)
-  const MOVEMENT_THRESHOLD = 0.008; // Increased deadzone for stability
+  // Enhanced smoothing parameters for reduced jitter
+  const SMOOTHING_FACTOR = 0.65; // Increased for more responsive but stable tracking
+  const LANDMARK_SMOOTHING = 0.85; // Higher smoothing to reduce jitter
+  const MOVEMENT_THRESHOLD = 0.005; // Smaller deadzone for more responsive tracking
   
   // Pinch detection with hysteresis to prevent jitter
   const PINCH_THRESHOLD_ENTER = 0.05; // Distance to enter pinch state (closer = more precise)
@@ -90,10 +90,19 @@ export const useHandTracking = () => {
         const prev = previousLandmarks[handIndex][landmarkIndex];
         if (!prev) return landmark;
         
+        // Calculate movement distance
+        const dx = landmark.x - prev.x;
+        const dy = landmark.y - prev.y;
+        const dz = landmark.z - prev.z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        
+        // Use adaptive smoothing: more smoothing for small movements
+        const adaptiveFactor = distance < 0.01 ? 0.9 : LANDMARK_SMOOTHING;
+        
         return {
-          x: prev.x + (landmark.x - prev.x) * LANDMARK_SMOOTHING,
-          y: prev.y + (landmark.y - prev.y) * LANDMARK_SMOOTHING,
-          z: prev.z + (landmark.z - prev.z) * LANDMARK_SMOOTHING,
+          x: prev.x + dx * adaptiveFactor,
+          y: prev.y + dy * adaptiveFactor,
+          z: prev.z + dz * adaptiveFactor,
         };
       });
     });

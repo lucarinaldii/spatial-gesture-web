@@ -1217,10 +1217,8 @@ const Index = () => {
                     landmarks={landmarks} 
                     videoWidth={window.innerWidth} 
                     videoHeight={window.innerHeight} 
-                    alignmentParams={alignmentParams} 
+                    alignmentParams={alignmentParams}
                     handedness={handedness}
-                    grabbedObjects={grabbedObjects}
-                    handPositions={handPositions}
                   />
                 )}
               </>
