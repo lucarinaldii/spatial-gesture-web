@@ -46,10 +46,18 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Flip context horizontally to match mirrored video
+    // Flip context horizontally to match mirrored video and scale down to match 3D model
     ctx.save();
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
+    
+    // Scale down skeleton to match 3D hand size (0.75 scale factor)
+    const scaleFactor = 0.75;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    ctx.translate(centerX, centerY);
+    ctx.scale(scaleFactor, scaleFactor);
+    ctx.translate(-centerX, -centerY);
 
     landmarks.forEach((hand: any) => {
       console.log('Hand has', hand.length, 'landmarks');
