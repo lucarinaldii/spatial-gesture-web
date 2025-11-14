@@ -71,10 +71,16 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
       HAND_CONNECTIONS.forEach(([start, end]) => {
         const startPoint = hand[start];
         const endPoint = hand[end];
+        
+        // Apply z-depth scaling to match 3D hand positioning
+        const startZ = startPoint.z || 0;
+        const endZ = endPoint.z || 0;
+        const startDepthScale = 1 + startZ * 0.3; // Reduced depth effect
+        const endDepthScale = 1 + endZ * 0.3;
 
         ctx.beginPath();
-        ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
-        ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+        ctx.moveTo(startPoint.x * canvas.width * startDepthScale, startPoint.y * canvas.height * startDepthScale);
+        ctx.lineTo(endPoint.x * canvas.width * endDepthScale, endPoint.y * canvas.height * endDepthScale);
         ctx.stroke();
       });
 
@@ -86,10 +92,12 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
       const fingertips = [4, 8, 12, 16, 20];
       fingertips.forEach(tipIndex => {
         const tip = hand[tipIndex];
+        const tipZ = tip.z || 0;
+        const depthScale = 1 + tipZ * 0.3; // Reduced depth effect
         ctx.beginPath();
         ctx.arc(
-          tip.x * canvas.width,
-          tip.y * canvas.height,
+          tip.x * canvas.width * depthScale,
+          tip.y * canvas.height * depthScale,
           3,
           0,
           2 * Math.PI
@@ -100,10 +108,12 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
       // Draw wrist (smaller)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       const wrist = hand[0];
+      const wristZ = wrist.z || 0;
+      const wristDepthScale = 1 + wristZ * 0.3; // Reduced depth effect
       ctx.beginPath();
       ctx.arc(
-        wrist.x * canvas.width,
-        wrist.y * canvas.height,
+        wrist.x * canvas.width * wristDepthScale,
+        wrist.y * canvas.height * wristDepthScale,
         3,
         0,
         2 * Math.PI
