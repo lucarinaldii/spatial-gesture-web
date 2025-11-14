@@ -709,7 +709,14 @@ const Index = () => {
               handVelocityHistoryRef.current.delete(handIndex);
             }
           }
-          if (newGrabbedObjects.size === 0) {
+          
+          // Only reset canvas drag if ALL hands have stopped pinching
+          const anyHandStillPinching = handPositions.some((_, idx) => {
+            const gesture = gestureStates[idx];
+            return gesture && gesture.isPinching;
+          });
+          
+          if (!anyHandStillPinching && newGrabbedObjects.size === 0) {
             canvasDragStartRef.current = null;
             canvasZoomBaseDistanceRef.current = null;
           }
