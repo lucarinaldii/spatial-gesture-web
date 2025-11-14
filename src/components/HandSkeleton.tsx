@@ -1,6 +1,38 @@
 import { useRef, useEffect } from 'react';
 import { AlignmentParams } from './AlignmentSettings';
 
+// Helper function to interpolate between left and right alignment parameters
+const interpolateAlignmentParams = (
+  leftParams: AlignmentParams['leftHand'],
+  rightParams: AlignmentParams['rightHand'],
+  handCenterX: number
+) => {
+  // Create a smooth blend zone from 0.3 to 0.7
+  const blendZoneStart = 0.3;
+  const blendZoneEnd = 0.7;
+  
+  let blend: number;
+  if (handCenterX < blendZoneStart) {
+    blend = 0; // Full left
+  } else if (handCenterX > blendZoneEnd) {
+    blend = 1; // Full right
+  } else {
+    // Smooth interpolation in the blend zone
+    blend = (handCenterX - blendZoneStart) / (blendZoneEnd - blendZoneStart);
+  }
+  
+  return {
+    skeletonScale: leftParams.skeletonScale * (1 - blend) + rightParams.skeletonScale * blend,
+    skeletonXOffset: leftParams.skeletonXOffset * (1 - blend) + rightParams.skeletonXOffset * blend,
+    skeletonYOffset: leftParams.skeletonYOffset * (1 - blend) + rightParams.skeletonYOffset * blend,
+    skeletonZDepth: leftParams.skeletonZDepth * (1 - blend) + rightParams.skeletonZDepth * blend,
+    hand3DScale: leftParams.hand3DScale * (1 - blend) + rightParams.hand3DScale * blend,
+    hand3DXOffset: leftParams.hand3DXOffset * (1 - blend) + rightParams.hand3DXOffset * blend,
+    hand3DYOffset: leftParams.hand3DYOffset * (1 - blend) + rightParams.hand3DYOffset * blend,
+    hand3DZDepth: leftParams.hand3DZDepth * (1 - blend) + rightParams.hand3DZDepth * blend,
+  };
+};
+
 interface HandSkeletonProps {
   landmarks: any;
   videoWidth: number;
@@ -53,15 +85,17 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
     ctx.translate(-canvas.width, 0);
 
     landmarks.forEach((hand: any, handIndex: number) => {
-      // Use screen position to determine which alignment to use
       // Calculate hand center from wrist (0) and middle finger base (9)
       const handWrist = hand[0];
       const handMiddleMCP = hand[9];
       const handCenterX = (handWrist.x + handMiddleMCP.x) / 2;
       
-      // Apply left-hand alignment when hand is on left side of screen
-      const useLeftAlignment = handCenterX < 0.5;
-      const handParams = useLeftAlignment ? alignmentParams.leftHand : alignmentParams.rightHand;
+      // Get interpolated alignment params for smooth transitions
+      const handParams = interpolateAlignmentParams(
+        alignmentParams.leftHand,
+        alignmentParams.rightHand,
+        handCenterX
+      );
       
       // Apply hand-specific alignment
       ctx.save();
