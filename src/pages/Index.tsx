@@ -857,12 +857,14 @@ const Index = () => {
       const DELETE_ZONE_X = 85; // Bottom right: 85-95%
       const DELETE_ZONE_Y = 75; // Bottom: 75-85%
       
-      // Check grabbed objects (pinch drag)
+      // Check grabbed objects (pinch drag) - use updated positions
       newGrabbedObjects.forEach((grabbed) => {
         const obj = objects.find(o => o.id === grabbed.id);
         if (obj) {
-          const objX = obj.position.x + canvasOffset.x;
-          const objY = obj.position.y + canvasOffset.y;
+          // Use updated position if available, otherwise use current position
+          const update = objectUpdates.get(grabbed.id);
+          const objX = update?.position ? update.position.x + canvasOffset.x : obj.position.x + canvasOffset.x;
+          const objY = update?.position ? update.position.y + canvasOffset.y : obj.position.y + canvasOffset.y;
           
           if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
             isAnyObjectOverDeleteZone = true;
@@ -870,12 +872,14 @@ const Index = () => {
         }
       });
       
-      // Check touched objects (touch drag)
+      // Check touched objects (touch drag) - use updated positions
       newTouchedObjects.forEach((touched) => {
         const obj = objects.find(o => o.id === touched.id);
         if (obj) {
-          const objX = obj.position.x + canvasOffset.x;
-          const objY = obj.position.y + canvasOffset.y;
+          // Use updated position if available, otherwise use current position
+          const update = objectUpdates.get(touched.id);
+          const objX = update?.position ? update.position.x + canvasOffset.x : obj.position.x + canvasOffset.x;
+          const objY = update?.position ? update.position.y + canvasOffset.y : obj.position.y + canvasOffset.y;
           
           if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
             isAnyObjectOverDeleteZone = true;
