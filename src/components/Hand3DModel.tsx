@@ -44,6 +44,8 @@ interface Hand3DModelProps {
   videoHeight: number;
   alignmentParams: AlignmentParams;
   handedness?: any; // MediaPipe handedness data
+  grabbedObjects?: Map<number, { id: string; offsetX: number; offsetY: number; }>;
+  handPositions?: Array<{ x: number; y: number; z: number }>;
 }
 
 interface HandModelProps {
@@ -51,6 +53,8 @@ interface HandModelProps {
   handIndex: number;
   alignmentParams: AlignmentParams;
   handParams: AlignmentParams['leftHand']; // Use interpolated params
+  isGrabbing?: boolean;
+  handZ?: number;
 }
 
 // Create a smooth finger segment using capsule-like geometry - flatter and more human
@@ -150,8 +154,9 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
 }
 
 // Smooth, realistic hand model
-function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: HandModelProps) {
+function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, isGrabbing, handZ }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const baseZRef = useRef<number | null>(null);
   
   // Validate all landmarks exist before processing
   if (!landmarks || landmarks.length < 21 || landmarks.some(lm => !lm || lm.x === undefined)) {
@@ -160,11 +165,28 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: 
   
   // Use provided interpolated params directly
   
+  // Calculate inverse scale when grabbing
+  let grabScaleFactor = 1;
+  if (isGrabbing && handZ !== undefined) {
+    // Store initial z when grabbing starts
+    if (baseZRef.current === null) {
+      baseZRef.current = handZ;
+    }
+    
+    // Calculate inverse scale: closer hand (more negative z) = smaller hand
+    const zDiff = handZ - baseZRef.current;
+    // When hand moves closer (negative zDiff), scale down
+    grabScaleFactor = Math.max(0.3, Math.min(2, 1 - zDiff * 4));
+  } else {
+    // Reset base z when not grabbing
+    baseZRef.current = null;
+  }
+  
   // Convert landmarks using hand-specific alignment params
   const vectors = landmarks.map(lm => {
     // Map normalized coordinates (0-1) to screen space
     // Use hand-specific alignment params with viewport-responsive multiplier
-    const scaleFactor = handParams.hand3DScale;
+    const scaleFactor = handParams.hand3DScale * grabScaleFactor; // Apply grab scale
     const baseSize = Math.min(window.innerWidth, window.innerHeight) / 100;
     // Apply hand-specific positioning with percentage-based offsets
     const xOffset = (handParams.hand3DXOffset / 100) * window.innerWidth * 0.1;
@@ -272,7 +294,7 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: 
   );
 }
 
-const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams, handedness }: Hand3DModelProps) {
+const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams, handedness, grabbedObjects, handPositions }: Hand3DModelProps) {
   if (!landmarks || landmarks.length === 0) return null;
   
   return (
@@ -321,12 +343,16 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
           const middleMCP = handLandmarks[9];
           const handCenterX = (wrist.x + middleMCP.x) / 2;
           
-          // Get interpolated alignment params for smooth transitions
-          const interpolatedParams = interpolateAlignmentParams(
+          // Get interpolated params based on hand position
+          const handParams = interpolateAlignmentParams(
             alignmentParams.leftHand,
             alignmentParams.rightHand,
             handCenterX
           );
+          
+          // Check if this hand is grabbing an object
+          const isGrabbing = grabbedObjects ? grabbedObjects.has(index) : false;
+          const handZ = handPositions && handPositions[index] ? handPositions[index].z : undefined;
           
           return (
             <SmoothHandModel 
@@ -334,7 +360,9 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
               landmarks={handLandmarks}
               handIndex={index}
               alignmentParams={alignmentParams}
-              handParams={interpolatedParams}
+              handParams={handParams}
+              isGrabbing={isGrabbing}
+              handZ={handZ}
             />
           );
         })}
