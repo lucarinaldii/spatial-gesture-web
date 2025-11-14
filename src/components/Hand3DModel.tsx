@@ -243,6 +243,8 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
       style={{ 
         width: videoWidth, 
         height: videoHeight,
+        border: '2px solid red',
+        borderRadius: '8px',
       }}
     >
       <Canvas
