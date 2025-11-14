@@ -92,24 +92,24 @@ const Index = () => {
   
   const defaultAlignmentParams: AlignmentParams = {
     leftHand: {
-      skeletonScale: 0.41,
-      skeletonXOffset: 0.2,
-      skeletonYOffset: 0.4,
-      skeletonZDepth: 0.65,
-      hand3DScale: 0.55,
-      hand3DXOffset: 0,
-      hand3DYOffset: -0.3,
-      hand3DZDepth: 3,
+      skeletonScale: 0.85,
+      skeletonXOffset: -1.00,
+      skeletonYOffset: 0.00,
+      skeletonZDepth: 0.85,
+      hand3DScale: 1.20,
+      hand3DXOffset: -5.00,
+      hand3DYOffset: 0.00,
+      hand3DZDepth: 1.0,
     },
     rightHand: {
-      skeletonScale: 0.46,
-      skeletonXOffset: -0.3,
-      skeletonYOffset: 0,
-      skeletonZDepth: 0,
-      hand3DScale: 0.55,
-      hand3DXOffset: -0.8,
-      hand3DYOffset: 0,
-      hand3DZDepth: 3,
+      skeletonScale: 0.85,
+      skeletonXOffset: -2.50,
+      skeletonYOffset: 1.80,
+      skeletonZDepth: 0.65,
+      hand3DScale: 1.20,
+      hand3DXOffset: 5.00,
+      hand3DYOffset: -1.00,
+      hand3DZDepth: 1.0,
     },
   };
   
@@ -884,7 +884,30 @@ const Index = () => {
                 const handIndex = Array.from(grabbedObjects.entries()).find(([_, g]) => g.id === obj.id)?.[0];
                 const isMerging = mergingCards.has(obj.id);
                 const isSplitting = splittingCards.has(obj.id);
-                return <InteractiveObject key={obj.id} id={obj.id} type={obj.type} title={obj.title} description={obj.description} fileUrl={obj.fileUrl} position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} rotation={obj.rotation} zIndex={obj.zIndex} handPosition={handIndex !== undefined ? handPositions[handIndex] : null} gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} onInteract={() => {}} isBeingDragged={isBeingDragged} scale={objectScales.get(obj.id) || 1} isMerging={isMerging} isSplitting={isSplitting} />;
+                
+                // Apply alignment offset to hand position for accurate interaction
+                let adjustedHandPosition = handIndex !== undefined ? handPositions[handIndex] : null;
+                if (adjustedHandPosition && landmarks && landmarks[handIndex]) {
+                  const hand = landmarks[handIndex];
+                  const thumb = hand[4];
+                  const pinky = hand[17];
+                  const isLeftHand = thumb.x > pinky.x;
+                  const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
+                  
+                  // Convert skeleton offset from pixel space to percentage space
+                  // Offset in pixels: skeletonXOffset * 50, skeletonYOffset * 50
+                  // Convert to percentage: (offset / dimension) * 100
+                  const offsetXPercent = (handParams.skeletonXOffset * 50 / window.innerWidth) * 100;
+                  const offsetYPercent = (handParams.skeletonYOffset * 50 / window.innerHeight) * 100;
+                  
+                  adjustedHandPosition = {
+                    ...adjustedHandPosition,
+                    x: adjustedHandPosition.x + offsetXPercent,
+                    y: adjustedHandPosition.y + offsetYPercent,
+                  };
+                }
+                
+                return <InteractiveObject key={obj.id} id={obj.id} type={obj.type} title={obj.title} description={obj.description} fileUrl={obj.fileUrl} position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} rotation={obj.rotation} zIndex={obj.zIndex} handPosition={adjustedHandPosition} gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} onInteract={() => {}} isBeingDragged={isBeingDragged} scale={objectScales.get(obj.id) || 1} isMerging={isMerging} isSplitting={isSplitting} />;
               })}
             </div>
             {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
