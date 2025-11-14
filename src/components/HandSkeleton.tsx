@@ -57,11 +57,16 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
     landmarks.forEach((hand: any, handIndex: number) => {
       console.log('Hand has', hand.length, 'landmarks');
       
-      // Determine if this is left or right hand
-      const isLeftHand = handedness && handedness[handIndex] && 
-                         handedness[handIndex][0] && 
-                         handedness[handIndex][0].categoryName === 'Left';
+      // Manually detect left/right hand by thumb position
+      // Thumb landmark is 4, pinky base is 17
+      const thumb = hand[4];
+      const pinky = hand[17];
+      // If thumb is to the right of pinky, it's a left hand (palm facing camera)
+      // If thumb is to the left of pinky, it's a right hand (palm facing camera)
+      const isLeftHand = thumb.x > pinky.x;
       const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
+      
+      console.log(`Hand ${handIndex}: ${isLeftHand ? 'LEFT' : 'RIGHT'} (thumb x: ${thumb.x.toFixed(2)}, pinky x: ${pinky.x.toFixed(2)})`);
       
       // Apply hand-specific alignment
       ctx.save();

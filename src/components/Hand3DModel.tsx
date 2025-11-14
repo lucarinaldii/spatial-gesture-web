@@ -284,9 +284,14 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
         
         {/* Render each detected hand */}
         {landmarks.map((handLandmarks, index) => {
-          const isLeftHand = handedness && handedness[index] && 
-                             handedness[index][0] && 
-                             handedness[index][0].categoryName === 'Left';
+          // Manually detect left/right hand by thumb position
+          // Thumb landmark is 4, pinky base is 17
+          const thumb = handLandmarks[4];
+          const pinky = handLandmarks[17];
+          // If thumb is to the right of pinky, it's a left hand (palm facing camera)
+          // If thumb is to the left of pinky, it's a right hand (palm facing camera)
+          const isLeftHand = thumb.x > pinky.x;
+          
           return (
             <SmoothHandModel 
               key={`hand-${index}`}
