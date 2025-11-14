@@ -23,7 +23,7 @@ interface ObjectData {
 
 const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
-  const { isReady, handPositions, gestureStates, landmarks, videoRef, startCamera } = useHandTracking();
+  const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
   
   const [objects, setObjects] = useState<ObjectData[]>([
@@ -89,14 +89,26 @@ const Index = () => {
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [alignmentParams, setAlignmentParams] = useState<AlignmentParams>({
-    skeletonScale: 0.55,
-    skeletonXOffset: 0,
-    skeletonYOffset: 0,
-    skeletonZDepth: 0.3,
-    hand3DScale: 0.55,
-    hand3DXOffset: 0,
-    hand3DYOffset: 0,
-    hand3DZDepth: 3,
+    leftHand: {
+      skeletonScale: 0.55,
+      skeletonXOffset: 0,
+      skeletonYOffset: 0,
+      skeletonZDepth: 0.3,
+      hand3DScale: 0.55,
+      hand3DXOffset: 0,
+      hand3DYOffset: 0,
+      hand3DZDepth: 3,
+    },
+    rightHand: {
+      skeletonScale: 0.55,
+      skeletonXOffset: 0,
+      skeletonYOffset: 0,
+      skeletonZDepth: 0.3,
+      hand3DScale: 0.55,
+      hand3DXOffset: 0,
+      hand3DYOffset: 0,
+      hand3DZDepth: 3,
+    },
   });
 
   const handleStartTracking = async () => {
@@ -864,8 +876,8 @@ const Index = () => {
             </div>
             {videoRef.current && (
               <>
-                {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} alignmentParams={alignmentParams} />}
-                {showSkeleton && <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} alignmentParams={alignmentParams} />}
+                {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} alignmentParams={alignmentParams} handedness={handedness} />}
+                {showSkeleton && <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} alignmentParams={alignmentParams} handedness={handedness} />}
               </>
             )}
             

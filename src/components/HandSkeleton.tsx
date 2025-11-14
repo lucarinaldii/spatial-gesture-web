@@ -6,6 +6,7 @@ interface HandSkeletonProps {
   videoWidth: number;
   videoHeight: number;
   alignmentParams: AlignmentParams;
+  handedness?: any; // MediaPipe handedness data
 }
 
 // Complete hand skeleton connections (all fingers)
@@ -24,7 +25,7 @@ const HAND_CONNECTIONS = [
   [5, 9], [9, 13], [13, 17],
 ];
 
-const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams }: HandSkeletonProps) => {
+const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, handedness }: HandSkeletonProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -48,21 +49,29 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams }: H
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Flip context horizontally and apply skeleton-specific alignment
+    // Flip context horizontally to match mirrored video  
     ctx.save();
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
-    
-    // Apply skeleton-specific alignment params
-    const scaleFactor = alignmentParams.skeletonScale;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    ctx.translate(centerX + alignmentParams.skeletonXOffset * 50, centerY + alignmentParams.skeletonYOffset * 50);
-    ctx.scale(scaleFactor, scaleFactor);
-    ctx.translate(-centerX, -centerY);
 
-    landmarks.forEach((hand: any) => {
+    landmarks.forEach((hand: any, handIndex: number) => {
       console.log('Hand has', hand.length, 'landmarks');
+      
+      // Determine if this is left or right hand
+      const isLeftHand = handedness && handedness[handIndex] && 
+                         handedness[handIndex][0] && 
+                         handedness[handIndex][0].categoryName === 'Left';
+      const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
+      
+      // Apply hand-specific alignment
+      ctx.save();
+      
+      const scaleFactor = handParams.skeletonScale;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      ctx.translate(centerX + handParams.skeletonXOffset * 50, centerY + handParams.skeletonYOffset * 50);
+      ctx.scale(scaleFactor, scaleFactor);
+      ctx.translate(-centerX, -centerY);
       
       // Draw connections with white opaque (thinner lines)
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
@@ -74,11 +83,11 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams }: H
         const startPoint = hand[start];
         const endPoint = hand[end];
         
-        // Apply z-depth scaling using alignment params
+        // Apply z-depth scaling using hand-specific params
         const startZ = startPoint.z || 0;
         const endZ = endPoint.z || 0;
-        const startDepthScale = 1 + startZ * alignmentParams.skeletonZDepth;
-        const endDepthScale = 1 + endZ * alignmentParams.skeletonZDepth;
+        const startDepthScale = 1 + startZ * handParams.skeletonZDepth;
+        const endDepthScale = 1 + endZ * handParams.skeletonZDepth;
 
         ctx.beginPath();
         ctx.moveTo(startPoint.x * canvas.width * startDepthScale, startPoint.y * canvas.height * startDepthScale);
@@ -95,7 +104,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams }: H
       fingertips.forEach(tipIndex => {
         const tip = hand[tipIndex];
         const tipZ = tip.z || 0;
-        const depthScale = 1 + tipZ * alignmentParams.skeletonZDepth;
+        const depthScale = 1 + tipZ * handParams.skeletonZDepth;
         ctx.beginPath();
         ctx.arc(
           tip.x * canvas.width * depthScale,
@@ -111,7 +120,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams }: H
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       const wrist = hand[0];
       const wristZ = wrist.z || 0;
-      const wristDepthScale = 1 + wristZ * alignmentParams.skeletonZDepth;
+      const wristDepthScale = 1 + wristZ * handParams.skeletonZDepth;
       ctx.beginPath();
       ctx.arc(
         wrist.x * canvas.width * wristDepthScale,
@@ -121,10 +130,11 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams }: H
         2 * Math.PI
       );
       ctx.fill();
+      ctx.restore(); // Restore for this hand
     });
     
-    ctx.restore();
-  }, [landmarks, videoWidth, videoHeight, alignmentParams]);
+    ctx.restore(); // Restore main context
+  }, [landmarks, videoWidth, videoHeight, alignmentParams, handedness]);
 
   return (
     <canvas

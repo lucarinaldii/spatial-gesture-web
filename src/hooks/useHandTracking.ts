@@ -32,6 +32,7 @@ export const useHandTracking = () => {
   const [handPositions, setHandPositions] = useState<HandPosition[]>([]);
   const [gestureStates, setGestureStates] = useState<GestureState[]>([]);
   const [landmarks, setLandmarks] = useState<any>(null);
+  const [handedness, setHandedness] = useState<any>(null);
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
@@ -183,11 +184,13 @@ export const useHandTracking = () => {
       setHandPositions(newPositions);
       setGestureStates(newGestures);
       setLandmarks(smoothedLandmarks);
+      setHandedness(result.handedness);
     } else {
       lastLandmarksRef.current = null;
       setHandPositions([]);
       setGestureStates([]);
       setLandmarks(null);
+      setHandedness(null);
       lastPositionsRef.current = [];
       lastPinchStatesRef.current = [false, false]; // Reset pinch states when no hands detected
     }
@@ -317,6 +320,7 @@ export const useHandTracking = () => {
     handPositions,
     gestureStates,
     landmarks,
+    handedness,
     videoRef,
     startCamera,
   };
