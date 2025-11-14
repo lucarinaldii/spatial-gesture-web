@@ -116,8 +116,8 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   // Convert landmarks to match skeleton canvas coordinates exactly
   const vectors = landmarks.map(lm => {
     // Map normalized coordinates (0-1) to screen space matching the canvas
-    // Apply same scaling as skeleton (0.65 scale factor)
-    const scaleFactor = 0.65;
+    // Apply same scaling as skeleton (0.65 scale factor * 1.2 = 0.78)
+    const scaleFactor = 0.78;
     const x = (1 - lm.x) * 10 * scaleFactor - 5 * scaleFactor;  // Flip horizontally and scale
     const y = -lm.y * 10 * scaleFactor + 5 * scaleFactor;       // Flip vertically and scale
     const z = -lm.z * 10;            // Depth (negative to push away from camera)
