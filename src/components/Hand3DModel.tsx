@@ -175,11 +175,14 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, is
     
     // Calculate inverse scale: closer hand (more negative z) = smaller hand
     const zDiff = handZ - baseZRef.current;
-    // When hand moves closer (negative zDiff), scale down
-    grabScaleFactor = Math.max(0.3, Math.min(2, 1 - zDiff * 4));
+    // When zDiff is negative (hand moving closer), scale becomes smaller
+    // When zDiff is positive (hand moving away), scale becomes larger
+    // Multiply by 8 for more noticeable effect
+    grabScaleFactor = Math.max(0.2, Math.min(3, 1 - zDiff * 8));
   } else {
     // Reset base z when not grabbing
     baseZRef.current = null;
+    grabScaleFactor = 1; // Explicitly return to normal size
   }
   
   // Convert landmarks using hand-specific alignment params
