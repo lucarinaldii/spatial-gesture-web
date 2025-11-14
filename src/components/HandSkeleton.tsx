@@ -48,16 +48,16 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams }: H
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Flip context horizontally to match mirrored video and apply unified alignment
+    // Flip context horizontally and apply skeleton-specific alignment
     ctx.save();
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
     
-    // Apply unified alignment params
-    const scaleFactor = alignmentParams.scale;
+    // Apply skeleton-specific alignment params
+    const scaleFactor = alignmentParams.skeletonScale;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    ctx.translate(centerX, centerY);
+    ctx.translate(centerX + alignmentParams.skeletonXOffset * 50, centerY + alignmentParams.skeletonYOffset * 50);
     ctx.scale(scaleFactor, scaleFactor);
     ctx.translate(-centerX, -centerY);
 

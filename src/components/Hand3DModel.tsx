@@ -124,15 +124,15 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams }: HandModelPro
     return null;
   }
   
-  // Convert landmarks using unified alignment params
+  // Convert landmarks using 3D hand-specific alignment params
   const vectors = landmarks.map(lm => {
     // Map normalized coordinates (0-1) to screen space
-    // Use unified alignment params
-    const scaleFactor = alignmentParams.scale;
-    // Apply unified positioning with offsets
-    const x = (1 - lm.x - 0.5) * 15 * scaleFactor + alignmentParams.xOffset;
-    const y = -(lm.y - 0.5) * 15 * scaleFactor + alignmentParams.yOffset;
-    const z = -lm.z * alignmentParams.zDepth;
+    // Use 3D hand-specific alignment params
+    const scaleFactor = alignmentParams.hand3DScale;
+    // Apply 3D hand positioning with offsets
+    const x = (1 - lm.x - 0.5) * 15 * scaleFactor + alignmentParams.hand3DXOffset;
+    const y = -(lm.y - 0.5) * 15 * scaleFactor + alignmentParams.hand3DYOffset;
+    const z = -lm.z * alignmentParams.hand3DZDepth;
     return new THREE.Vector3(x, y, z);
   });
   
