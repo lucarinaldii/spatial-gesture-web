@@ -126,9 +126,10 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
     // Map normalized coordinates (0-1) to screen space matching the canvas
     // Apply 30% scale increase: 0.65 * 1.3 = 0.845
     const scaleFactor = 0.845;
-    const x = (1 - lm.x) * 10 * scaleFactor - 5 * scaleFactor;  // Flip horizontally and scale
-    const y = -lm.y * 10 * scaleFactor + 5 * scaleFactor;       // Flip vertically and scale
-    const z = -lm.z * 10;            // Depth (negative to push away from camera)
+    // Match skeleton positioning - use actual x position (mirrored) without center offset
+    const x = (1 - lm.x - 0.5) * 15 * scaleFactor;  // Flip horizontally and scale from center
+    const y = -(lm.y - 0.5) * 15 * scaleFactor;     // Flip vertically and scale from center
+    const z = -lm.z * 10;                            // Depth (negative to push away from camera)
     return new THREE.Vector3(x, y, z);
   });
   
@@ -160,13 +161,7 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
     },
   ];
   
-  useFrame(() => {
-    if (!groupRef.current) return;
-    
-    if (handIndex === 1) {
-      groupRef.current.position.x = 5;
-    }
-  });
+  // Remove hardcoded positioning - hands now position based on actual landmark coordinates
   
   // Trigger re-render when landmarks change
   useFrame(() => {
