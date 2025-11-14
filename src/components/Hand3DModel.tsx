@@ -241,8 +241,8 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
     <div 
       className="absolute inset-0 pointer-events-none z-20"
       style={{ 
-        width: videoWidth, 
-        height: videoHeight,
+        width: '100vw', 
+        height: '100vh',
         border: '2px solid red',
         borderRadius: '8px',
       }}
