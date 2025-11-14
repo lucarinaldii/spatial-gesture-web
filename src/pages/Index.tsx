@@ -89,11 +89,14 @@ const Index = () => {
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [alignmentParams, setAlignmentParams] = useState<AlignmentParams>({
-    scale: 0.55,
-    xOffset: 0,
-    yOffset: 0,
-    zDepth: 3,
+    skeletonScale: 0.55,
+    skeletonXOffset: 0,
+    skeletonYOffset: 0,
     skeletonZDepth: 0.3,
+    hand3DScale: 0.55,
+    hand3DXOffset: 0,
+    hand3DYOffset: 0,
+    hand3DZDepth: 3,
   });
 
   const handleStartTracking = async () => {
