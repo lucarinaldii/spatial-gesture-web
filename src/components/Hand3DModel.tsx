@@ -49,7 +49,8 @@ interface Hand3DModelProps {
 interface HandModelProps {
   landmarks: NormalizedLandmark[];
   handIndex: number;
-  handParams: AlignmentParams['leftHand'];
+  alignmentParams: AlignmentParams;
+  handParams: AlignmentParams['leftHand']; // Use interpolated params
 }
 
 // Create a smooth finger segment using capsule-like geometry - flatter and more human
@@ -149,7 +150,7 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
 }
 
 // Smooth, realistic hand model
-function SmoothHandModel({ landmarks, handIndex, handParams }: HandModelProps) {
+function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   
   // Validate all landmarks exist before processing
@@ -157,19 +158,22 @@ function SmoothHandModel({ landmarks, handIndex, handParams }: HandModelProps) {
     return null;
   }
   
-  // Convert landmarks using hand-specific alignment params (optimized calculation)
-  const scaleFactor = handParams.hand3DScale;
-  const baseSize = Math.min(window.innerWidth, window.innerHeight) / 100;
-  const xOffset = (handParams.hand3DXOffset / 100) * window.innerWidth * 0.1;
-  const yOffset = (handParams.hand3DYOffset / 100) * window.innerHeight * 0.1;
-  const scale = baseSize * 1.5 * scaleFactor;
-  const zDepth = handParams.hand3DZDepth;
+  // Use provided interpolated params directly
   
-  const vectors = landmarks.map(lm => new THREE.Vector3(
-    (1 - lm.x - 0.5) * scale + xOffset,
-    -(lm.y - 0.5) * scale + yOffset,
-    -lm.z * zDepth
-  ));
+  // Convert landmarks using hand-specific alignment params
+  const vectors = landmarks.map(lm => {
+    // Map normalized coordinates (0-1) to screen space
+    // Use hand-specific alignment params with viewport-responsive multiplier
+    const scaleFactor = handParams.hand3DScale;
+    const baseSize = Math.min(window.innerWidth, window.innerHeight) / 100;
+    // Apply hand-specific positioning with percentage-based offsets
+    const xOffset = (handParams.hand3DXOffset / 100) * window.innerWidth * 0.1;
+    const yOffset = (handParams.hand3DYOffset / 100) * window.innerHeight * 0.1;
+    const x = (1 - lm.x - 0.5) * baseSize * 1.5 * scaleFactor + xOffset;
+    const y = -(lm.y - 0.5) * baseSize * 1.5 * scaleFactor + yOffset;
+    const z = -lm.z * handParams.hand3DZDepth;
+    return new THREE.Vector3(x, y, z);
+  });
   
   const fingers = [
     { 
@@ -312,28 +316,25 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
         
         {/* Render each detected hand */}
         {landmarks.map((handLandmarks, index) => {
-          // Detect which hand it is based on handedness data
-          let isLeftHand = false;
-          if (handedness && handedness[index]) {
-            const handLabel = handedness[index][0]?.categoryName || handedness[index][0]?.displayName;
-            isLeftHand = handLabel === 'Left';
-          } else {
-            // Fallback: use hand center position if handedness not available
-            const wrist = handLandmarks[0];
-            const middleMCP = handLandmarks[9];
-            const handCenterX = (wrist.x + middleMCP.x) / 2;
-            isLeftHand = handCenterX < 0.5;
-          }
+          // Calculate hand center from wrist (0) and middle finger base (9)
+          const wrist = handLandmarks[0];
+          const middleMCP = handLandmarks[9];
+          const handCenterX = (wrist.x + middleMCP.x) / 2;
           
-          // Use proper params for left or right hand
-          const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
+          // Get interpolated alignment params for smooth transitions
+          const interpolatedParams = interpolateAlignmentParams(
+            alignmentParams.leftHand,
+            alignmentParams.rightHand,
+            handCenterX
+          );
           
           return (
             <SmoothHandModel 
               key={`hand-${index}`}
               landmarks={handLandmarks}
               handIndex={index}
-              handParams={handParams}
+              alignmentParams={alignmentParams}
+              handParams={interpolatedParams}
             />
           );
         })}

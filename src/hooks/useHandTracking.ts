@@ -41,14 +41,14 @@ export const useHandTracking = () => {
   const lastPinchStatesRef = useRef<boolean[]>([false, false]); // Track previous pinch states
   const lastLandmarksRef = useRef<any>(null); // Store previous landmarks for smoothing
   
-  // Enhanced smoothing parameters for reduced jitter
-  const SMOOTHING_FACTOR = 0.65; // Increased for more responsive but stable tracking
-  const LANDMARK_SMOOTHING = 0.75; // Reduced for more responsive pinch detection
-  const MOVEMENT_THRESHOLD = 0.005; // Smaller deadzone for more responsive tracking
+  // Smoothing parameters - adjusted for natural movements
+  const SMOOTHING_FACTOR = 0.5; // Higher = more responsive, lower = smoother
+  const LANDMARK_SMOOTHING = 0.7; // Smoothing for landmark positions (higher = smoother)
+  const MOVEMENT_THRESHOLD = 0.008; // Increased deadzone for stability
   
   // Pinch detection with hysteresis to prevent jitter
-  const PINCH_THRESHOLD_ENTER = 0.06; // Distance to enter pinch state (increased for easier detection)
-  const PINCH_THRESHOLD_EXIT = 0.08; // Distance to exit pinch state (larger = easier to maintain)
+  const PINCH_THRESHOLD_ENTER = 0.05; // Distance to enter pinch state (closer = more precise)
+  const PINCH_THRESHOLD_EXIT = 0.07; // Distance to exit pinch state (larger = easier to maintain)
 
   const calculateDistance = (point1: any, point2: any) => {
     const dx = point1.x - point2.x;
@@ -90,19 +90,10 @@ export const useHandTracking = () => {
         const prev = previousLandmarks[handIndex][landmarkIndex];
         if (!prev) return landmark;
         
-        // Calculate movement distance
-        const dx = landmark.x - prev.x;
-        const dy = landmark.y - prev.y;
-        const dz = landmark.z - prev.z;
-        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        
-        // Use adaptive smoothing: more smoothing for small movements
-        const adaptiveFactor = distance < 0.01 ? 0.9 : LANDMARK_SMOOTHING;
-        
         return {
-          x: prev.x + dx * adaptiveFactor,
-          y: prev.y + dy * adaptiveFactor,
-          z: prev.z + dz * adaptiveFactor,
+          x: prev.x + (landmark.x - prev.x) * LANDMARK_SMOOTHING,
+          y: prev.y + (landmark.y - prev.y) * LANDMARK_SMOOTHING,
+          z: prev.z + (landmark.z - prev.z) * LANDMARK_SMOOTHING,
         };
       });
     });
@@ -134,11 +125,6 @@ export const useHandTracking = () => {
         const wasPinching = lastPinchStatesRef.current[i] || false;
         const threshold = wasPinching ? PINCH_THRESHOLD_EXIT : PINCH_THRESHOLD_ENTER;
         const isPinching = pinchDistance < threshold;
-        
-        // Debug logging
-        if (isPinching !== wasPinching) {
-          console.log(`Hand ${i} pinch ${isPinching ? 'START' : 'END'} - distance: ${pinchDistance.toFixed(4)}`);
-        }
         
         // Update pinch state history
         lastPinchStatesRef.current[i] = isPinching;

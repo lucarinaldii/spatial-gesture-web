@@ -120,7 +120,7 @@ const Index = () => {
   const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
   const [show3DHand, setShow3DHand] = useState(true);
-  const [showSkeleton, setShowSkeleton] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const scaleVelocityRef = useRef<Map<string, number>>(new Map());
   const scaleHistoryRef = useRef<Map<string, Array<{ scale: number; timestamp: number }>>>(new Map());
@@ -544,8 +544,6 @@ const Index = () => {
         }
 
         if (isPinching && !wasPinching) {
-          console.log(`🤏 Hand ${handIndex} pinch detected at (${handX.toFixed(1)}, ${handY.toFixed(1)})`);
-          
           // Release any touched objects when pinching starts
           if (newTouchedObjects.has(handIndex)) {
             const touched = newTouchedObjects.get(handIndex);
@@ -563,12 +561,10 @@ const Index = () => {
           const targetObject = objects.find((obj) => {
             const adjustedX = obj.position.x + canvasOffset.x;
             const adjustedY = obj.position.y + canvasOffset.y;
-            const distance = Math.sqrt(Math.pow(handX - adjustedX, 2) + Math.pow(handY - adjustedY, 2));
             return Math.abs(handX - adjustedX) < 16 && Math.abs(handY - adjustedY) < 12;
           });
 
           if (targetObject) {
-            console.log(`✅ Card "${targetObject.title}" grabbed by hand ${handIndex}`);
             const adjustedX = targetObject.position.x + canvasOffset.x;
             const adjustedY = targetObject.position.y + canvasOffset.y;
             newGrabbedObjects.set(handIndex, { id: targetObject.id, offsetX: handX - adjustedX, offsetY: handY - adjustedY });
@@ -1221,8 +1217,8 @@ const Index = () => {
                     landmarks={landmarks} 
                     videoWidth={window.innerWidth} 
                     videoHeight={window.innerHeight} 
-                    alignmentParams={alignmentParams}
-                    handedness={handedness}
+                    alignmentParams={alignmentParams} 
+                    handedness={handedness} 
                   />
                 )}
               </>
