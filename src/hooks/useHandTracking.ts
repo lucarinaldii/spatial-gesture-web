@@ -43,12 +43,12 @@ export const useHandTracking = () => {
   
   // Enhanced smoothing parameters for reduced jitter
   const SMOOTHING_FACTOR = 0.65; // Increased for more responsive but stable tracking
-  const LANDMARK_SMOOTHING = 0.85; // Higher smoothing to reduce jitter
+  const LANDMARK_SMOOTHING = 0.75; // Reduced for more responsive pinch detection
   const MOVEMENT_THRESHOLD = 0.005; // Smaller deadzone for more responsive tracking
   
   // Pinch detection with hysteresis to prevent jitter
-  const PINCH_THRESHOLD_ENTER = 0.05; // Distance to enter pinch state (closer = more precise)
-  const PINCH_THRESHOLD_EXIT = 0.07; // Distance to exit pinch state (larger = easier to maintain)
+  const PINCH_THRESHOLD_ENTER = 0.06; // Distance to enter pinch state (increased for easier detection)
+  const PINCH_THRESHOLD_EXIT = 0.08; // Distance to exit pinch state (larger = easier to maintain)
 
   const calculateDistance = (point1: any, point2: any) => {
     const dx = point1.x - point2.x;
@@ -134,6 +134,11 @@ export const useHandTracking = () => {
         const wasPinching = lastPinchStatesRef.current[i] || false;
         const threshold = wasPinching ? PINCH_THRESHOLD_EXIT : PINCH_THRESHOLD_ENTER;
         const isPinching = pinchDistance < threshold;
+        
+        // Debug logging
+        if (isPinching !== wasPinching) {
+          console.log(`Hand ${i} pinch ${isPinching ? 'START' : 'END'} - distance: ${pinchDistance.toFixed(4)}`);
+        }
         
         // Update pinch state history
         lastPinchStatesRef.current[i] = isPinching;
