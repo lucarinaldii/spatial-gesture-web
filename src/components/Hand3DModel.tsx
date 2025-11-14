@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { NormalizedLandmark } from '@mediapipe/tasks-vision';
@@ -234,7 +234,7 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   );
 }
 
-export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand3DModelProps) {
+const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand3DModelProps) {
   if (!landmarks || landmarks.length === 0) return null;
   
   return (
@@ -258,7 +258,7 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
           preserveDrawingBuffer: false,
           powerPreference: 'high-performance'
         }}
-        frameloop="demand"
+        frameloop="always"
       >
         <PerspectiveCamera makeDefault position={[0, 0, 12]} fov={75} />
         
@@ -289,4 +289,6 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
       </Canvas>
     </div>
   );
-}
+});
+
+export default Hand3DModel;
