@@ -4,16 +4,19 @@ import { PerspectiveCamera } from '@react-three/drei';
 import { NormalizedLandmark } from '@mediapipe/tasks-vision';
 import * as THREE from 'three';
 import { landmarkToVector3, HAND_LANDMARKS } from '@/utils/handBoneCalculations';
+import { AlignmentParams } from './AlignmentSettings';
 
 interface Hand3DModelProps {
   landmarks: NormalizedLandmark[][];
   videoWidth: number;
   videoHeight: number;
+  alignmentParams: AlignmentParams;
 }
 
 interface HandModelProps {
   landmarks: NormalizedLandmark[];
   handIndex: number;
+  alignmentParams: AlignmentParams;
 }
 
 // Create a smooth finger segment using capsule-like geometry - flatter and more human
@@ -113,7 +116,7 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
 }
 
 // Smooth, realistic hand model
-function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
+function SmoothHandModel({ landmarks, handIndex, alignmentParams }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   
   // Validate all landmarks exist before processing
@@ -124,12 +127,12 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   // Convert landmarks to match skeleton canvas coordinates exactly
   const vectors = landmarks.map(lm => {
     // Map normalized coordinates (0-1) to screen space matching the canvas
-    // Match skeleton scaleFactor of 0.55
-    const scaleFactor = 0.55;
-    // Match skeleton positioning - use actual x position (mirrored) without center offset
-    const x = (1 - lm.x - 0.5) * 15 * scaleFactor;  // Flip horizontally and scale from center
-    const y = -(lm.y - 0.5) * 15 * scaleFactor;     // Flip vertically and scale from center
-    const z = -lm.z * 3;                             // Reduced depth to bring 3D hand forward to match skeleton
+    // Use alignment params for scale
+    const scaleFactor = alignmentParams.hand3DScale;
+    // Match skeleton positioning - use actual x position (mirrored) with offset
+    const x = (1 - lm.x - 0.5) * 15 * scaleFactor + alignmentParams.hand3DXOffset;
+    const y = -(lm.y - 0.5) * 15 * scaleFactor + alignmentParams.hand3DYOffset;
+    const z = -lm.z * alignmentParams.hand3DZDepth;
     return new THREE.Vector3(x, y, z);
   });
   
@@ -230,7 +233,7 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   );
 }
 
-const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand3DModelProps) {
+const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams }: Hand3DModelProps) {
   if (!landmarks || landmarks.length === 0) return null;
   
   return (
@@ -280,6 +283,7 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
             key={`hand-${index}`}
             landmarks={handLandmarks}
             handIndex={index}
+            alignmentParams={alignmentParams}
           />
         ))}
       </Canvas>
