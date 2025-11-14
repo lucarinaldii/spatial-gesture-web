@@ -773,6 +773,28 @@ const Index = () => {
         if (!isPinching && wasPinching) {
           const grabbed = newGrabbedObjects.get(handIndex);
           if (grabbed) {
+            // Check if object is over delete zone before releasing
+            const obj = objects.find(o => o.id === grabbed.id);
+            if (obj) {
+              const objX = obj.position.x + canvasOffset.x;
+              const objY = obj.position.y + canvasOffset.y;
+              const DELETE_ZONE_X = 85;
+              const DELETE_ZONE_Y = 75;
+              
+              if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
+                // Delete the object
+                setObjects(prev => prev.filter(o => o.id !== grabbed.id));
+                toast({ title: "Card deleted", description: "Card moved to trash" });
+                newGrabbedObjects.delete(handIndex);
+                hasChanges = true;
+                baseDistanceRef.current.delete(grabbed.id);
+                baseAngleRef.current.delete(grabbed.id);
+                splitDistanceRef.current.delete(grabbed.id);
+                handVelocityHistoryRef.current.delete(handIndex);
+                return;
+              }
+            }
+            
             newGrabbedObjects.delete(handIndex);
             hasChanges = true;
             if (!Array.from(newGrabbedObjects.values()).some(g => g.id === grabbed.id)) {
@@ -827,28 +849,40 @@ const Index = () => {
         lastPinchStates.current.set(handIndex, isPinching);
       });
 
-      // Update show delete zone based on whether anything is being touched
-      setShowDeleteZone(newTouchedObjects.size > 0);
+      // Update show delete zone based on whether anything is being grabbed or touched
+      setShowDeleteZone(newGrabbedObjects.size > 0 || newTouchedObjects.size > 0);
       
-      // Check collision with delete zone for touched objects
+      // Check collision with delete zone for grabbed or touched objects
       let isAnyObjectOverDeleteZone = false;
-      if (newTouchedObjects.size > 0) {
-        const DELETE_ZONE_X = 85; // Bottom right: 85-95%
-        const DELETE_ZONE_Y = 75; // Bottom: 75-85%
-        
-        newTouchedObjects.forEach((touched) => {
-          const obj = objects.find(o => o.id === touched.id);
-          if (obj) {
-            const objX = obj.position.x + canvasOffset.x;
-            const objY = obj.position.y + canvasOffset.y;
-            
-            // Check if object center is within delete zone
-            if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
-              isAnyObjectOverDeleteZone = true;
-            }
+      const DELETE_ZONE_X = 85; // Bottom right: 85-95%
+      const DELETE_ZONE_Y = 75; // Bottom: 75-85%
+      
+      // Check grabbed objects (pinch drag)
+      newGrabbedObjects.forEach((grabbed) => {
+        const obj = objects.find(o => o.id === grabbed.id);
+        if (obj) {
+          const objX = obj.position.x + canvasOffset.x;
+          const objY = obj.position.y + canvasOffset.y;
+          
+          if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
+            isAnyObjectOverDeleteZone = true;
           }
-        });
-      }
+        }
+      });
+      
+      // Check touched objects (touch drag)
+      newTouchedObjects.forEach((touched) => {
+        const obj = objects.find(o => o.id === touched.id);
+        if (obj) {
+          const objX = obj.position.x + canvasOffset.x;
+          const objY = obj.position.y + canvasOffset.y;
+          
+          if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
+            isAnyObjectOverDeleteZone = true;
+          }
+        }
+      });
+      
       setIsOverDeleteZone(isAnyObjectOverDeleteZone);
       
       if (hasChanges) setGrabbedObjects(newGrabbedObjects);
