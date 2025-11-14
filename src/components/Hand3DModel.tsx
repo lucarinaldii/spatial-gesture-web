@@ -113,12 +113,15 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
     return null;
   }
   
-  // Use video dimensions for precise skeleton alignment
-  const vectors = landmarks.map(lm => ({
-    x: (1 - lm.x) * 10 - 5,  // Flip and center
-    y: -lm.y * 10 + 5,        // Flip and center  
-    z: -lm.z * 20             // Depth
-  })).map(v => new THREE.Vector3(v.x, v.y, v.z));
+  // Convert landmarks to match skeleton canvas coordinates exactly
+  const vectors = landmarks.map(lm => {
+    // Map normalized coordinates (0-1) to screen space matching the canvas
+    // Mirror horizontally to match skeleton flip
+    const x = (1 - lm.x) * 10 - 5;  // Flip horizontally and center
+    const y = lm.y * 10 - 5;        // Center vertically
+    const z = lm.z * 10;             // Depth
+    return new THREE.Vector3(x, y, z);
+  });
   
   const fingers = [
     { 
@@ -150,6 +153,10 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   
   useFrame(() => {
     if (!groupRef.current) return;
+    
+    // Rotate to view from top (palm facing camera, thumb inward)
+    groupRef.current.rotation.x = Math.PI * 0.5; // 90 degrees to view from top
+    
     if (handIndex === 1) {
       groupRef.current.position.x = 5;
     }
@@ -233,7 +240,7 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
           preserveDrawingBuffer: true 
         }}
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
+        <PerspectiveCamera makeDefault position={[0, -20, 0]} fov={50} rotation={[Math.PI / 2, 0, 0]} />
         
         {/* Soft, natural lighting for skin-like appearance */}
         <ambientLight intensity={1.2} />
