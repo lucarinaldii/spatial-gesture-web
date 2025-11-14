@@ -16,8 +16,8 @@ interface HandModelProps {
   handIndex: number;
 }
 
-// Create a smooth finger segment using capsule-like geometry
-function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 }: {
+// Create a smooth finger segment using capsule-like geometry - flatter and more human
+function SmoothFingerSegment({ start, end, startRadius = 0.12, endRadius = 0.10 }: {
   start: THREE.Vector3; 
   end: THREE.Vector3; 
   startRadius?: number;
@@ -34,36 +34,30 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
     <group>
       {/* Main finger segment - tapered cylinder */}
       <mesh position={midpoint} quaternion={quaternion}>
-        <cylinderGeometry args={[endRadius, startRadius, distance, 12, 1, false]} />
+        <cylinderGeometry args={[endRadius, startRadius, distance, 16, 1, false]} />
         <meshStandardMaterial 
-          color="#ffd4b8"
-          roughness={0.6}
-          metalness={0.1}
-          transparent
-          opacity={0.6}
+          color="white"
+          roughness={0.4}
+          metalness={0.0}
           side={THREE.DoubleSide}
         />
       </mesh>
       
       {/* Smooth caps at both ends */}
       <mesh position={start}>
-        <sphereGeometry args={[startRadius, 12, 12]} />
+        <sphereGeometry args={[startRadius, 16, 16]} />
         <meshStandardMaterial 
-          color="#ffd4b8"
-          roughness={0.6}
-          metalness={0.1}
-          transparent
-          opacity={0.6}
+          color="white"
+          roughness={0.4}
+          metalness={0.0}
         />
       </mesh>
       <mesh position={end}>
-        <sphereGeometry args={[endRadius, 12, 12]} />
+        <sphereGeometry args={[endRadius, 16, 16]} />
         <meshStandardMaterial 
-          color="#ffd4b8"
-          roughness={0.6}
-          metalness={0.1}
-          transparent
-          opacity={0.6}
+          color="white"
+          roughness={0.4}
+          metalness={0.0}
         />
       </mesh>
     </group>
@@ -101,11 +95,9 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
   return (
     <mesh geometry={geometry}>
       <meshStandardMaterial 
-        color="#ffcba4"
-        roughness={0.65}
-        metalness={0.05}
-        transparent
-        opacity={0.6}
+        color="white"
+        roughness={0.4}
+        metalness={0.0}
         side={THREE.DoubleSide}
       />
     </mesh>
