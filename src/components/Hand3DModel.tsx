@@ -116,9 +116,10 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   // Convert landmarks to match skeleton canvas coordinates exactly
   const vectors = landmarks.map(lm => {
     // Map normalized coordinates (0-1) to screen space matching the canvas
-    // Mirror horizontally to match skeleton flip
-    const x = (1 - lm.x) * 10 - 5;  // Flip horizontally and center
-    const y = -lm.y * 10 + 5;       // Flip vertically to match canvas coordinates
+    // Apply same scaling as skeleton (0.65 scale factor)
+    const scaleFactor = 0.65;
+    const x = (1 - lm.x) * 10 * scaleFactor - 5 * scaleFactor;  // Flip horizontally and scale
+    const y = -lm.y * 10 * scaleFactor + 5 * scaleFactor;       // Flip vertically and scale
     const z = -lm.z * 10;            // Depth (negative to push away from camera)
     return new THREE.Vector3(x, y, z);
   });
@@ -127,27 +128,27 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
     { 
       name: 'thumb', 
       indices: [1, 2, 3, 4],
-      radii: [[0.25, 0.22], [0.22, 0.20], [0.20, 0.18]]
+      radii: [[0.16, 0.14], [0.14, 0.13], [0.13, 0.12]]
     },
     { 
       name: 'index', 
       indices: [5, 6, 7, 8],
-      radii: [[0.22, 0.20], [0.20, 0.18], [0.18, 0.16]]
+      radii: [[0.14, 0.13], [0.13, 0.12], [0.12, 0.10]]
     },
     { 
       name: 'middle', 
       indices: [9, 10, 11, 12],
-      radii: [[0.23, 0.21], [0.21, 0.19], [0.19, 0.17]]
+      radii: [[0.15, 0.14], [0.14, 0.12], [0.12, 0.11]]
     },
     { 
       name: 'ring', 
       indices: [13, 14, 15, 16],
-      radii: [[0.21, 0.19], [0.19, 0.17], [0.17, 0.15]]
+      radii: [[0.14, 0.12], [0.12, 0.11], [0.11, 0.10]]
     },
     { 
       name: 'pinky', 
       indices: [17, 18, 19, 20],
-      radii: [[0.19, 0.17], [0.17, 0.15], [0.15, 0.13]]
+      radii: [[0.12, 0.11], [0.11, 0.10], [0.10, 0.09]]
     },
   ];
   
@@ -171,12 +172,12 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
       {/* Palm surface */}
       <PalmMesh vectors={vectors} />
       
-      {/* Connection from wrist to finger bases (thinner palm connections) */}
-      <SmoothFingerSegment start={vectors[0]} end={vectors[1]} startRadius={0.30} endRadius={0.25} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[5]} startRadius={0.28} endRadius={0.23} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[9]} startRadius={0.28} endRadius={0.23} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[13]} startRadius={0.26} endRadius={0.22} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[17]} startRadius={0.24} endRadius={0.20} />
+      {/* Connection from wrist to finger bases (scaled down to match skeleton) */}
+      <SmoothFingerSegment start={vectors[0]} end={vectors[1]} startRadius={0.20} endRadius={0.16} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[5]} startRadius={0.18} endRadius={0.15} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[9]} startRadius={0.18} endRadius={0.15} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[13]} startRadius={0.17} endRadius={0.14} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[17]} startRadius={0.16} endRadius={0.13} />
       
       {/* Render each finger with smooth segments */}
       {fingers.map((finger) => (
@@ -201,11 +202,9 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
           <mesh position={vectors[finger.indices[finger.indices.length - 1]]}>
             <sphereGeometry args={[finger.radii[finger.radii.length - 1][1], 12, 12]} />
             <meshStandardMaterial 
-              color="#ffd4b8"
-              roughness={0.7}
-              metalness={0.05}
-              transparent
-              opacity={0.6}
+              color="white"
+              roughness={0.4}
+              metalness={0.0}
             />
           </mesh>
         </group>
@@ -213,13 +212,11 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
       
       {/* Wrist base */}
       <mesh position={vectors[0]}>
-        <sphereGeometry args={[0.32, 12, 12]} />
+        <sphereGeometry args={[0.21, 12, 12]} />
         <meshStandardMaterial 
-          color="#ffcba4"
-          roughness={0.65}
-          metalness={0.05}
-          transparent
-          opacity={0.6}
+          color="white"
+          roughness={0.4}
+          metalness={0.0}
         />
       </mesh>
     </group>
