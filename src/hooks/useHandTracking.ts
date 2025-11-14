@@ -47,8 +47,8 @@ export const useHandTracking = () => {
   const MOVEMENT_THRESHOLD = 0.008; // Increased deadzone for stability
   
   // Pinch detection with hysteresis to prevent jitter
-  const PINCH_THRESHOLD_ENTER = 0.03; // Distance to enter pinch state (closer = more precise)
-  const PINCH_THRESHOLD_EXIT = 0.04; // Distance to exit pinch state (larger = easier to maintain)
+  const PINCH_THRESHOLD_ENTER = 0.01; // Distance to enter pinch state (very close)
+  const PINCH_THRESHOLD_EXIT = 0.09; // Distance to exit pinch state (larger = easier to maintain)
 
   const calculateDistance = (point1: any, point2: any) => {
     const dx = point1.x - point2.x;
