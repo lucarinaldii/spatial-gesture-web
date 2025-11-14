@@ -129,7 +129,7 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
     // Match skeleton positioning - use actual x position (mirrored) without center offset
     const x = (1 - lm.x - 0.5) * 15 * scaleFactor;  // Flip horizontally and scale from center
     const y = -(lm.y - 0.5) * 15 * scaleFactor;     // Flip vertically and scale from center
-    const z = -lm.z * 10;                            // Depth (negative to push away from camera)
+    const z = -lm.z * 3;                             // Reduced depth to bring 3D hand forward to match skeleton
     return new THREE.Vector3(x, y, z);
   });
   
