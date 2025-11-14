@@ -3,11 +3,10 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 
 export interface AlignmentParams {
-  skeletonScale: number;
-  hand3DScale: number;
-  hand3DXOffset: number;
-  hand3DYOffset: number;
-  hand3DZDepth: number;
+  scale: number;
+  xOffset: number;
+  yOffset: number;
+  zDepth: number;
   skeletonZDepth: number;
 }
 
@@ -23,17 +22,17 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
   return (
     <Card className="glass-panel p-4 space-y-4 max-w-sm">
-      <h3 className="text-lg font-semibold text-foreground">Alignment Settings</h3>
+      <h3 className="text-lg font-semibold text-foreground">Hand Alignment</h3>
       
       <div className="space-y-3">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <Label className="text-sm">Skeleton Scale</Label>
-            <span className="text-xs text-muted-foreground font-mono">{params.skeletonScale.toFixed(2)}</span>
+            <Label className="text-sm">Hand Scale</Label>
+            <span className="text-xs text-muted-foreground font-mono">{params.scale.toFixed(2)}</span>
           </div>
           <Slider
-            value={[params.skeletonScale]}
-            onValueChange={([v]) => updateParam('skeletonScale', v)}
+            value={[params.scale]}
+            onValueChange={([v]) => updateParam('scale', v)}
             min={0.3}
             max={1.0}
             step={0.01}
@@ -43,27 +42,12 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <Label className="text-sm">3D Hand Scale</Label>
-            <span className="text-xs text-muted-foreground font-mono">{params.hand3DScale.toFixed(2)}</span>
+            <Label className="text-sm">X Offset</Label>
+            <span className="text-xs text-muted-foreground font-mono">{params.xOffset.toFixed(2)}</span>
           </div>
           <Slider
-            value={[params.hand3DScale]}
-            onValueChange={([v]) => updateParam('hand3DScale', v)}
-            min={0.3}
-            max={1.0}
-            step={0.01}
-            className="w-full"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <Label className="text-sm">3D Hand X Offset</Label>
-            <span className="text-xs text-muted-foreground font-mono">{params.hand3DXOffset.toFixed(2)}</span>
-          </div>
-          <Slider
-            value={[params.hand3DXOffset]}
-            onValueChange={([v]) => updateParam('hand3DXOffset', v)}
+            value={[params.xOffset]}
+            onValueChange={([v]) => updateParam('xOffset', v)}
             min={-5}
             max={5}
             step={0.1}
@@ -73,12 +57,12 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <Label className="text-sm">3D Hand Y Offset</Label>
-            <span className="text-xs text-muted-foreground font-mono">{params.hand3DYOffset.toFixed(2)}</span>
+            <Label className="text-sm">Y Offset</Label>
+            <span className="text-xs text-muted-foreground font-mono">{params.yOffset.toFixed(2)}</span>
           </div>
           <Slider
-            value={[params.hand3DYOffset]}
-            onValueChange={([v]) => updateParam('hand3DYOffset', v)}
+            value={[params.yOffset]}
+            onValueChange={([v]) => updateParam('yOffset', v)}
             min={-5}
             max={5}
             step={0.1}
@@ -88,12 +72,12 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <Label className="text-sm">3D Hand Z Depth</Label>
-            <span className="text-xs text-muted-foreground font-mono">{params.hand3DZDepth.toFixed(1)}</span>
+            <Label className="text-sm">Z Depth</Label>
+            <span className="text-xs text-muted-foreground font-mono">{params.zDepth.toFixed(1)}</span>
           </div>
           <Slider
-            value={[params.hand3DZDepth]}
-            onValueChange={([v]) => updateParam('hand3DZDepth', v)}
+            value={[params.zDepth]}
+            onValueChange={([v]) => updateParam('zDepth', v)}
             min={1}
             max={10}
             step={0.1}
@@ -103,7 +87,7 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <Label className="text-sm">Skeleton Z Depth Effect</Label>
+            <Label className="text-sm">Skeleton Depth Effect</Label>
             <span className="text-xs text-muted-foreground font-mono">{params.skeletonZDepth.toFixed(2)}</span>
           </div>
           <Slider
@@ -119,12 +103,10 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
       <div className="pt-2 border-t border-border/30">
         <p className="text-xs text-muted-foreground font-mono leading-relaxed">
-          Current Values:<br/>
-          skeletonScale: {params.skeletonScale}<br/>
-          hand3DScale: {params.hand3DScale}<br/>
-          hand3DXOffset: {params.hand3DXOffset}<br/>
-          hand3DYOffset: {params.hand3DYOffset}<br/>
-          hand3DZDepth: {params.hand3DZDepth}<br/>
+          scale: {params.scale}<br/>
+          xOffset: {params.xOffset}<br/>
+          yOffset: {params.yOffset}<br/>
+          zDepth: {params.zDepth}<br/>
           skeletonZDepth: {params.skeletonZDepth}
         </p>
       </div>
