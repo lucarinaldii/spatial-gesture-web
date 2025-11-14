@@ -4,6 +4,7 @@ import { useHandTracking } from '@/hooks/useHandTracking';
 import HandSkeleton from '@/components/HandSkeleton';
 import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
+import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, RotateCcw, Eye, EyeOff } from 'lucide-react';
 
@@ -87,6 +88,14 @@ const Index = () => {
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [alignmentParams, setAlignmentParams] = useState<AlignmentParams>({
+    skeletonScale: 0.55,
+    hand3DScale: 0.55,
+    hand3DXOffset: 0,
+    hand3DYOffset: 0,
+    hand3DZDepth: 3,
+    skeletonZDepth: 0.3,
+  });
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -767,63 +776,10 @@ const Index = () => {
     return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
   }, [handPositions, gestureStates, grabbedObjects, objects, toast]);
 
+  // Physics loop disabled - cards no longer have inertia
   useEffect(() => {
-    const physicsLoop = () => {
-      setObjects(prev => prev.map(obj => {
-        if (!obj.isPhysicsEnabled) return obj;
-        
-        // Safety check: ensure position and velocity exist
-        if (!obj.position || !obj.velocity) {
-          return {
-            ...obj,
-            position: obj.position || { x: 50, y: 50 },
-            velocity: obj.velocity || { x: 0, y: 0 },
-            isPhysicsEnabled: false
-          };
-        }
-        
-        // Space-like floating with momentum and gentle drift
-        const DRIFT_DAMPING = 0.985; // Less damping for more inertia
-        const GENTLE_DRIFT = 0.03; // Very small random drift
-        
-        // Add tiny random drift for floating effect
-        const driftX = (Math.random() - 0.5) * GENTLE_DRIFT;
-        const driftY = (Math.random() - 0.5) * GENTLE_DRIFT;
-        
-        const newVelocity = { 
-          x: obj.velocity.x * DRIFT_DAMPING + driftX, 
-          y: obj.velocity.y * DRIFT_DAMPING + driftY
-        };
-        
-        let newPosition = { 
-          x: obj.position.x + newVelocity.x, 
-          y: obj.position.y + newVelocity.y 
-        };
-        
-        // Soft boundary bounce
-        if (newPosition.x <= 5 || newPosition.x >= 95) { 
-          newPosition.x = Math.max(5, Math.min(95, newPosition.x)); 
-          newVelocity.x = -newVelocity.x * 0.5;
-        }
-        
-        if (newPosition.y <= 5 || newPosition.y >= 85) { 
-          newPosition.y = Math.max(5, Math.min(85, newPosition.y)); 
-          newVelocity.y = -newVelocity.y * 0.5;
-        }
-        
-        // Stop physics when velocity is very low (settled)
-        const isSettled = Math.abs(newVelocity.y) < 0.01 && Math.abs(newVelocity.x) < 0.01;
-        
-        return { 
-          ...obj, 
-          position: newPosition, 
-          velocity: newVelocity, 
-          isPhysicsEnabled: !isSettled 
-        };
-      }));
-    };
-    const intervalId = setInterval(physicsLoop, 1000 / 60);
-    return () => clearInterval(intervalId);
+    // Inertia disabled per user request
+    return () => {};
   }, []);
 
   return (
@@ -906,10 +862,15 @@ const Index = () => {
             </div>
             {videoRef.current && (
               <>
-                {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />}
-                {showSkeleton && <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />}
+                {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} alignmentParams={alignmentParams} />}
+                {showSkeleton && <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} alignmentParams={alignmentParams} />}
               </>
             )}
+            
+            {/* Alignment Settings Panel */}
+            <div className="fixed top-8 right-8 z-50">
+              <AlignmentSettings params={alignmentParams} onParamsChange={setAlignmentParams} />
+            </div>
           </div>
         )}
       </div>

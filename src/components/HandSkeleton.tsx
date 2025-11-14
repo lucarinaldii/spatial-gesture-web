@@ -1,9 +1,11 @@
 import { useRef, useEffect } from 'react';
+import { AlignmentParams } from './AlignmentSettings';
 
 interface HandSkeletonProps {
   landmarks: any;
   videoWidth: number;
   videoHeight: number;
+  alignmentParams: AlignmentParams;
 }
 
 // Complete hand skeleton connections (all fingers)
@@ -22,7 +24,7 @@ const HAND_CONNECTIONS = [
   [5, 9], [9, 13], [13, 17],
 ];
 
-const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps) => {
+const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams }: HandSkeletonProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -51,8 +53,8 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     ctx.scale(-1, 1);
     ctx.translate(-canvas.width, 0);
     
-    // Scale down skeleton to match 3D hand size
-    const scaleFactor = 0.55;
+    // Scale down skeleton using alignment params
+    const scaleFactor = alignmentParams.skeletonScale;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     ctx.translate(centerX, centerY);
@@ -72,11 +74,11 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
         const startPoint = hand[start];
         const endPoint = hand[end];
         
-        // Apply z-depth scaling to match 3D hand positioning
+        // Apply z-depth scaling using alignment params
         const startZ = startPoint.z || 0;
         const endZ = endPoint.z || 0;
-        const startDepthScale = 1 + startZ * 0.3; // Reduced depth effect
-        const endDepthScale = 1 + endZ * 0.3;
+        const startDepthScale = 1 + startZ * alignmentParams.skeletonZDepth;
+        const endDepthScale = 1 + endZ * alignmentParams.skeletonZDepth;
 
         ctx.beginPath();
         ctx.moveTo(startPoint.x * canvas.width * startDepthScale, startPoint.y * canvas.height * startDepthScale);
@@ -93,7 +95,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
       fingertips.forEach(tipIndex => {
         const tip = hand[tipIndex];
         const tipZ = tip.z || 0;
-        const depthScale = 1 + tipZ * 0.3; // Reduced depth effect
+        const depthScale = 1 + tipZ * alignmentParams.skeletonZDepth;
         ctx.beginPath();
         ctx.arc(
           tip.x * canvas.width * depthScale,
@@ -109,7 +111,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       const wrist = hand[0];
       const wristZ = wrist.z || 0;
-      const wristDepthScale = 1 + wristZ * 0.3; // Reduced depth effect
+      const wristDepthScale = 1 + wristZ * alignmentParams.skeletonZDepth;
       ctx.beginPath();
       ctx.arc(
         wrist.x * canvas.width * wristDepthScale,
@@ -122,7 +124,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     });
     
     ctx.restore();
-  }, [landmarks, videoWidth, videoHeight]);
+  }, [landmarks, videoWidth, videoHeight, alignmentParams]);
 
   return (
     <canvas
