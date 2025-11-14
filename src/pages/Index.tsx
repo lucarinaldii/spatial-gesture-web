@@ -93,22 +93,22 @@ const Index = () => {
   const defaultAlignmentParams: AlignmentParams = {
     leftHand: {
       skeletonScale: 0.85,
-      skeletonXOffset: -2.0, // Percentage of viewport width
+      skeletonXOffset: -1.0, // Percentage of viewport width
       skeletonYOffset: 0.0,  // Percentage of viewport height
       skeletonZDepth: 0.85,
       hand3DScale: 1.25,
-      hand3DXOffset: -1.6,   // Percentage-based offset
-      hand3DYOffset: 0.0,
+      hand3DXOffset: 4.6,    // Percentage-based offset
+      hand3DYOffset: 0.7,
       hand3DZDepth: 1.0,
     },
     rightHand: {
-      skeletonScale: 0.85,
-      skeletonXOffset: -5.0, // Percentage of viewport width
-      skeletonYOffset: 3.6,  // Percentage of viewport height
+      skeletonScale: 0.74,
+      skeletonXOffset: 2.6,  // Percentage of viewport width
+      skeletonYOffset: 1.8,  // Percentage of viewport height
       skeletonZDepth: 0.65,
       hand3DScale: 1.21,
-      hand3DXOffset: 5.4,    // Percentage-based offset
-      hand3DYOffset: -2.0,
+      hand3DXOffset: -5.0,   // Percentage-based offset
+      hand3DYOffset: -1.0,
       hand3DZDepth: 1.0,
     },
   };
