@@ -789,10 +789,10 @@ const Index = () => {
                 }
                 
                 const initialZ = baseDistanceRef.current.get(zKey)!;
-                // Calculate scale: moving hand closer (more negative z) = zoom in
-                // Typical z range is around -0.2 to 0.2, so we scale the difference
-                const zDiff = initialZ - hand.z; // Inverted: closer = positive
-                const scaleFactor = Math.max(0.5, Math.min(3, 1 + zDiff * 3)); // Amplify the effect
+                // Calculate scale: moving hand farther (smaller hand, more positive z) = zoom in
+                // Inverted behavior as requested
+                const zDiff = hand.z - initialZ; // Farther = positive, closer = negative
+                const scaleFactor = Math.max(0.5, Math.min(3, 1 + zDiff * 6)); // Increased power from 3 to 6
                 
                 setObjectScales(prev => {
                   const next = new Map(prev);
