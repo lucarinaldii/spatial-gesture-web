@@ -142,7 +142,6 @@ const Index = () => {
       isPhysicsEnabled: false,
     }]);
     
-    toast({ title: "File imported", description: `${file.name} added to scene` });
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -206,9 +205,7 @@ const Index = () => {
     
     // Reset alignment parameters
     setAlignmentParams(defaultAlignmentParams);
-    
-    toast({ title: "Session restarted", description: "Canvas and objects reset" });
-  }, [toast]);
+  }, []);
 
   // Hand gesture detection for import button
   useEffect(() => {
@@ -833,8 +830,8 @@ const Index = () => {
           <div className="relative min-h-screen">
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
-            {/* Bottom center buttons */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-4">
+            {/* Bottom center buttons - pointer-events-auto ensures they're clickable */}
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-4 pointer-events-auto">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
               <Button 
                 ref={restartButtonRef}
@@ -890,12 +887,8 @@ const Index = () => {
                 return <InteractiveObject key={obj.id} id={obj.id} type={obj.type} title={obj.title} description={obj.description} fileUrl={obj.fileUrl} position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} rotation={obj.rotation} zIndex={obj.zIndex} handPosition={handIndex !== undefined ? handPositions[handIndex] : null} gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} onInteract={() => {}} isBeingDragged={isBeingDragged} scale={objectScales.get(obj.id) || 1} isMerging={isMerging} isSplitting={isSplitting} />;
               })}
             </div>
-            {videoRef.current && (
-              <>
-                {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} alignmentParams={alignmentParams} handedness={handedness} />}
-                {showSkeleton && <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} alignmentParams={alignmentParams} handedness={handedness} />}
-              </>
-            )}
+            {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
+            {showSkeleton && landmarks && <HandSkeleton landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
             
             {/* Alignment Settings Panel */}
             {showSettings && (

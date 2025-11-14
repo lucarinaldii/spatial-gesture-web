@@ -243,12 +243,10 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
   
   return (
     <div 
-      className="absolute inset-0 pointer-events-none z-20"
+      className="fixed inset-0 pointer-events-none z-20"
       style={{ 
         width: '100vw', 
         height: '100vh',
-        border: '2px solid red',
-        borderRadius: '8px',
       }}
     >
       <Canvas

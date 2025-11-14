@@ -44,8 +44,6 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    console.log('Drawing hand skeleton with', landmarks.length, 'hands');
-
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -55,8 +53,6 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
     ctx.translate(-canvas.width, 0);
 
     landmarks.forEach((hand: any, handIndex: number) => {
-      console.log('Hand has', hand.length, 'landmarks');
-      
       // Manually detect left/right hand by thumb position
       // Thumb landmark is 4, pinky base is 17
       const thumb = hand[4];
@@ -65,8 +61,6 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
       // If thumb is to the left of pinky, it's a right hand (palm facing camera)
       const isLeftHand = thumb.x > pinky.x;
       const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
-      
-      console.log(`Hand ${handIndex}: ${isLeftHand ? 'LEFT' : 'RIGHT'} (thumb x: ${thumb.x.toFixed(2)}, pinky x: ${pinky.x.toFixed(2)})`);
       
       // Apply hand-specific alignment
       ctx.save();
@@ -144,9 +138,9 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
   return (
     <canvas
       ref={canvasRef}
-      width={videoWidth}
-      height={videoHeight}
-      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+      width={window.innerWidth}
+      height={window.innerHeight}
+      className="fixed inset-0 w-full h-full pointer-events-none z-10"
     />
   );
 };
