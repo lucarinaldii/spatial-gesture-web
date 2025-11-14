@@ -52,7 +52,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight }: HandSkeletonProps)
     ctx.translate(-canvas.width, 0);
     
     // Scale down skeleton to match 3D hand size
-    const scaleFactor = 0.65;
+    const scaleFactor = 0.55;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     ctx.translate(centerX, centerY);
