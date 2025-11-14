@@ -21,6 +21,38 @@ interface ObjectData {
   isPhysicsEnabled: boolean;
 }
 
+// Helper function to create placeholder hand landmarks in open pose
+const createPlaceholderHandLandmarks = (hand: 'Left' | 'Right') => {
+  const centerX = 0.5;
+  const centerY = 0.5;
+  const offset = hand === 'Left' ? -0.15 : 0.15;
+  
+  // Create open hand pose with normalized coordinates
+  return [
+    { x: centerX + offset, y: centerY, z: 0, visibility: 1 }, // Wrist (0)
+    { x: centerX + offset - 0.02, y: centerY - 0.05, z: -0.01, visibility: 1 }, // Thumb CMC (1)
+    { x: centerX + offset - 0.04, y: centerY - 0.08, z: -0.02, visibility: 1 }, // Thumb MCP (2)
+    { x: centerX + offset - 0.05, y: centerY - 0.11, z: -0.03, visibility: 1 }, // Thumb IP (3)
+    { x: centerX + offset - 0.06, y: centerY - 0.14, z: -0.04, visibility: 1 }, // Thumb tip (4)
+    { x: centerX + offset + 0.01, y: centerY - 0.05, z: 0, visibility: 1 }, // Index MCP (5)
+    { x: centerX + offset + 0.01, y: centerY - 0.10, z: 0, visibility: 1 }, // Index PIP (6)
+    { x: centerX + offset + 0.01, y: centerY - 0.14, z: 0, visibility: 1 }, // Index DIP (7)
+    { x: centerX + offset + 0.01, y: centerY - 0.18, z: 0, visibility: 1 }, // Index tip (8)
+    { x: centerX + offset + 0.04, y: centerY - 0.04, z: 0, visibility: 1 }, // Middle MCP (9)
+    { x: centerX + offset + 0.04, y: centerY - 0.10, z: 0, visibility: 1 }, // Middle PIP (10)
+    { x: centerX + offset + 0.04, y: centerY - 0.15, z: 0, visibility: 1 }, // Middle DIP (11)
+    { x: centerX + offset + 0.04, y: centerY - 0.19, z: 0, visibility: 1 }, // Middle tip (12)
+    { x: centerX + offset + 0.06, y: centerY - 0.03, z: 0, visibility: 1 }, // Ring MCP (13)
+    { x: centerX + offset + 0.06, y: centerY - 0.09, z: 0, visibility: 1 }, // Ring PIP (14)
+    { x: centerX + offset + 0.06, y: centerY - 0.14, z: 0, visibility: 1 }, // Ring DIP (15)
+    { x: centerX + offset + 0.06, y: centerY - 0.17, z: 0, visibility: 1 }, // Ring tip (16)
+    { x: centerX + offset + 0.08, y: centerY - 0.01, z: 0, visibility: 1 }, // Pinky MCP (17)
+    { x: centerX + offset + 0.08, y: centerY - 0.07, z: 0, visibility: 1 }, // Pinky PIP (18)
+    { x: centerX + offset + 0.08, y: centerY - 0.11, z: 0, visibility: 1 }, // Pinky DIP (19)
+    { x: centerX + offset + 0.08, y: centerY - 0.14, z: 0, visibility: 1 }, // Pinky tip (20)
+  ];
+};
+
 const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
   const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
@@ -909,8 +941,46 @@ const Index = () => {
                 return <InteractiveObject key={obj.id} id={obj.id} type={obj.type} title={obj.title} description={obj.description} fileUrl={obj.fileUrl} position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} rotation={obj.rotation} zIndex={obj.zIndex} handPosition={adjustedHandPosition} gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} onInteract={() => {}} isBeingDragged={isBeingDragged} scale={objectScales.get(obj.id) || 1} isMerging={isMerging} isSplitting={isSplitting} />;
               })}
             </div>
-            {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
-            {showSkeleton && landmarks && <HandSkeleton landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
+            {show3DHand && (
+              <>
+                {/* Show placeholder hands when not tracking or no hands detected */}
+                {(!isTracking || !landmarks || landmarks.length === 0) && (
+                  <div className="fixed inset-0 pointer-events-none opacity-50">
+                    <Hand3DModel 
+                      landmarks={[createPlaceholderHandLandmarks('Left'), createPlaceholderHandLandmarks('Right')]} 
+                      videoWidth={window.innerWidth} 
+                      videoHeight={window.innerHeight} 
+                      alignmentParams={{
+                        leftHand: {
+                          ...alignmentParams.leftHand,
+                          hand3DScale: alignmentParams.leftHand.hand3DScale * 0.5,
+                          hand3DXOffset: 0,
+                          hand3DYOffset: 0,
+                        },
+                        rightHand: {
+                          ...alignmentParams.rightHand,
+                          hand3DScale: alignmentParams.rightHand.hand3DScale * 0.5,
+                          hand3DXOffset: 0,
+                          hand3DYOffset: 0,
+                        }
+                      }}
+                      handedness={[{index: 0, categoryName: 'Left', displayName: 'Left', score: 1}, {index: 1, categoryName: 'Right', displayName: 'Right', score: 1}]}
+                    />
+                  </div>
+                )}
+                {/* Live tracked hands */}
+                {landmarks && landmarks.length > 0 && (
+                  <Hand3DModel 
+                    landmarks={landmarks} 
+                    videoWidth={window.innerWidth} 
+                    videoHeight={window.innerHeight} 
+                    alignmentParams={alignmentParams} 
+                    handedness={handedness} 
+                  />
+                )}
+              </>
+            )}
+            {showSkeleton && landmarks && landmarks.length > 0 && <HandSkeleton landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
             
             {/* Alignment Settings Panel */}
             {showSettings && (
