@@ -39,6 +39,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
           color="#ffd4b8"
           roughness={0.6}
           metalness={0.1}
+          transparent
+          opacity={0.6}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -50,6 +52,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
           color="#ffd4b8"
           roughness={0.6}
           metalness={0.1}
+          transparent
+          opacity={0.6}
         />
       </mesh>
       <mesh position={end} castShadow>
@@ -58,6 +62,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
           color="#ffd4b8"
           roughness={0.6}
           metalness={0.1}
+          transparent
+          opacity={0.6}
         />
       </mesh>
     </group>
@@ -98,6 +104,8 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
         color="#ffcba4"
         roughness={0.65}
         metalness={0.05}
+        transparent
+        opacity={0.6}
         side={THREE.DoubleSide}
       />
     </mesh>
@@ -197,6 +205,8 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
               color="#ffd4b8"
               roughness={0.7}
               metalness={0.05}
+              transparent
+              opacity={0.6}
             />
           </mesh>
         </group>
@@ -209,6 +219,8 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
           color="#ffcba4"
           roughness={0.65}
           metalness={0.05}
+          transparent
+          opacity={0.6}
         />
       </mesh>
     </group>
@@ -238,7 +250,7 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
         }}
         shadows
       >
-        <PerspectiveCamera makeDefault position={[0, 0, 15]} fov={63} />
+        <PerspectiveCamera makeDefault position={[0, 0, 12]} fov={75} />
         
         {/* Soft, natural lighting for skin-like appearance with shadows */}
         <ambientLight intensity={0.8} />
