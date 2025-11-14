@@ -11,7 +11,6 @@ interface HandGestureControlsProps {
 export const HandGestureControls = ({ gestureStates, handPositions }: HandGestureControlsProps) => {
   const { camera } = useThree();
   const lastPinchPosition = useRef<{ x: number; y: number } | null>(null);
-  const isPanning = useRef(false);
 
   useFrame(() => {
     // Only handle single hand pinch for panning
@@ -22,7 +21,7 @@ export const HandGestureControls = ({ gestureStates, handPositions }: HandGestur
       if (gesture.isPinching) {
         const currentPos = { x: hand.x, y: hand.y };
 
-        if (lastPinchPosition.current && isPanning.current) {
+        if (lastPinchPosition.current) {
           // Calculate pan delta
           const deltaX = (currentPos.x - lastPinchPosition.current.x) * 10;
           const deltaY = (currentPos.y - lastPinchPosition.current.y) * 10;
@@ -33,15 +32,12 @@ export const HandGestureControls = ({ gestureStates, handPositions }: HandGestur
         }
 
         lastPinchPosition.current = currentPos;
-        isPanning.current = true;
       } else {
         lastPinchPosition.current = null;
-        isPanning.current = false;
       }
     } else {
       // Reset if not single hand or if two hands (disable zoom)
       lastPinchPosition.current = null;
-      isPanning.current = false;
     }
   });
 
