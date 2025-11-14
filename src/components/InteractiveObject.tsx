@@ -135,7 +135,7 @@ const InteractiveObject = memo(({
                   <Model3D url={fileUrl || ''} />
                 </Center>
               </Suspense>
-              <OrbitControls enableZoom={false} enablePan={false} />
+              <OrbitControls enableZoom={false} enablePan={true} />
             </Canvas>
           </div>
         );
