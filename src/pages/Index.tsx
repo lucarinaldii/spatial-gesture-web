@@ -86,6 +86,7 @@ const Index = () => {
   const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
   const [show3DHand, setShow3DHand] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(true);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -856,33 +857,42 @@ const Index = () => {
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
             {/* Bottom center buttons */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-6">
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-4">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
               <Button 
                 ref={restartButtonRef}
                 onClick={handleRestart} 
                 size="lg" 
                 variant="destructive"
-                className={`rounded-full neon-glow transition-all duration-200 text-lg px-8 py-8 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+                className={`rounded-full neon-glow transition-all duration-200 px-6 py-6 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
-                <RotateCcw className="w-6 h-6 mr-2" />Restart
+                <RotateCcw className="w-5 h-5 mr-2" />Flip Camera
               </Button>
               <Button 
                 ref={importButtonRef}
                 onClick={() => fileInputRef.current?.click()} 
                 size="lg" 
-                className={`rounded-full neon-glow transition-all duration-200 text-lg px-8 py-8 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+                className={`rounded-full neon-glow transition-all duration-200 px-6 py-6 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
-                <Plus className="w-6 h-6 mr-2" />Import File
+                <Plus className="w-5 h-5 mr-2" />Import File
               </Button>
               <Button 
                 onClick={() => setShow3DHand(!show3DHand)} 
                 size="lg" 
                 variant="outline"
-                className="rounded-full neon-glow transition-all duration-200 text-lg px-8 py-8"
+                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
               >
-                {show3DHand ? <Eye className="w-6 h-6 mr-2" /> : <EyeOff className="w-6 h-6 mr-2" />}
+                {show3DHand ? <Eye className="w-5 h-5 mr-2" /> : <EyeOff className="w-5 h-5 mr-2" />}
                 3D Hand
+              </Button>
+              <Button 
+                onClick={() => setShowSkeleton(!showSkeleton)} 
+                size="lg" 
+                variant="outline"
+                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
+              >
+                {showSkeleton ? <Eye className="w-5 h-5 mr-2" /> : <EyeOff className="w-5 h-5 mr-2" />}
+                Skeleton
               </Button>
             </div>
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
@@ -897,7 +907,7 @@ const Index = () => {
             {videoRef.current && (
               <>
                 {show3DHand && landmarks && landmarks.length > 0 && <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />}
-                <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />
+                {showSkeleton && <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />}
               </>
             )}
           </div>
