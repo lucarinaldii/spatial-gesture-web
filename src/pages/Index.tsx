@@ -120,7 +120,7 @@ const Index = () => {
   const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
   const [show3DHand, setShow3DHand] = useState(true);
-  const [showSkeleton, setShowSkeleton] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const scaleVelocityRef = useRef<Map<string, number>>(new Map());
   const scaleHistoryRef = useRef<Map<string, Array<{ scale: number; timestamp: number }>>>(new Map());
