@@ -33,7 +33,7 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
   return (
     <group>
       {/* Main finger segment - tapered cylinder */}
-      <mesh position={midpoint} quaternion={quaternion}>
+      <mesh position={midpoint} quaternion={quaternion} castShadow>
         <cylinderGeometry args={[endRadius, startRadius, distance, 16, 1, false]} />
         <meshStandardMaterial 
           color="#ffd4b8"
@@ -44,7 +44,7 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
       </mesh>
       
       {/* Smooth caps at both ends */}
-      <mesh position={start}>
+      <mesh position={start} castShadow>
         <sphereGeometry args={[startRadius, 16, 16]} />
         <meshStandardMaterial 
           color="#ffd4b8"
@@ -52,7 +52,7 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
           metalness={0.1}
         />
       </mesh>
-      <mesh position={end}>
+      <mesh position={end} castShadow>
         <sphereGeometry args={[endRadius, 16, 16]} />
         <meshStandardMaterial 
           color="#ffd4b8"
@@ -93,7 +93,7 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
   geometry.computeVertexNormals();
   
   return (
-    <mesh geometry={geometry}>
+    <mesh geometry={geometry} castShadow>
       <meshStandardMaterial 
         color="#ffcba4"
         roughness={0.65}
@@ -118,8 +118,8 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
     // Map normalized coordinates (0-1) to screen space matching the canvas
     // Mirror horizontally to match skeleton flip
     const x = (1 - lm.x) * 10 - 5;  // Flip horizontally and center
-    const y = lm.y * 10 - 5;        // Center vertically
-    const z = lm.z * 10;             // Depth
+    const y = -lm.y * 10 + 5;       // Flip vertically to match canvas coordinates
+    const z = -lm.z * 10;            // Depth (negative to push away from camera)
     return new THREE.Vector3(x, y, z);
   });
   
@@ -153,9 +153,6 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   
   useFrame(() => {
     if (!groupRef.current) return;
-    
-    // Rotate to view from top (palm facing camera, thumb inward)
-    groupRef.current.rotation.x = Math.PI * 0.5; // 90 degrees to view from top
     
     if (handIndex === 1) {
       groupRef.current.position.x = 5;
@@ -194,7 +191,7 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
           })}
           
           {/* Fingertip - extra smooth */}
-          <mesh position={vectors[finger.indices[finger.indices.length - 1]]}>
+          <mesh position={vectors[finger.indices[finger.indices.length - 1]]} castShadow>
             <sphereGeometry args={[finger.radii[finger.radii.length - 1][1], 20, 20]} />
             <meshStandardMaterial 
               color="#ffd4b8"
@@ -206,7 +203,7 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
       ))}
       
       {/* Wrist base */}
-      <mesh position={vectors[0]}>
+      <mesh position={vectors[0]} castShadow>
         <sphereGeometry args={[0.32, 20, 20]} />
         <meshStandardMaterial 
           color="#ffcba4"
@@ -239,15 +236,34 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
           antialias: true,
           preserveDrawingBuffer: true 
         }}
+        shadows
       >
-        <PerspectiveCamera makeDefault position={[0, -20, 0]} fov={50} rotation={[Math.PI / 2, 0, 0]} />
+        <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
         
-        {/* Soft, natural lighting for skin-like appearance */}
-        <ambientLight intensity={1.2} />
-        <directionalLight position={[5, 10, 8]} intensity={0.8} color="#fff5e6" />
-        <directionalLight position={[-5, -5, -8]} intensity={0.4} color="#ffeedd" />
-        <pointLight position={[0, 5, 15]} intensity={0.6} color="#ffe4d1" />
-        <hemisphereLight intensity={0.5} groundColor="#d4a574" color="#ffeedd" />
+        {/* Soft, natural lighting for skin-like appearance with shadows */}
+        <ambientLight intensity={0.8} />
+        <directionalLight 
+          position={[5, 10, 8]} 
+          intensity={1.0} 
+          color="#fff5e6" 
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-far={50}
+          shadow-camera-left={-10}
+          shadow-camera-right={10}
+          shadow-camera-top={10}
+          shadow-camera-bottom={-10}
+        />
+        <directionalLight position={[-5, -5, -8]} intensity={0.3} color="#ffeedd" />
+        <pointLight position={[0, 5, 15]} intensity={0.5} color="#ffe4d1" castShadow />
+        <hemisphereLight intensity={0.4} groundColor="#d4a574" color="#ffeedd" />
+        
+        {/* Ground plane for depth reference with shadow */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]} receiveShadow>
+          <planeGeometry args={[30, 30]} />
+          <shadowMaterial opacity={0.15} color="#000000" />
+        </mesh>
         
         {/* Render each detected hand */}
         {landmarks.map((handLandmarks, index) => (
