@@ -2,10 +2,11 @@ import { useState, useRef, useEffect, memo, Suspense } from 'react';
 import { Card } from '@/components/ui/card';
 import { HandPosition, GestureState } from '@/hooks/useHandTracking';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Center } from '@react-three/drei';
+import { useGLTF, Center } from '@react-three/drei';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { HandGestureControls } from './HandGestureControls';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -26,6 +27,8 @@ interface InteractiveObjectProps {
   scale?: number;
   isMerging?: boolean;
   isSplitting?: boolean;
+  allHandPositions?: HandPosition[];
+  allGestureStates?: GestureState[];
 }
 
 const Model3D = ({ url }: { url: string }) => {
@@ -49,6 +52,8 @@ const InteractiveObject = memo(({
   scale = 1,
   isMerging = false,
   isSplitting = false,
+  allHandPositions = [],
+  allGestureStates = [],
 }: InteractiveObjectProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
@@ -135,7 +140,10 @@ const InteractiveObject = memo(({
                   <Model3D url={fileUrl || ''} />
                 </Center>
               </Suspense>
-              <OrbitControls enableZoom={false} enablePan={true} />
+              <HandGestureControls 
+                gestureStates={allGestureStates} 
+                handPositions={allHandPositions} 
+              />
             </Canvas>
           </div>
         );
