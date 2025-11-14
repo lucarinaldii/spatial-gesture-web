@@ -6,7 +6,7 @@ import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, RotateCcw, Eye, EyeOff, Settings } from 'lucide-react';
+import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2 } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -122,6 +122,8 @@ const Index = () => {
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDeleteZone, setShowDeleteZone] = useState(false);
+  const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
   
   const defaultAlignmentParams: AlignmentParams = {
     leftHand: {
@@ -439,6 +441,25 @@ const Index = () => {
             // Release touched object (moved away from object)
             const touched = newTouchedObjects.get(handIndex);
             if (touched) {
+              // Check if object is over delete zone
+              const obj = objects.find(o => o.id === touched.id);
+              if (obj) {
+                const objX = obj.position.x + canvasOffset.x;
+                const objY = obj.position.y + canvasOffset.y;
+                const DELETE_ZONE_X = 85;
+                const DELETE_ZONE_Y = 75;
+                
+                if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
+                  // Delete the object
+                  setObjects(prev => prev.filter(o => o.id !== touched.id));
+                  toast({ title: "Card deleted", description: "Card moved to trash" });
+                  newTouchedObjects.delete(handIndex);
+                  hasTouchChanges = true;
+                  handVelocityHistoryRef.current.delete(handIndex);
+                  return;
+                }
+              }
+              
               newTouchedObjects.delete(handIndex);
               hasTouchChanges = true;
               
@@ -467,6 +488,25 @@ const Index = () => {
           // Release touched object if hand gesture changed (fingers extended or not parallel anymore)
           const touched = newTouchedObjects.get(handIndex);
           if (touched) {
+            // Check if object is over delete zone
+            const obj = objects.find(o => o.id === touched.id);
+            if (obj) {
+              const objX = obj.position.x + canvasOffset.x;
+              const objY = obj.position.y + canvasOffset.y;
+              const DELETE_ZONE_X = 85;
+              const DELETE_ZONE_Y = 75;
+              
+              if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
+                // Delete the object
+                setObjects(prev => prev.filter(o => o.id !== touched.id));
+                toast({ title: "Card deleted", description: "Card moved to trash" });
+                newTouchedObjects.delete(handIndex);
+                hasTouchChanges = true;
+                handVelocityHistoryRef.current.delete(handIndex);
+                return;
+              }
+            }
+            
             newTouchedObjects.delete(handIndex);
             hasTouchChanges = true;
             
@@ -787,6 +827,30 @@ const Index = () => {
         lastPinchStates.current.set(handIndex, isPinching);
       });
 
+      // Update show delete zone based on whether anything is being touched
+      setShowDeleteZone(newTouchedObjects.size > 0);
+      
+      // Check collision with delete zone for touched objects
+      let isAnyObjectOverDeleteZone = false;
+      if (newTouchedObjects.size > 0) {
+        const DELETE_ZONE_X = 85; // Bottom right: 85-95%
+        const DELETE_ZONE_Y = 75; // Bottom: 75-85%
+        
+        newTouchedObjects.forEach((touched) => {
+          const obj = objects.find(o => o.id === touched.id);
+          if (obj) {
+            const objX = obj.position.x + canvasOffset.x;
+            const objY = obj.position.y + canvasOffset.y;
+            
+            // Check if object center is within delete zone
+            if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
+              isAnyObjectOverDeleteZone = true;
+            }
+          }
+        });
+      }
+      setIsOverDeleteZone(isAnyObjectOverDeleteZone);
+      
       if (hasChanges) setGrabbedObjects(newGrabbedObjects);
       if (hasTouchChanges) touchedObjects.current = newTouchedObjects;
       if (scaleUpdate) setObjectScales(prev => { const n = new Map(prev); n.set(scaleUpdate.id, scaleUpdate.scale); return n; });
@@ -986,6 +1050,33 @@ const Index = () => {
               </>
             )}
             {showSkeleton && landmarks && landmarks.length > 0 && <HandSkeleton landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
+            
+            {/* Delete Zone - shown when dragging cards */}
+            {showDeleteZone && (
+              <div 
+                className="fixed bottom-8 right-8 z-40 pointer-events-none"
+                style={{
+                  width: '150px',
+                  height: '150px',
+                }}
+              >
+                <div 
+                  className={`w-full h-full rounded-full flex items-center justify-center transition-all duration-300 ${
+                    isOverDeleteZone 
+                      ? 'bg-destructive/90 scale-110 shadow-2xl shadow-destructive/50' 
+                      : 'bg-destructive/70 scale-100'
+                  }`}
+                >
+                  <Trash2 
+                    className={`transition-all duration-300 ${
+                      isOverDeleteZone ? 'w-20 h-20' : 'w-16 h-16'
+                    }`} 
+                    strokeWidth={2}
+                    color="white"
+                  />
+                </div>
+              </div>
+            )}
             
             {/* Alignment Settings Panel */}
             {showSettings && (
