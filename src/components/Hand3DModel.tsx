@@ -17,7 +17,7 @@ interface HandModelProps {
 }
 
 // Create a smooth finger segment using capsule-like geometry
-function SmoothFingerSegment({ start, end, startRadius = 0.35, endRadius = 0.3 }: { 
+function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 }: {
   start: THREE.Vector3; 
   end: THREE.Vector3; 
   startRadius?: number;
@@ -113,33 +113,38 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
     return null;
   }
   
-  const vectors = landmarks.map(lm => landmarkToVector3(lm, 10));
+  // Use video dimensions for precise skeleton alignment
+  const vectors = landmarks.map(lm => ({
+    x: (1 - lm.x) * 10 - 5,  // Flip and center
+    y: -lm.y * 10 + 5,        // Flip and center  
+    z: -lm.z * 20             // Depth
+  })).map(v => new THREE.Vector3(v.x, v.y, v.z));
   
   const fingers = [
     { 
       name: 'thumb', 
       indices: [1, 2, 3, 4],
-      radii: [[0.45, 0.42], [0.42, 0.38], [0.38, 0.35]]
+      radii: [[0.25, 0.22], [0.22, 0.20], [0.20, 0.18]]
     },
     { 
       name: 'index', 
       indices: [5, 6, 7, 8],
-      radii: [[0.40, 0.37], [0.37, 0.33], [0.33, 0.28]]
+      radii: [[0.22, 0.20], [0.20, 0.18], [0.18, 0.16]]
     },
     { 
       name: 'middle', 
       indices: [9, 10, 11, 12],
-      radii: [[0.42, 0.39], [0.39, 0.35], [0.35, 0.30]]
+      radii: [[0.23, 0.21], [0.21, 0.19], [0.19, 0.17]]
     },
     { 
       name: 'ring', 
       indices: [13, 14, 15, 16],
-      radii: [[0.38, 0.35], [0.35, 0.31], [0.31, 0.27]]
+      radii: [[0.21, 0.19], [0.19, 0.17], [0.17, 0.15]]
     },
     { 
       name: 'pinky', 
       indices: [17, 18, 19, 20],
-      radii: [[0.35, 0.32], [0.32, 0.28], [0.28, 0.24]]
+      radii: [[0.19, 0.17], [0.17, 0.15], [0.15, 0.13]]
     },
   ];
   
@@ -155,12 +160,12 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
       {/* Palm surface */}
       <PalmMesh vectors={vectors} />
       
-      {/* Connection from wrist to finger bases (thick palm connections) */}
-      <SmoothFingerSegment start={vectors[0]} end={vectors[1]} startRadius={0.6} endRadius={0.5} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[5]} startRadius={0.55} endRadius={0.45} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[9]} startRadius={0.55} endRadius={0.45} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[13]} startRadius={0.52} endRadius={0.42} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[17]} startRadius={0.48} endRadius={0.38} />
+      {/* Connection from wrist to finger bases (thinner palm connections) */}
+      <SmoothFingerSegment start={vectors[0]} end={vectors[1]} startRadius={0.30} endRadius={0.25} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[5]} startRadius={0.28} endRadius={0.23} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[9]} startRadius={0.28} endRadius={0.23} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[13]} startRadius={0.26} endRadius={0.22} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[17]} startRadius={0.24} endRadius={0.20} />
       
       {/* Render each finger with smooth segments */}
       {fingers.map((finger) => (
@@ -195,7 +200,7 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
       
       {/* Wrist base */}
       <mesh position={vectors[0]}>
-        <sphereGeometry args={[0.65, 20, 20]} />
+        <sphereGeometry args={[0.32, 20, 20]} />
         <meshStandardMaterial 
           color="#ffcba4"
           roughness={0.65}

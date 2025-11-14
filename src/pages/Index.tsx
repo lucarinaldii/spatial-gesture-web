@@ -5,7 +5,7 @@ import HandSkeleton from '@/components/HandSkeleton';
 import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw, Eye, EyeOff } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -85,6 +85,7 @@ const Index = () => {
   const [mergingCards, setMergingCards] = useState<Set<string>>(new Set());
   const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
+  const [show3DHand, setShow3DHand] = useState(true);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -874,6 +875,15 @@ const Index = () => {
               >
                 <Plus className="w-6 h-6 mr-2" />Import File
               </Button>
+              <Button 
+                onClick={() => setShow3DHand(!show3DHand)} 
+                size="lg" 
+                variant="outline"
+                className="rounded-full neon-glow transition-all duration-200 text-lg px-8 py-8"
+              >
+                {show3DHand ? <Eye className="w-6 h-6 mr-2" /> : <EyeOff className="w-6 h-6 mr-2" />}
+                3D Hand
+              </Button>
             </div>
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
               {objects.sort((a, b) => a.zIndex - b.zIndex).map((obj) => {
@@ -886,7 +896,7 @@ const Index = () => {
             </div>
             {videoRef.current && (
               <>
-                <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />
+                {show3DHand && <Hand3DModel landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />}
                 <HandSkeleton landmarks={landmarks} videoWidth={videoRef.current.videoWidth || 640} videoHeight={videoRef.current.videoHeight || 480} />
               </>
             )}
