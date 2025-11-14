@@ -46,7 +46,7 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
       <div className="space-y-4">
         {/* Left Hand Controls */}
         <div className="space-y-3 pb-3 border-b border-border/30">
-          <h4 className="text-sm font-semibold text-primary">Left Hand</h4>
+          <h4 className="text-sm font-semibold text-primary">Right Hand</h4>
           
           <div className="pl-2 space-y-3">
             <h5 className="text-xs font-semibold text-muted-foreground">Skeleton</h5>
@@ -122,7 +122,7 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
                 value={[params.leftHand.hand3DScale]}
                 onValueChange={([v]) => updateLeftParam('hand3DScale', v)}
                 min={0.3}
-                max={1.0}
+                max={1.5}
                 step={0.01}
                 className="w-full"
               />
@@ -177,7 +177,7 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
 
         {/* Right Hand Controls */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-secondary">Right Hand</h4>
+          <h4 className="text-sm font-semibold text-secondary">Left Hand</h4>
           
           <div className="pl-2 space-y-3">
             <h5 className="text-xs font-semibold text-muted-foreground">Skeleton</h5>
@@ -253,7 +253,7 @@ export default function AlignmentSettings({ params, onParamsChange }: AlignmentS
                 value={[params.rightHand.hand3DScale]}
                 onValueChange={([v]) => updateRightParam('hand3DScale', v)}
                 min={0.3}
-                max={1.0}
+                max={1.5}
                 step={0.01}
                 className="w-full"
               />
