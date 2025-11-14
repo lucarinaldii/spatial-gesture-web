@@ -285,13 +285,14 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
         
         {/* Render each detected hand */}
         {landmarks.map((handLandmarks, index) => {
-          // Manually detect left/right hand by thumb position
-          // Thumb landmark is 4, pinky base is 17
-          const thumb = handLandmarks[4];
-          const pinky = handLandmarks[17];
-          // If thumb is to the right of pinky, it's a left hand (palm facing camera)
-          // If thumb is to the left of pinky, it's a right hand (palm facing camera)
-          const isLeftHand = thumb.x > pinky.x;
+          // Use screen position to determine which alignment to use
+          // Calculate hand center from wrist (0) and middle finger base (9)
+          const wrist = handLandmarks[0];
+          const middleMCP = handLandmarks[9];
+          const handCenterX = (wrist.x + middleMCP.x) / 2;
+          
+          // Apply left-hand alignment when hand is on left side of screen
+          const useLeftAlignment = handCenterX < 0.5;
           
           return (
             <SmoothHandModel 
@@ -299,7 +300,7 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
               landmarks={handLandmarks}
               handIndex={index}
               alignmentParams={alignmentParams}
-              isLeftHand={isLeftHand}
+              isLeftHand={useLeftAlignment}
             />
           );
         })}

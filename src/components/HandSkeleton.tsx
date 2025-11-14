@@ -53,14 +53,15 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
     ctx.translate(-canvas.width, 0);
 
     landmarks.forEach((hand: any, handIndex: number) => {
-      // Manually detect left/right hand by thumb position
-      // Thumb landmark is 4, pinky base is 17
-      const thumb = hand[4];
-      const pinky = hand[17];
-      // If thumb is to the right of pinky, it's a left hand (palm facing camera)
-      // If thumb is to the left of pinky, it's a right hand (palm facing camera)
-      const isLeftHand = thumb.x > pinky.x;
-      const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
+      // Use screen position to determine which alignment to use
+      // Calculate hand center from wrist (0) and middle finger base (9)
+      const handWrist = hand[0];
+      const handMiddleMCP = hand[9];
+      const handCenterX = (handWrist.x + handMiddleMCP.x) / 2;
+      
+      // Apply left-hand alignment when hand is on left side of screen
+      const useLeftAlignment = handCenterX < 0.5;
+      const handParams = useLeftAlignment ? alignmentParams.leftHand : alignmentParams.rightHand;
       
       // Apply hand-specific alignment
       ctx.save();
