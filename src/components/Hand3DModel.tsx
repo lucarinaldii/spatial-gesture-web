@@ -108,6 +108,11 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
 function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   
+  // Validate all landmarks exist before processing
+  if (!landmarks || landmarks.length < 21 || landmarks.some(lm => !lm || lm.x === undefined)) {
+    return null;
+  }
+  
   const vectors = landmarks.map(lm => landmarkToVector3(lm, 10));
   
   const fingers = [
