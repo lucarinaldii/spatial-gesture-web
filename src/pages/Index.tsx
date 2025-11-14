@@ -579,7 +579,7 @@ const Index = () => {
           
           if (newGrabbedObjects.size === 0) {
             // Canvas panning and zooming when not grabbing any objects
-            if (handPositions.length === 2) {
+            if (handPositions.length === 2 && handPositions[0] && handPositions[1]) {
               // Two-hand pinch: zoom and pan
               const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
               const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
@@ -601,7 +601,7 @@ const Index = () => {
                 canvasDragStartRef.current = { x: handX, y: handY };
               }
             }
-          } else if (obj0 && obj1 && obj0.id === obj1.id && handPositions.length === 2) {
+          } else if (obj0 && obj1 && obj0.id === obj1.id && handPositions.length === 2 && handPositions[0] && handPositions[1]) {
             // Two hands grabbing the same card - check for splitting
             const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
             const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
@@ -748,6 +748,9 @@ const Index = () => {
                 // Move both cards independently
                 const grabbed0 = newGrabbedObjects.get(0);
                 const grabbed1 = newGrabbedObjects.get(1);
+                
+                if (!handPositions[0] || !handPositions[1]) return;
+                
                 const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
                 const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
                 
