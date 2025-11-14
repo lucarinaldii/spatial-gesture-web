@@ -33,8 +33,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
   return (
     <group>
       {/* Main finger segment - tapered cylinder */}
-      <mesh position={midpoint} quaternion={quaternion} castShadow>
-        <cylinderGeometry args={[endRadius, startRadius, distance, 16, 1, false]} />
+      <mesh position={midpoint} quaternion={quaternion}>
+        <cylinderGeometry args={[endRadius, startRadius, distance, 12, 1, false]} />
         <meshStandardMaterial 
           color="#ffd4b8"
           roughness={0.6}
@@ -46,8 +46,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
       </mesh>
       
       {/* Smooth caps at both ends */}
-      <mesh position={start} castShadow>
-        <sphereGeometry args={[startRadius, 16, 16]} />
+      <mesh position={start}>
+        <sphereGeometry args={[startRadius, 12, 12]} />
         <meshStandardMaterial 
           color="#ffd4b8"
           roughness={0.6}
@@ -56,8 +56,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.20, endRadius = 0.18 
           opacity={0.6}
         />
       </mesh>
-      <mesh position={end} castShadow>
-        <sphereGeometry args={[endRadius, 16, 16]} />
+      <mesh position={end}>
+        <sphereGeometry args={[endRadius, 12, 12]} />
         <meshStandardMaterial 
           color="#ffd4b8"
           roughness={0.6}
@@ -99,7 +99,7 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
   geometry.computeVertexNormals();
   
   return (
-    <mesh geometry={geometry} castShadow>
+    <mesh geometry={geometry}>
       <meshStandardMaterial 
         color="#ffcba4"
         roughness={0.65}
@@ -167,6 +167,13 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
     }
   });
   
+  // Trigger re-render when landmarks change
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.updateMatrixWorld();
+    }
+  });
+  
   return (
     <group ref={groupRef}>
       {/* Palm surface */}
@@ -199,8 +206,8 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
           })}
           
           {/* Fingertip - extra smooth */}
-          <mesh position={vectors[finger.indices[finger.indices.length - 1]]} castShadow>
-            <sphereGeometry args={[finger.radii[finger.radii.length - 1][1], 20, 20]} />
+          <mesh position={vectors[finger.indices[finger.indices.length - 1]]}>
+            <sphereGeometry args={[finger.radii[finger.radii.length - 1][1], 12, 12]} />
             <meshStandardMaterial 
               color="#ffd4b8"
               roughness={0.7}
@@ -213,8 +220,8 @@ function SmoothHandModel({ landmarks, handIndex }: HandModelProps) {
       ))}
       
       {/* Wrist base */}
-      <mesh position={vectors[0]} castShadow>
-        <sphereGeometry args={[0.32, 20, 20]} />
+      <mesh position={vectors[0]}>
+        <sphereGeometry args={[0.32, 12, 12]} />
         <meshStandardMaterial 
           color="#ffcba4"
           roughness={0.65}
@@ -245,36 +252,28 @@ export default function Hand3DModel({ landmarks, videoWidth, videoHeight }: Hand
         }}
         gl={{ 
           alpha: true, 
-          antialias: true,
-          preserveDrawingBuffer: true 
+          antialias: false,
+          preserveDrawingBuffer: false,
+          powerPreference: 'high-performance'
         }}
-        shadows
+        frameloop="demand"
       >
         <PerspectiveCamera makeDefault position={[0, 0, 12]} fov={75} />
         
-        {/* Soft, natural lighting for skin-like appearance with shadows */}
-        <ambientLight intensity={0.8} />
+        {/* Simplified lighting without shadows for performance */}
+        <ambientLight intensity={0.9} />
         <directionalLight 
           position={[5, 10, 8]} 
-          intensity={1.0} 
+          intensity={0.8} 
           color="#fff5e6" 
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-camera-far={50}
-          shadow-camera-left={-10}
-          shadow-camera-right={10}
-          shadow-camera-top={10}
-          shadow-camera-bottom={-10}
         />
         <directionalLight position={[-5, -5, -8]} intensity={0.3} color="#ffeedd" />
-        <pointLight position={[0, 5, 15]} intensity={0.5} color="#ffe4d1" castShadow />
-        <hemisphereLight intensity={0.4} groundColor="#d4a574" color="#ffeedd" />
+        <pointLight position={[0, 5, 15]} intensity={0.4} color="#ffe4d1" />
         
-        {/* Ground plane for depth reference with shadow */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]} receiveShadow>
+        {/* Subtle ground plane without shadows */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]}>
           <planeGeometry args={[30, 30]} />
-          <shadowMaterial opacity={0.15} color="#000000" />
+          <meshBasicMaterial color="#000000" transparent opacity={0.1} />
         </mesh>
         
         {/* Render each detected hand */}
