@@ -241,8 +241,6 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, isLeftHand }: 
 const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams, handedness }: Hand3DModelProps) {
   if (!landmarks || landmarks.length === 0) return null;
   
-  console.log('Hand3DModel render with params:', alignmentParams);
-  
   return (
     <div 
       className="absolute inset-0 pointer-events-none z-20"

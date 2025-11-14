@@ -44,7 +44,6 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    console.log('HandSkeleton render with params:', alignmentParams);
     console.log('Drawing hand skeleton with', landmarks.length, 'hands');
 
     // Clear canvas

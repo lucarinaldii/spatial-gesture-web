@@ -6,7 +6,7 @@ import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import { Plus, RotateCcw, Eye, EyeOff, Settings } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -88,28 +88,32 @@ const Index = () => {
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
-  const [alignmentParams, setAlignmentParams] = useState<AlignmentParams>({
+  const [showSettings, setShowSettings] = useState(false);
+  
+  const defaultAlignmentParams: AlignmentParams = {
     leftHand: {
-      skeletonScale: 0.55,
-      skeletonXOffset: 0,
-      skeletonYOffset: 0,
-      skeletonZDepth: 0.3,
+      skeletonScale: 0.41,
+      skeletonXOffset: 0.2,
+      skeletonYOffset: 0.4,
+      skeletonZDepth: 0.65,
       hand3DScale: 0.55,
       hand3DXOffset: 0,
-      hand3DYOffset: 0,
+      hand3DYOffset: -0.3,
       hand3DZDepth: 3,
     },
     rightHand: {
-      skeletonScale: 0.55,
-      skeletonXOffset: 0,
+      skeletonScale: 0.46,
+      skeletonXOffset: -0.3,
       skeletonYOffset: 0,
-      skeletonZDepth: 0.3,
+      skeletonZDepth: 0,
       hand3DScale: 0.55,
-      hand3DXOffset: 0,
+      hand3DXOffset: -0.8,
       hand3DYOffset: 0,
       hand3DZDepth: 3,
     },
-  });
+  };
+  
+  const [alignmentParams, setAlignmentParams] = useState<AlignmentParams>(defaultAlignmentParams);
 
   const handleStartTracking = async () => {
     setIsTracking(true);
@@ -199,6 +203,9 @@ const Index = () => {
     maxZIndexRef.current = 3;
     baseDistanceRef.current.clear();
     baseAngleRef.current.clear();
+    
+    // Reset alignment parameters
+    setAlignmentParams(defaultAlignmentParams);
     
     toast({ title: "Session restarted", description: "Canvas and objects reset" });
   }, [toast]);
@@ -864,6 +871,15 @@ const Index = () => {
                 {showSkeleton ? <Eye className="w-5 h-5 mr-2" /> : <EyeOff className="w-5 h-5 mr-2" />}
                 Skeleton
               </Button>
+              <Button 
+                onClick={() => setShowSettings(!showSettings)} 
+                size="lg" 
+                variant="outline"
+                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
+              >
+                <Settings className="w-5 h-5 mr-2" />
+                Settings
+              </Button>
             </div>
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
               {objects.sort((a, b) => a.zIndex - b.zIndex).map((obj) => {
@@ -882,9 +898,11 @@ const Index = () => {
             )}
             
             {/* Alignment Settings Panel */}
-            <div className="fixed top-8 right-8 z-50">
-              <AlignmentSettings params={alignmentParams} onParamsChange={setAlignmentParams} />
-            </div>
+            {showSettings && (
+              <div className="fixed top-8 right-8 z-50">
+                <AlignmentSettings params={alignmentParams} onParamsChange={setAlignmentParams} />
+              </div>
+            )}
           </div>
         )}
       </div>

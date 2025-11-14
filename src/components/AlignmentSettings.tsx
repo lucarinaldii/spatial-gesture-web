@@ -32,12 +32,10 @@ interface AlignmentSettingsProps {
 
 export default function AlignmentSettings({ params, onParamsChange }: AlignmentSettingsProps) {
   const updateLeftParam = (key: keyof AlignmentParams['leftHand'], value: number) => {
-    console.log('Updating left hand param:', key, '=', value);
     onParamsChange({ ...params, leftHand: { ...params.leftHand, [key]: value } });
   };
   
   const updateRightParam = (key: keyof AlignmentParams['rightHand'], value: number) => {
-    console.log('Updating right hand param:', key, '=', value);
     onParamsChange({ ...params, rightHand: { ...params.rightHand, [key]: value } });
   };
 
