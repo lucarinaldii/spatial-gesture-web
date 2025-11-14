@@ -945,7 +945,7 @@ const Index = () => {
               <>
                 {/* Show placeholder hands when not tracking or no hands detected */}
                 {(!isTracking || !landmarks || landmarks.length === 0) && (
-                  <div className="fixed top-0 left-0 right-0 pointer-events-none opacity-50 flex flex-col items-center pt-8">
+                  <div className="fixed top-0 left-0 right-0 pointer-events-none opacity-50 flex flex-col items-center pt-8 animate-float">
                     <div className="relative w-full h-64">
                       <Hand3DModel 
                         landmarks={[createPlaceholderHandLandmarks('Left'), createPlaceholderHandLandmarks('Right')]} 
