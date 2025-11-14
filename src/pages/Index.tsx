@@ -122,6 +122,8 @@ const Index = () => {
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const scaleVelocityRef = useRef<Map<string, number>>(new Map());
+  const scaleHistoryRef = useRef<Map<string, Array<{ scale: number; timestamp: number }>>>(new Map());
   // Delete zone disabled
   // const [showDeleteZone, setShowDeleteZone] = useState(false);
   // const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
@@ -239,6 +241,8 @@ const Index = () => {
     maxZIndexRef.current = 3;
     baseDistanceRef.current.clear();
     baseAngleRef.current.clear();
+    scaleVelocityRef.current.clear();
+    scaleHistoryRef.current.clear();
     
     // Reset alignment parameters
     setAlignmentParams(defaultAlignmentParams);
@@ -665,6 +669,8 @@ const Index = () => {
                 baseDistanceRef.current.delete(`${obj0.id}_zoom`);
                 baseDistanceRef.current.delete(`${obj0.id}_z`);
                 baseAngleRef.current.delete(obj0.id);
+                scaleVelocityRef.current.delete(obj0.id);
+                scaleHistoryRef.current.delete(obj0.id);
                 
                 setTimeout(() => {
                   setSplittingCards(prev => {
@@ -794,6 +800,12 @@ const Index = () => {
                 const zDiff = hand.z - initialZ; // Farther = positive, closer = negative
                 const scaleFactor = Math.max(0.5, Math.min(3, 1 + zDiff * 6)); // Increased power from 3 to 6
                 
+                // Track scale history for inertia
+                const scaleHistory = scaleHistoryRef.current.get(grabbed.id) || [];
+                scaleHistory.push({ scale: scaleFactor, timestamp: Date.now() });
+                if (scaleHistory.length > 5) scaleHistory.shift(); // Keep last 5 samples
+                scaleHistoryRef.current.set(grabbed.id, scaleHistory);
+                
                 setObjectScales(prev => {
                   const next = new Map(prev);
                   next.set(grabbed.id, scaleFactor);
@@ -836,6 +848,8 @@ const Index = () => {
                 baseDistanceRef.current.delete(`${grabbed.id}_z`);
                 baseAngleRef.current.delete(grabbed.id);
                 splitDistanceRef.current.delete(grabbed.id);
+                scaleVelocityRef.current.delete(grabbed.id);
+                scaleHistoryRef.current.delete(grabbed.id);
                 handVelocityHistoryRef.current.delete(handIndex);
                 return;
               }
@@ -850,6 +864,29 @@ const Index = () => {
               baseDistanceRef.current.delete(`${grabbed.id}_z`);
               baseAngleRef.current.delete(grabbed.id);
               splitDistanceRef.current.delete(grabbed.id);
+              
+              // Calculate scale velocity from scale history
+              const scaleHistory = scaleHistoryRef.current.get(grabbed.id) || [];
+              let scaleVelocity = 0;
+              
+              if (scaleHistory.length >= 2) {
+                const recent = scaleHistory[scaleHistory.length - 1];
+                const previous = scaleHistory[0];
+                const timeDelta = (recent.timestamp - previous.timestamp) / 1000; // seconds
+                
+                if (timeDelta > 0) {
+                  // Calculate scale change per second
+                  scaleVelocity = (recent.scale - previous.scale) / timeDelta;
+                }
+              }
+              
+              // Store scale velocity for physics loop
+              if (Math.abs(scaleVelocity) > 0.01) {
+                scaleVelocityRef.current.set(grabbed.id, scaleVelocity);
+              }
+              
+              // Clear scale history
+              scaleHistoryRef.current.delete(grabbed.id);
               
               // Calculate release velocity from hand movement history
               const history = handVelocityHistoryRef.current.get(handIndex) || [];
@@ -981,6 +1018,53 @@ const Index = () => {
     animationFrameRef.current = requestAnimationFrame(updateDrag);
     return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
   }, [handPositions, gestureStates, grabbedObjects, objects, toast]);
+
+  // Scale inertia physics loop
+  useEffect(() => {
+    const applyScalePhysics = () => {
+      let hasActiveVelocity = false;
+      
+      setObjectScales(prev => {
+        const next = new Map(prev);
+        
+        scaleVelocityRef.current.forEach((velocity, id) => {
+          const currentScale = next.get(id) || 1;
+          
+          // Apply velocity with damping
+          const FRICTION = 0.92;
+          const SCALE_VELOCITY_MULTIPLIER = 0.016; // 60fps frame time
+          
+          const newScale = Math.max(0.5, Math.min(3, 
+            currentScale + velocity * SCALE_VELOCITY_MULTIPLIER
+          ));
+          
+          next.set(id, newScale);
+          
+          // Apply friction to velocity
+          const newVelocity = velocity * FRICTION;
+          
+          // Stop if velocity is very small
+          if (Math.abs(newVelocity) < 0.01) {
+            scaleVelocityRef.current.delete(id);
+          } else {
+            scaleVelocityRef.current.set(id, newVelocity);
+            hasActiveVelocity = true;
+          }
+        });
+        
+        return next;
+      });
+      
+      if (hasActiveVelocity) {
+        requestAnimationFrame(applyScalePhysics);
+      }
+    };
+    
+    // Start physics loop if there are active velocities
+    if (scaleVelocityRef.current.size > 0) {
+      requestAnimationFrame(applyScalePhysics);
+    }
+  }, [objects]);
 
   // Physics loop disabled - cards no longer have inertia
   useEffect(() => {
