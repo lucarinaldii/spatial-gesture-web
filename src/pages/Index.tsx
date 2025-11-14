@@ -945,27 +945,30 @@ const Index = () => {
               <>
                 {/* Show placeholder hands when not tracking or no hands detected */}
                 {(!isTracking || !landmarks || landmarks.length === 0) && (
-                  <div className="fixed inset-0 pointer-events-none opacity-50">
-                    <Hand3DModel 
-                      landmarks={[createPlaceholderHandLandmarks('Left'), createPlaceholderHandLandmarks('Right')]} 
-                      videoWidth={window.innerWidth} 
-                      videoHeight={window.innerHeight} 
-                      alignmentParams={{
-                        leftHand: {
-                          ...alignmentParams.leftHand,
-                          hand3DScale: alignmentParams.leftHand.hand3DScale * 0.5,
-                          hand3DXOffset: 0,
-                          hand3DYOffset: 0,
-                        },
-                        rightHand: {
-                          ...alignmentParams.rightHand,
-                          hand3DScale: alignmentParams.rightHand.hand3DScale * 0.5,
-                          hand3DXOffset: 0,
-                          hand3DYOffset: 0,
-                        }
-                      }}
-                      handedness={[{index: 0, categoryName: 'Left', displayName: 'Left', score: 1}, {index: 1, categoryName: 'Right', displayName: 'Right', score: 1}]}
-                    />
+                  <div className="fixed top-0 left-0 right-0 pointer-events-none opacity-50 flex flex-col items-center pt-8">
+                    <div className="relative w-full h-64">
+                      <Hand3DModel 
+                        landmarks={[createPlaceholderHandLandmarks('Left'), createPlaceholderHandLandmarks('Right')]} 
+                        videoWidth={window.innerWidth} 
+                        videoHeight={window.innerHeight} 
+                        alignmentParams={{
+                          leftHand: {
+                            ...alignmentParams.leftHand,
+                            hand3DScale: alignmentParams.leftHand.hand3DScale * 0.5,
+                            hand3DXOffset: -8,
+                            hand3DYOffset: -35,
+                          },
+                          rightHand: {
+                            ...alignmentParams.rightHand,
+                            hand3DScale: alignmentParams.rightHand.hand3DScale * 0.5,
+                            hand3DXOffset: 8,
+                            hand3DYOffset: -35,
+                          }
+                        }}
+                        handedness={[{index: 0, categoryName: 'Left', displayName: 'Left', score: 1}, {index: 1, categoryName: 'Right', displayName: 'Right', score: 1}]}
+                      />
+                    </div>
+                    <p className="text-foreground/70 text-sm font-medium mt-2">Show Hands</p>
                   </div>
                 )}
                 {/* Live tracked hands */}
