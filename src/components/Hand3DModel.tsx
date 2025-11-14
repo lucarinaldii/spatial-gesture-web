@@ -160,6 +160,7 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, is
   const currentScaleRef = useRef<number>(1);
   const targetScaleRef = useRef<number>(1);
   const releaseTimeRef = useRef<number>(0);
+  const wasGrabbingRef = useRef<boolean>(false);
   
   // Validate all landmarks exist before processing
   if (!landmarks || landmarks.length < 21 || landmarks.some(lm => !lm || lm.x === undefined)) {
@@ -168,25 +169,28 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, is
   
   // Use provided interpolated params directly
   
-  // Calculate inverse scale when grabbing
+  // Calculate inverse scale ONLY when actively grabbing a card
   let targetScale = 1;
   if (isGrabbing && handZ !== undefined) {
-    // Store initial z when grabbing starts
-    if (baseZRef.current === null) {
+    // Store initial z when grabbing starts (first frame of grab)
+    if (!wasGrabbingRef.current) {
       baseZRef.current = handZ;
       releaseTimeRef.current = 0;
+      wasGrabbingRef.current = true;
     }
     
     // Calculate inverse scale: closer to camera (more negative z) = smaller hand
-    const zDiff = handZ - baseZRef.current;
+    const zDiff = handZ - (baseZRef.current || handZ);
     // When zDiff is negative (moving closer to camera), scale decreases
     // When zDiff is positive (moving away from camera), scale increases
     targetScale = Math.max(0.2, Math.min(3, 1 + zDiff * 8));
     targetScaleRef.current = targetScale;
   } else {
-    // When released, start delay timer
-    if (baseZRef.current !== null && releaseTimeRef.current === 0) {
+    // Card released
+    if (wasGrabbingRef.current) {
+      // Start delay timer on first frame after release
       releaseTimeRef.current = Date.now();
+      wasGrabbingRef.current = false;
     }
     
     // Add 500ms delay before returning to normal size
