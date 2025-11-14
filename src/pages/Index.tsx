@@ -122,8 +122,9 @@ const Index = () => {
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
-  const [showDeleteZone, setShowDeleteZone] = useState(false);
-  const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
+  // Delete zone disabled
+  // const [showDeleteZone, setShowDeleteZone] = useState(false);
+  // const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
   
   const defaultAlignmentParams: AlignmentParams = {
     leftHand: {
@@ -441,6 +442,8 @@ const Index = () => {
             // Release touched object (moved away from object)
             const touched = newTouchedObjects.get(handIndex);
             if (touched) {
+              // Delete zone disabled
+              /*
               // Check if object is over delete zone
               const obj = objects.find(o => o.id === touched.id);
               if (obj) {
@@ -459,6 +462,7 @@ const Index = () => {
                   return;
                 }
               }
+              */
               
               newTouchedObjects.delete(handIndex);
               hasTouchChanges = true;
@@ -488,6 +492,8 @@ const Index = () => {
           // Release touched object if hand gesture changed (fingers extended or not parallel anymore)
           const touched = newTouchedObjects.get(handIndex);
           if (touched) {
+            // Delete zone disabled
+            /*
             // Check if object is over delete zone
             const obj = objects.find(o => o.id === touched.id);
             if (obj) {
@@ -506,6 +512,7 @@ const Index = () => {
                 return;
               }
             }
+            */
             
             newTouchedObjects.delete(handIndex);
             hasTouchChanges = true;
@@ -773,6 +780,8 @@ const Index = () => {
         if (!isPinching && wasPinching) {
           const grabbed = newGrabbedObjects.get(handIndex);
           if (grabbed) {
+            // Delete zone disabled
+            /* 
             // Check if object is over delete zone before releasing
             const obj = objects.find(o => o.id === grabbed.id);
             if (obj) {
@@ -794,6 +803,7 @@ const Index = () => {
                 return;
               }
             }
+            */
             
             newGrabbedObjects.delete(handIndex);
             hasChanges = true;
@@ -849,6 +859,8 @@ const Index = () => {
         lastPinchStates.current.set(handIndex, isPinching);
       });
 
+      // Delete zone disabled
+      /*
       // Update show delete zone based on whether anything is being grabbed or touched
       setShowDeleteZone(newGrabbedObjects.size > 0 || newTouchedObjects.size > 0);
       
@@ -888,6 +900,7 @@ const Index = () => {
       });
       
       setIsOverDeleteZone(isAnyObjectOverDeleteZone);
+      */
       
       if (hasChanges) setGrabbedObjects(newGrabbedObjects);
       if (hasTouchChanges) touchedObjects.current = newTouchedObjects;
@@ -1089,7 +1102,7 @@ const Index = () => {
             )}
             {showSkeleton && landmarks && landmarks.length > 0 && <HandSkeleton landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
             
-            {/* Delete Zone - shown when dragging cards */}
+            {/* Delete Zone - disabled
             {showDeleteZone && (
               <div 
                 className="fixed bottom-8 right-8 z-40 pointer-events-none"
@@ -1115,6 +1128,7 @@ const Index = () => {
                 </div>
               </div>
             )}
+            */}
             
             {/* Alignment Settings Panel */}
             {showSettings && (
