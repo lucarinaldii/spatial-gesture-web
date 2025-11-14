@@ -11,12 +11,14 @@ interface Hand3DModelProps {
   videoWidth: number;
   videoHeight: number;
   alignmentParams: AlignmentParams;
+  handedness?: any; // MediaPipe handedness data
 }
 
 interface HandModelProps {
   landmarks: NormalizedLandmark[];
   handIndex: number;
   alignmentParams: AlignmentParams;
+  isLeftHand: boolean;
 }
 
 // Create a smooth finger segment using capsule-like geometry - flatter and more human
@@ -116,7 +118,7 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
 }
 
 // Smooth, realistic hand model
-function SmoothHandModel({ landmarks, handIndex, alignmentParams }: HandModelProps) {
+function SmoothHandModel({ landmarks, handIndex, alignmentParams, isLeftHand }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   
   // Validate all landmarks exist before processing
@@ -124,15 +126,18 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams }: HandModelPro
     return null;
   }
   
-  // Convert landmarks using 3D hand-specific alignment params
+  // Get hand-specific params
+  const handParams = isLeftHand ? alignmentParams.leftHand : alignmentParams.rightHand;
+  
+  // Convert landmarks using hand-specific alignment params
   const vectors = landmarks.map(lm => {
     // Map normalized coordinates (0-1) to screen space
-    // Use 3D hand-specific alignment params
-    const scaleFactor = alignmentParams.hand3DScale;
-    // Apply 3D hand positioning with offsets
-    const x = (1 - lm.x - 0.5) * 15 * scaleFactor + alignmentParams.hand3DXOffset;
-    const y = -(lm.y - 0.5) * 15 * scaleFactor + alignmentParams.hand3DYOffset;
-    const z = -lm.z * alignmentParams.hand3DZDepth;
+    // Use hand-specific alignment params
+    const scaleFactor = handParams.hand3DScale;
+    // Apply hand-specific positioning with offsets
+    const x = (1 - lm.x - 0.5) * 15 * scaleFactor + handParams.hand3DXOffset;
+    const y = -(lm.y - 0.5) * 15 * scaleFactor + handParams.hand3DYOffset;
+    const z = -lm.z * handParams.hand3DZDepth;
     return new THREE.Vector3(x, y, z);
   });
   
@@ -233,7 +238,7 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams }: HandModelPro
   );
 }
 
-const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams }: Hand3DModelProps) {
+const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams, handedness }: Hand3DModelProps) {
   if (!landmarks || landmarks.length === 0) return null;
   
   return (
@@ -278,14 +283,20 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
         </mesh>
         
         {/* Render each detected hand */}
-        {landmarks.map((handLandmarks, index) => (
-          <SmoothHandModel 
-            key={`hand-${index}`}
-            landmarks={handLandmarks}
-            handIndex={index}
-            alignmentParams={alignmentParams}
-          />
-        ))}
+        {landmarks.map((handLandmarks, index) => {
+          const isLeftHand = handedness && handedness[index] && 
+                             handedness[index][0] && 
+                             handedness[index][0].categoryName === 'Left';
+          return (
+            <SmoothHandModel 
+              key={`hand-${index}`}
+              landmarks={handLandmarks}
+              handIndex={index}
+              alignmentParams={alignmentParams}
+              isLeftHand={isLeftHand}
+            />
+          );
+        })}
       </Canvas>
     </div>
   );
