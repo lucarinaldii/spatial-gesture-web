@@ -366,182 +366,6 @@ const Index = () => {
         const handY = handPos.y * 100;
         const wasPinching = lastPinchStates.current.get(handIndex) || false;
         
-        // Index finger proximity detection for touch dragging
-        const indexFingerTip = gesture.fingers.index.tipPosition;
-        const fingerX = indexFingerTip.x * 100;
-        const fingerY = indexFingerTip.y * 100;
-        const TOUCH_THRESHOLD = 10; // Distance threshold for "touching"
-        
-        // Check if only index finger is extended (pointing gesture)
-        const isPointing = gesture.fingers.index.isExtended &&
-                          !gesture.fingers.middle.isExtended &&
-                          !gesture.fingers.ring.isExtended &&
-                          !gesture.fingers.pinky.isExtended;
-        
-        // Check if hand is parallel to camera (index finger pointing forward)
-        // Lower z value means closer to camera (pointing forward)
-        const isHandParallel = indexFingerTip.z < -0.05;
-        
-        // Check if hand is moving closer to camera (z decreasing)
-        const previousZ = previousZPositionRef.current.get(handIndex);
-        const isMovingCloser = previousZ !== undefined ? indexFingerTip.z < previousZ : false;
-        previousZPositionRef.current.set(handIndex, indexFingerTip.z);
-
-        // Track hand velocity history for inertia calculation
-        const now = Date.now();
-        if (!handVelocityHistoryRef.current.has(handIndex)) {
-          handVelocityHistoryRef.current.set(handIndex, []);
-        }
-        const history = handVelocityHistoryRef.current.get(handIndex)!;
-        history.push({ x: fingerX, y: fingerY, timestamp: now });
-        // Keep only last 5 frames (about 83ms at 60fps)
-        if (history.length > 5) history.shift();
-
-        // Touch dragging with index finger (when not pinching, only index extended, hand parallel and moving closer)
-        if (!isPinching && isPointing && isHandParallel && isMovingCloser) {
-          const wasTouching = newTouchedObjects.has(handIndex);
-          const targetObject = objects.find((obj) => {
-            const adjustedX = obj.position.x + canvasOffset.x;
-            const adjustedY = obj.position.y + canvasOffset.y;
-            return Math.abs(fingerX - adjustedX) < TOUCH_THRESHOLD && Math.abs(fingerY - adjustedY) < TOUCH_THRESHOLD;
-          });
-
-          if (targetObject) {
-            if (!wasTouching) {
-              // Start touching
-              const adjustedX = targetObject.position.x + canvasOffset.x;
-              const adjustedY = targetObject.position.y + canvasOffset.y;
-              newTouchedObjects.set(handIndex, { 
-                id: targetObject.id, 
-                offsetX: fingerX - adjustedX, 
-                offsetY: fingerY - adjustedY 
-              });
-              hasTouchChanges = true;
-              maxZIndexRef.current += 1;
-              objectUpdates.set(targetObject.id, { 
-                ...(objectUpdates.get(targetObject.id) || {}), 
-                zIndex: maxZIndexRef.current 
-              });
-              setObjects(prev => prev.map(obj => 
-                obj.id === targetObject.id ? { 
-                  ...obj, 
-                  isPhysicsEnabled: false, 
-                  velocity: { x: 0, y: 0 } 
-                } : obj
-              ));
-            } else {
-              // Continue touching - move object with finger
-              const touched = newTouchedObjects.get(handIndex);
-              if (touched) {
-                objectUpdates.set(touched.id, { 
-                  ...(objectUpdates.get(touched.id) || {}), 
-                  position: { 
-                    x: Math.max(5, Math.min(95, fingerX - touched.offsetX)) - canvasOffset.x, 
-                    y: Math.max(5, Math.min(90, fingerY - touched.offsetY)) - canvasOffset.y 
-                  } 
-                });
-              }
-            }
-          } else if (wasTouching) {
-            // Release touched object (moved away from object)
-            const touched = newTouchedObjects.get(handIndex);
-            if (touched) {
-              // Delete zone disabled
-              /*
-              // Check if object is over delete zone
-              const obj = objects.find(o => o.id === touched.id);
-              if (obj) {
-                const objX = obj.position.x + canvasOffset.x;
-                const objY = obj.position.y + canvasOffset.y;
-                const DELETE_ZONE_X = 85;
-                const DELETE_ZONE_Y = 75;
-                
-                if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
-                  // Delete the object
-                  setObjects(prev => prev.filter(o => o.id !== touched.id));
-                  toast({ title: "Card deleted", description: "Card moved to trash" });
-                  newTouchedObjects.delete(handIndex);
-                  hasTouchChanges = true;
-                  handVelocityHistoryRef.current.delete(handIndex);
-                  return;
-                }
-              }
-              */
-              
-              newTouchedObjects.delete(handIndex);
-              hasTouchChanges = true;
-              
-              // Calculate release velocity
-              let velocityX = 0, velocityY = 0;
-              if (history.length >= 2) {
-                const recent = history[history.length - 1];
-                const previous = history[0];
-                const timeDelta = (recent.timestamp - previous.timestamp) / 1000;
-                if (timeDelta > 0) {
-                  velocityX = (recent.x - previous.x) / timeDelta * 0.016;
-                  velocityY = (recent.y - previous.y) / timeDelta * 0.016;
-                }
-              }
-              
-              setObjects(prev => prev.map(obj => obj.id === touched.id ? { 
-                ...obj, 
-                isPhysicsEnabled: true, 
-                velocity: { x: velocityX, y: velocityY } 
-              } : obj));
-              
-              handVelocityHistoryRef.current.delete(handIndex);
-            }
-          }
-        } else if (newTouchedObjects.has(handIndex)) {
-          // Release touched object if hand gesture changed (fingers extended or not parallel anymore)
-          const touched = newTouchedObjects.get(handIndex);
-          if (touched) {
-            // Delete zone disabled
-            /*
-            // Check if object is over delete zone
-            const obj = objects.find(o => o.id === touched.id);
-            if (obj) {
-              const objX = obj.position.x + canvasOffset.x;
-              const objY = obj.position.y + canvasOffset.y;
-              const DELETE_ZONE_X = 85;
-              const DELETE_ZONE_Y = 75;
-              
-              if (objX >= DELETE_ZONE_X && objX <= 95 && objY >= DELETE_ZONE_Y && objY <= 85) {
-                // Delete the object
-                setObjects(prev => prev.filter(o => o.id !== touched.id));
-                toast({ title: "Card deleted", description: "Card moved to trash" });
-                newTouchedObjects.delete(handIndex);
-                hasTouchChanges = true;
-                handVelocityHistoryRef.current.delete(handIndex);
-                return;
-              }
-            }
-            */
-            
-            newTouchedObjects.delete(handIndex);
-            hasTouchChanges = true;
-            
-            // Calculate release velocity
-            let velocityX = 0, velocityY = 0;
-            if (history.length >= 2) {
-              const recent = history[history.length - 1];
-              const previous = history[0];
-              const timeDelta = (recent.timestamp - previous.timestamp) / 1000;
-              if (timeDelta > 0) {
-                velocityX = (recent.x - previous.x) / timeDelta * 0.016;
-                velocityY = (recent.y - previous.y) / timeDelta * 0.016;
-              }
-            }
-            
-            setObjects(prev => prev.map(obj => obj.id === touched.id ? { 
-              ...obj, 
-              isPhysicsEnabled: true, 
-              velocity: { x: velocityX, y: velocityY } 
-            } : obj));
-            
-            handVelocityHistoryRef.current.delete(handIndex);
-          }
-        }
 
         if (isPinching && !wasPinching) {
           // Release any touched objects when pinching starts
@@ -581,31 +405,7 @@ const Index = () => {
           const obj0 = newGrabbedObjects.get(0);
           const obj1 = newGrabbedObjects.get(1);
           
-          if (newGrabbedObjects.size === 0) {
-            // Canvas panning and zooming when not grabbing any objects
-            if (handPositions.length === 2 && handPositions[0] && handPositions[1]) {
-              // Two-hand pinch: zoom and pan
-              const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
-              const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
-              const distance = Math.sqrt(Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2));
-              if (!canvasZoomBaseDistanceRef.current) canvasZoomBaseDistanceRef.current = distance;
-              else setCanvasZoom(Math.max(0.5, Math.min(3, distance / canvasZoomBaseDistanceRef.current)));
-              const midX = (hand1X + hand2X) / 2, midY = (hand1Y + hand2Y) / 2;
-              if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: midX, y: midY };
-              else {
-                setCanvasOffset(prev => ({ x: prev.x + midX - canvasDragStartRef.current!.x, y: prev.y + midY - canvasDragStartRef.current!.y }));
-                canvasDragStartRef.current = { x: midX, y: midY };
-              }
-            } else if (handPositions.length === 1) {
-              // Single-hand pinch: pan only
-              if (!canvasDragStartRef.current) {
-                canvasDragStartRef.current = { x: handX, y: handY };
-              } else {
-                setCanvasOffset(prev => ({ x: prev.x + handX - canvasDragStartRef.current!.x, y: prev.y + handY - canvasDragStartRef.current!.y }));
-                canvasDragStartRef.current = { x: handX, y: handY };
-              }
-            }
-          } else if (obj0 && obj1 && obj0.id === obj1.id && handPositions.length === 2 && handPositions[0] && handPositions[1]) {
+          if (obj0 && obj1 && obj0.id === obj1.id && handPositions.length === 2 && handPositions[0] && handPositions[1]) {
             // Two hands grabbing the same card - check for splitting
             const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
             const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
@@ -1112,7 +912,7 @@ const Index = () => {
                 variant="destructive"
                 className={`rounded-full neon-glow transition-all duration-200 px-6 py-6 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
-                <RotateCcw className="w-5 h-5 mr-2" />Flip Camera
+                <RotateCcw className="w-5 h-5 mr-2" />Restart
               </Button>
               <Button 
                 ref={importButtonRef}
