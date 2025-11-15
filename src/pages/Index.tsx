@@ -501,17 +501,8 @@ const Index = () => {
                 toast({ title: "Card split!", description: "Card divided into two" });
               }
             } else {
-              // Normal two-hand manipulation (scale and rotate)
-              if (!baseDistanceRef.current.has(obj0.id)) baseDistanceRef.current.set(obj0.id, distance);
-              else {
-                scaleUpdate = { id: obj0.id, scale: Math.max(0.5, Math.min(2, distance / baseDistanceRef.current.get(obj0.id)!)) };
-                const angle = Math.atan2(hand2Y - hand1Y, hand2X - hand1X) * (180 / Math.PI);
-                if (!baseAngleRef.current.has(obj0.id)) baseAngleRef.current.set(obj0.id, angle);
-                else objectUpdates.set(obj0.id, { ...(objectUpdates.get(obj0.id) || {}), rotation: { x: 0, y: angle - baseAngleRef.current.get(obj0.id)!, z: 0 } });
-                const avgHandX = (hand1X + hand2X) / 2, avgHandY = (hand1Y + hand2Y) / 2;
-                const avgOffsetX = (obj0.offsetX + obj1.offsetX) / 2, avgOffsetY = (obj0.offsetY + obj1.offsetY) / 2;
-                objectUpdates.set(obj0.id, { ...(objectUpdates.get(obj0.id) || {}), position: { x: Math.max(5, Math.min(95, avgHandX - avgOffsetX)) - canvasOffset.x, y: Math.max(5, Math.min(90, avgHandY - avgOffsetY)) - canvasOffset.y } });
-              }
+              // Normal two-hand manipulation (scale and rotate) - DISABLED
+              // Resize disabled per user request
             }
           } else if (obj0 && obj1 && obj0.id !== obj1.id && handPositions.length === 2) {
             // Two hands grabbing different cards - check for merging
@@ -584,8 +575,8 @@ const Index = () => {
                   objectUpdates.set(grabbed0.id, { 
                     ...(objectUpdates.get(grabbed0.id) || {}), 
                     position: { 
-                      x: Math.max(5, Math.min(95, hand1X - grabbed0.offsetX)) - canvasOffset.x, 
-                      y: Math.max(5, Math.min(90, hand1Y - grabbed0.offsetY)) - canvasOffset.y 
+                      x: hand1X - grabbed0.offsetX - canvasOffset.x, 
+                      y: hand1Y - grabbed0.offsetY - canvasOffset.y 
                     } 
                   });
                 }
@@ -593,8 +584,8 @@ const Index = () => {
                   objectUpdates.set(grabbed1.id, { 
                     ...(objectUpdates.get(grabbed1.id) || {}), 
                     position: { 
-                      x: Math.max(5, Math.min(95, hand2X - grabbed1.offsetX)) - canvasOffset.x, 
-                      y: Math.max(5, Math.min(90, hand2Y - grabbed1.offsetY)) - canvasOffset.y 
+                      x: hand2X - grabbed1.offsetX - canvasOffset.x, 
+                      y: hand2Y - grabbed1.offsetY - canvasOffset.y 
                     } 
                   });
                 }
@@ -609,8 +600,8 @@ const Index = () => {
                 objectUpdates.set(grabbed.id, { 
                   ...(objectUpdates.get(grabbed.id) || {}), 
                   position: { 
-                    x: Math.max(5, Math.min(95, handX - grabbed.offsetX)) - canvasOffset.x, 
-                    y: Math.max(5, Math.min(90, handY - grabbed.offsetY)) - canvasOffset.y 
+                    x: handX - grabbed.offsetX - canvasOffset.x, 
+                    y: handY - grabbed.offsetY - canvasOffset.y 
                   } 
                 });
               }
@@ -800,10 +791,10 @@ const Index = () => {
     const cardX = (card.position.x + canvasOffset.x) * window.innerWidth / 100;
     const cardY = (card.position.y + canvasOffset.y) * window.innerHeight / 100;
     
-    // Offset for connector position with 80px padding
-    // Approximate card content width ~256px + 160px padding = ~416px total
-    const cardWidth = 416;
-    const cardHeight = card.type === 'card' ? 240 : 320; // Height with 80px padding
+    // Offset for connector position with 50px padding
+    // Approximate card content width ~256px + 100px padding = ~356px total
+    const cardWidth = 356;
+    const cardHeight = card.type === 'card' ? 180 : 320; // Height with 50px padding
     
     switch (connector) {
       case 'left':
@@ -838,16 +829,16 @@ const Index = () => {
         
         switch (conn) {
           case 'left':
-            connX = cardX - 21; // Adjusted for 80px padding card
+            connX = cardX - 18; // Adjusted for 50px padding card
             break;
           case 'right':
-            connX = cardX + 21;
+            connX = cardX + 18;
             break;
           case 'top':
-            connY = cardY - 12; // Adjusted for 80px padding card
+            connY = cardY - 9; // Adjusted for 50px padding card
             break;
           case 'bottom':
-            connY = cardY + 12;
+            connY = cardY + 9;
             break;
         }
         
