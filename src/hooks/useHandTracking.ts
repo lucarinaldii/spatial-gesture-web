@@ -47,8 +47,9 @@ export const useHandTracking = () => {
   const MOVEMENT_THRESHOLD = 0.008; // Increased deadzone for stability
   
   // Pinch detection with hysteresis to prevent jitter
-  const PINCH_THRESHOLD_ENTER = 0.05; // Distance to enter pinch state (closer = more precise)
-  const PINCH_THRESHOLD_EXIT = 0.07; // Distance to exit pinch state (larger = easier to maintain)
+  // Base thresholds - these will be scaled based on hand depth
+  const PINCH_THRESHOLD_ENTER_BASE = 0.05;
+  const PINCH_THRESHOLD_EXIT_BASE = 0.07;
 
   const calculateDistance = (point1: any, point2: any) => {
     const dx = point1.x - point2.x;
@@ -121,15 +122,22 @@ export const useHandTracking = () => {
         // Calculate pinch distance
         const pinchDistance = calculateDistance(indexTip, thumbTip);
         
+        // Scale thresholds based on z-depth (hand distance from camera)
+        // When hand is closer (more negative z), increase threshold to compensate for larger appearance
+        const avgZ = (indexTip.z + thumbTip.z) / 2;
+        const depthScale = Math.max(1, 1 + Math.abs(avgZ) * 3); // Scale up threshold when z is negative
+        
         // Hysteresis for stable pinch detection
         const wasPinching = lastPinchStatesRef.current[i] || false;
-        const threshold = wasPinching ? PINCH_THRESHOLD_EXIT : PINCH_THRESHOLD_ENTER;
+        const threshold = wasPinching 
+          ? PINCH_THRESHOLD_EXIT_BASE * depthScale 
+          : PINCH_THRESHOLD_ENTER_BASE * depthScale;
         const isPinching = pinchDistance < threshold;
         
         // Update pinch state history
         lastPinchStatesRef.current[i] = isPinching;
         
-        const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / PINCH_THRESHOLD_ENTER)));
+        const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / (PINCH_THRESHOLD_ENTER_BASE * depthScale))));
         
         // Create raw position (mirrored for natural movement)
         const rawPosition: HandPosition = {
