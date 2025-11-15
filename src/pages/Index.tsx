@@ -800,9 +800,10 @@ const Index = () => {
     const cardX = (card.position.x + canvasOffset.x) * window.innerWidth / 100;
     const cardY = (card.position.y + canvasOffset.y) * window.innerHeight / 100;
     
-    // Offset for connector position - matching the actual visual position of the dots
-    const cardWidth = 384; // w-96 = 24rem = 384px
-    const cardHeight = card.type === 'card' ? 200 : 320; // Increased for larger padding
+    // Offset for connector position with 150px padding
+    // Approximate card content width ~256px + 300px padding = ~556px total
+    const cardWidth = 556;
+    const cardHeight = card.type === 'card' ? 350 : 320; // Height with 150px padding
     
     switch (connector) {
       case 'left':
@@ -837,16 +838,16 @@ const Index = () => {
         
         switch (conn) {
           case 'left':
-            connX = cardX - 19; // Adjusted for larger card width (w-96)
+            connX = cardX - 28; // Adjusted for 150px padding card
             break;
           case 'right':
-            connX = cardX + 19;
+            connX = cardX + 28;
             break;
           case 'top':
-            connY = cardY - 10; // Adjusted for larger card height
+            connY = cardY - 18; // Adjusted for 150px padding card
             break;
           case 'bottom':
-            connY = cardY + 10;
+            connY = cardY + 18;
             break;
         }
         

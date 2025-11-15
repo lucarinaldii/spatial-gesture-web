@@ -190,7 +190,7 @@ const InteractiveObject = memo(({
         <Card
           className={`
             glass-panel transition-all duration-200 relative
-            ${type === 'card' ? 'p-13 w-96' : 'p-2 w-80 h-80'}
+            ${type === 'card' ? 'w-auto' : 'p-2 w-80 h-80'}
             ${isHovered ? 'border-primary' : 'border-border/30'}
             ${wasClicked ? 'scale-95' : ''}
             ${isBeingDragged ? 'scale-110 ring-2 ring-primary' : ''}
@@ -199,6 +199,7 @@ const InteractiveObject = memo(({
           `}
           style={{
             backfaceVisibility: 'hidden',
+            padding: type === 'card' ? '150px' : undefined,
           }}
         >
           {renderContent()}
