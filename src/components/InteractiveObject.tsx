@@ -199,7 +199,7 @@ const InteractiveObject = memo(({
           `}
           style={{
             backfaceVisibility: 'hidden',
-            padding: type === 'card' ? '150px' : undefined,
+            padding: type === 'card' ? '80px' : undefined,
           }}
         >
           {renderContent()}
