@@ -5,6 +5,7 @@ import HandSkeleton from '@/components/HandSkeleton';
 import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
+import WireConnection from '@/components/WireConnection';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2 } from 'lucide-react';
 
@@ -99,7 +100,6 @@ const Index = () => {
   const importButtonRef = useRef<HTMLButtonElement>(null);
   const restartButtonRef = useRef<HTMLButtonElement>(null);
   const [grabbedObjects, setGrabbedObjects] = useState<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
-  const [objectScales, setObjectScales] = useState<Map<string, number>>(new Map());
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
   const [canvasZoom, setCanvasZoom] = useState(1);
   const [isImportButtonHovered, setIsImportButtonHovered] = useState(false);
@@ -122,8 +122,10 @@ const Index = () => {
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
-  const scaleVelocityRef = useRef<Map<string, number>>(new Map());
-  const scaleHistoryRef = useRef<Map<string, Array<{ scale: number; timestamp: number }>>>(new Map());
+  
+  // Wire connection state
+  const [activeWire, setActiveWire] = useState<{ startCardId: string; startConnector: string; handIndex: number } | null>(null);
+  const [connections, setConnections] = useState<Array<{ id: string; fromCardId: string; fromConnector: string; toCardId: string; toConnector: string }>>([]);
   // Delete zone disabled
   // const [showDeleteZone, setShowDeleteZone] = useState(false);
   // const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
@@ -236,13 +238,12 @@ const Index = () => {
     // Reset canvas
     setCanvasOffset({ x: 0, y: 0 });
     setCanvasZoom(1);
-    setObjectScales(new Map());
     setGrabbedObjects(new Map());
+    setConnections([]);
+    setActiveWire(null);
     maxZIndexRef.current = 3;
     baseDistanceRef.current.clear();
     baseAngleRef.current.clear();
-    scaleVelocityRef.current.clear();
-    scaleHistoryRef.current.clear();
     
     // Reset alignment parameters
     setAlignmentParams(defaultAlignmentParams);
@@ -466,11 +467,7 @@ const Index = () => {
                 
                 splitDistanceRef.current.delete(obj0.id);
                 baseDistanceRef.current.delete(obj0.id);
-                baseDistanceRef.current.delete(`${obj0.id}_zoom`);
-                baseDistanceRef.current.delete(`${obj0.id}_z`);
                 baseAngleRef.current.delete(obj0.id);
-                scaleVelocityRef.current.delete(obj0.id);
-                scaleHistoryRef.current.delete(obj0.id);
                 
                 setTimeout(() => {
                   setSplittingCards(prev => {
@@ -583,35 +580,11 @@ const Index = () => {
               }
             }
           } else {
-            // Single hand grab - zoom based on hand depth
+            // Single hand grab - move card with hand
             const grabbed = newGrabbedObjects.get(handIndex);
             if (grabbed) {
               const hand = handPositions[handIndex];
               if (hand) {
-                // Track initial z-position for zoom
-                const zKey = `${grabbed.id}_z`;
-                if (!baseDistanceRef.current.has(zKey)) {
-                  baseDistanceRef.current.set(zKey, hand.z);
-                }
-                
-                const initialZ = baseDistanceRef.current.get(zKey)!;
-                // Calculate scale: moving hand farther (smaller hand, more positive z) = zoom in
-                // Inverted behavior as requested
-                const zDiff = hand.z - initialZ; // Farther = positive, closer = negative
-                const scaleFactor = Math.max(0.5, Math.min(3, 1 + zDiff * 6)); // Increased power from 3 to 6
-                
-                // Track scale history for inertia
-                const scaleHistory = scaleHistoryRef.current.get(grabbed.id) || [];
-                scaleHistory.push({ scale: scaleFactor, timestamp: Date.now() });
-                if (scaleHistory.length > 5) scaleHistory.shift(); // Keep last 5 samples
-                scaleHistoryRef.current.set(grabbed.id, scaleHistory);
-                
-                setObjectScales(prev => {
-                  const next = new Map(prev);
-                  next.set(grabbed.id, scaleFactor);
-                  return next;
-                });
-                
                 objectUpdates.set(grabbed.id, { 
                   ...(objectUpdates.get(grabbed.id) || {}), 
                   position: { 
@@ -644,12 +617,8 @@ const Index = () => {
                 newGrabbedObjects.delete(handIndex);
                 hasChanges = true;
                 baseDistanceRef.current.delete(grabbed.id);
-                baseDistanceRef.current.delete(`${grabbed.id}_zoom`);
-                baseDistanceRef.current.delete(`${grabbed.id}_z`);
                 baseAngleRef.current.delete(grabbed.id);
                 splitDistanceRef.current.delete(grabbed.id);
-                scaleVelocityRef.current.delete(grabbed.id);
-                scaleHistoryRef.current.delete(grabbed.id);
                 handVelocityHistoryRef.current.delete(handIndex);
                 return;
               }
@@ -660,33 +629,8 @@ const Index = () => {
             hasChanges = true;
             if (!Array.from(newGrabbedObjects.values()).some(g => g.id === grabbed.id)) {
               baseDistanceRef.current.delete(grabbed.id);
-              baseDistanceRef.current.delete(`${grabbed.id}_zoom`);
-              baseDistanceRef.current.delete(`${grabbed.id}_z`);
               baseAngleRef.current.delete(grabbed.id);
               splitDistanceRef.current.delete(grabbed.id);
-              
-              // Calculate scale velocity from scale history
-              const scaleHistory = scaleHistoryRef.current.get(grabbed.id) || [];
-              let scaleVelocity = 0;
-              
-              if (scaleHistory.length >= 2) {
-                const recent = scaleHistory[scaleHistory.length - 1];
-                const previous = scaleHistory[0];
-                const timeDelta = (recent.timestamp - previous.timestamp) / 1000; // seconds
-                
-                if (timeDelta > 0) {
-                  // Calculate scale change per second
-                  scaleVelocity = (recent.scale - previous.scale) / timeDelta;
-                }
-              }
-              
-              // Store scale velocity for physics loop
-              if (Math.abs(scaleVelocity) > 0.01) {
-                scaleVelocityRef.current.set(grabbed.id, scaleVelocity);
-              }
-              
-              // Clear scale history
-              scaleHistoryRef.current.delete(grabbed.id);
               
               // Calculate release velocity from hand movement history
               const history = handVelocityHistoryRef.current.get(handIndex) || [];
@@ -780,8 +724,11 @@ const Index = () => {
       
       if (hasChanges) setGrabbedObjects(newGrabbedObjects);
       if (hasTouchChanges) touchedObjects.current = newTouchedObjects;
-      if (scaleUpdate) setObjectScales(prev => { const n = new Map(prev); n.set(scaleUpdate.id, scaleUpdate.scale); return n; });
-      if (objectUpdates.size > 0) setObjects(prev => prev.map(obj => { 
+      if (scaleUpdate) {
+        // Two-hand scale (not removed, just single-hand z-scale removed)
+        setObjects(prev => prev.map(obj => obj.id === scaleUpdate.id ? { ...obj, rotation: { ...obj.rotation } } : obj));
+      }
+      if (objectUpdates.size > 0) setObjects(prev => prev.map(obj => {
         const u = objectUpdates.get(obj.id);
         
         // ALWAYS ensure position, rotation, and velocity have valid values
@@ -819,52 +766,88 @@ const Index = () => {
     return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
   }, [handPositions, gestureStates, grabbedObjects, objects, toast]);
 
-  // Scale inertia physics loop
-  useEffect(() => {
-    const applyScalePhysics = () => {
-      let hasActiveVelocity = false;
-      
-      setObjectScales(prev => {
-        const next = new Map(prev);
-        
-        scaleVelocityRef.current.forEach((velocity, id) => {
-          const currentScale = next.get(id) || 1;
-          
-          // Apply velocity with damping
-          const FRICTION = 0.92;
-          const SCALE_VELOCITY_MULTIPLIER = 0.016; // 60fps frame time
-          
-          const newScale = Math.max(0.5, Math.min(3, 
-            currentScale + velocity * SCALE_VELOCITY_MULTIPLIER
-          ));
-          
-          next.set(id, newScale);
-          
-          // Apply friction to velocity
-          const newVelocity = velocity * FRICTION;
-          
-          // Stop if velocity is very small
-          if (Math.abs(newVelocity) < 0.01) {
-            scaleVelocityRef.current.delete(id);
-          } else {
-            scaleVelocityRef.current.set(id, newVelocity);
-            hasActiveVelocity = true;
-          }
-        });
-        
-        return next;
-      });
-      
-      if (hasActiveVelocity) {
-        requestAnimationFrame(applyScalePhysics);
-      }
-    };
+  // Handle connector interactions
+  const handleConnectorGrab = useCallback((connectorId: string) => {
+    const [cardId, position] = connectorId.split('-');
+    setActiveWire({ startCardId: cardId, startConnector: position, handIndex: 0 });
+  }, []);
+
+  const getConnectorPosition = (cardId: string, connector: string) => {
+    const card = objects.find(obj => obj.id === cardId);
+    if (!card) return { x: 0, y: 0 };
     
-    // Start physics loop if there are active velocities
-    if (scaleVelocityRef.current.size > 0) {
-      requestAnimationFrame(applyScalePhysics);
+    const cardX = (card.position.x + canvasOffset.x) * window.innerWidth / 100;
+    const cardY = (card.position.y + canvasOffset.y) * window.innerHeight / 100;
+    
+    // Offset for connector position based on card size (assuming 16rem / 256px width for card type)
+    const cardWidth = 256;
+    const cardHeight = card.type === 'card' ? 150 : 320;
+    
+    switch (connector) {
+      case 'left':
+        return { x: cardX - cardWidth / 2, y: cardY };
+      case 'right':
+        return { x: cardX + cardWidth / 2, y: cardY };
+      case 'top':
+        return { x: cardX, y: cardY - cardHeight / 2 };
+      case 'bottom':
+        return { x: cardX, y: cardY + cardHeight / 2 };
+      default:
+        return { x: cardX, y: cardY };
     }
-  }, [objects]);
+  };
+
+  // Update wire end position based on hand position when actively dragging
+  useEffect(() => {
+    if (!activeWire || handPositions.length === 0) return;
+    
+    const hand = handPositions[activeWire.handIndex];
+    if (!hand) return;
+    
+    // Check if hand releases (stops pinching)
+    const gesture = gestureStates[activeWire.handIndex];
+    if (gesture && !gesture.isPinching) {
+      // Check if near any connector to complete connection
+      const handX = hand.x * window.innerWidth;
+      const handY = hand.y * window.innerHeight;
+      
+      let foundConnection = false;
+      for (const obj of objects) {
+        if (obj.id === activeWire.startCardId) continue; // Can't connect to self
+        
+        const connectors = ['left', 'right', 'top', 'bottom'];
+        for (const conn of connectors) {
+          const connPos = getConnectorPosition(obj.id, conn);
+          const distance = Math.sqrt(
+            Math.pow(handX - connPos.x, 2) + Math.pow(handY - connPos.y, 2)
+          );
+          
+          if (distance < 50) { // 50px threshold
+            // Create connection
+            setConnections(prev => [
+              ...prev,
+              {
+                id: Date.now().toString(),
+                fromCardId: activeWire.startCardId,
+                fromConnector: activeWire.startConnector,
+                toCardId: obj.id,
+                toConnector: conn,
+              }
+            ]);
+            foundConnection = true;
+            toast({
+              title: "Connection created",
+              description: `Connected ${activeWire.startCardId} to ${obj.id}`,
+            });
+            break;
+          }
+        }
+        if (foundConnection) break;
+      }
+      
+      setActiveWire(null);
+    }
+  }, [activeWire, handPositions, gestureStates, objects, canvasOffset, toast]);
 
   // Physics loop disabled - cards no longer have inertia
   useEffect(() => {
@@ -978,8 +961,55 @@ const Index = () => {
                   };
                 }
                 
-                return <InteractiveObject key={obj.id} id={obj.id} type={obj.type} title={obj.title} description={obj.description} fileUrl={obj.fileUrl} position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} rotation={obj.rotation} zIndex={obj.zIndex} handPosition={adjustedHandPosition} gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} onInteract={() => {}} isBeingDragged={isBeingDragged} scale={objectScales.get(obj.id) || 1} isMerging={isMerging} isSplitting={isSplitting} allHandPositions={handPositions} allGestureStates={gestureStates} />;
+                return <InteractiveObject 
+                  key={obj.id} 
+                  id={obj.id} 
+                  type={obj.type} 
+                  title={obj.title} 
+                  description={obj.description} 
+                  fileUrl={obj.fileUrl} 
+                  position={{ x: obj.position.x + canvasOffset.x, y: obj.position.y + canvasOffset.y }} 
+                  rotation={obj.rotation} 
+                  zIndex={obj.zIndex} 
+                  handPosition={adjustedHandPosition} 
+                  gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} 
+                  onInteract={() => {}} 
+                  isBeingDragged={isBeingDragged} 
+                  scale={1} 
+                  isMerging={isMerging} 
+                  isSplitting={isSplitting} 
+                  allHandPositions={handPositions} 
+                  allGestureStates={gestureStates}
+                  onConnectorGrab={handleConnectorGrab}
+                  activeConnector={activeWire ? `${activeWire.startCardId}-${activeWire.startConnector}` : null}
+                />;
               })}
+              
+              {/* Render wire connections */}
+              {connections.map((conn) => {
+                const startPos = getConnectorPosition(conn.fromCardId, conn.fromConnector);
+                const endPos = getConnectorPosition(conn.toCardId, conn.toConnector);
+                return (
+                  <WireConnection
+                    key={conn.id}
+                    startX={startPos.x}
+                    startY={startPos.y}
+                    endX={endPos.x}
+                    endY={endPos.y}
+                  />
+                );
+              })}
+              
+              {/* Render active wire being dragged */}
+              {activeWire && handPositions[activeWire.handIndex] && (
+                <WireConnection
+                  startX={getConnectorPosition(activeWire.startCardId, activeWire.startConnector).x}
+                  startY={getConnectorPosition(activeWire.startCardId, activeWire.startConnector).y}
+                  endX={handPositions[activeWire.handIndex].x * window.innerWidth}
+                  endY={handPositions[activeWire.handIndex].y * window.innerHeight}
+                  isActive
+                />
+              )}
             </div>
             {show3DHand && (
               <>
