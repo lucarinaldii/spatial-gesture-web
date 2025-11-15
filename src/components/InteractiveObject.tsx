@@ -7,6 +7,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { HandGestureControls } from './HandGestureControls';
+import CardConnector from './CardConnector';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -29,6 +30,10 @@ interface InteractiveObjectProps {
   isSplitting?: boolean;
   allHandPositions?: HandPosition[];
   allGestureStates?: GestureState[];
+  onConnectorGrab?: (connectorId: string) => void;
+  activeConnector?: string | null;
+  hoveredConnector?: string | null;
+  onConnectorHover?: (connectorId: string | null) => void;
 }
 
 const Model3D = ({ url }: { url: string }) => {
@@ -54,6 +59,10 @@ const InteractiveObject = memo(({
   isSplitting = false,
   allHandPositions = [],
   allGestureStates = [],
+  onConnectorGrab,
+  activeConnector,
+  hoveredConnector,
+  onConnectorHover,
 }: InteractiveObjectProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
@@ -180,7 +189,7 @@ const InteractiveObject = memo(({
       >
         <Card
           className={`
-            glass-panel transition-all duration-200
+            glass-panel transition-all duration-200 relative
             ${type === 'card' ? 'p-6 w-64' : 'p-2 w-80 h-80'}
             ${isHovered ? 'border-primary' : 'border-border/30'}
             ${wasClicked ? 'scale-95' : ''}
@@ -193,6 +202,48 @@ const InteractiveObject = memo(({
           }}
         >
           {renderContent()}
+          
+          {/* Connector points */}
+          {type === 'card' && !isBeingDragged && (
+            <>
+              <CardConnector
+                position="left"
+                isActive={activeConnector === `${id}-left`}
+                isHovered={hoveredConnector === `${id}-left`}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  onConnectorGrab?.(`${id}-left`);
+                }}
+              />
+              <CardConnector
+                position="right"
+                isActive={activeConnector === `${id}-right`}
+                isHovered={hoveredConnector === `${id}-right`}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  onConnectorGrab?.(`${id}-right`);
+                }}
+              />
+              <CardConnector
+                position="top"
+                isActive={activeConnector === `${id}-top`}
+                isHovered={hoveredConnector === `${id}-top`}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  onConnectorGrab?.(`${id}-top`);
+                }}
+              />
+              <CardConnector
+                position="bottom"
+                isActive={activeConnector === `${id}-bottom`}
+                isHovered={hoveredConnector === `${id}-bottom`}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  onConnectorGrab?.(`${id}-bottom`);
+                }}
+              />
+            </>
+          )}
         </Card>
       </div>
     </div>
