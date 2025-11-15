@@ -126,6 +126,8 @@ const Index = () => {
   // Wire connection state
   const [activeWire, setActiveWire] = useState<{ startCardId: string; startConnector: string; handIndex: number } | null>(null);
   const [connections, setConnections] = useState<Array<{ id: string; fromCardId: string; fromConnector: string; toCardId: string; toConnector: string }>>([]);
+  const [hoveredConnector, setHoveredConnector] = useState<string | null>(null);
+  const hoveredConnectorRef = useRef<string | null>(null);
   // Delete zone disabled
   // const [showDeleteZone, setShowDeleteZone] = useState(false);
   // const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
@@ -241,6 +243,8 @@ const Index = () => {
     setGrabbedObjects(new Map());
     setConnections([]);
     setActiveWire(null);
+    setHoveredConnector(null);
+    hoveredConnectorRef.current = null;
     maxZIndexRef.current = 3;
     baseDistanceRef.current.clear();
     baseAngleRef.current.clear();
@@ -367,38 +371,55 @@ const Index = () => {
         const handY = handPos.y * 100;
         const wasPinching = lastPinchStates.current.get(handIndex) || false;
         
+        // Update hovered connector for visual feedback
+        if (!isPinching) {
+          const hoveredConn = checkConnectorHover(handX, handY);
+          if (hoveredConn !== hoveredConnectorRef.current) {
+            hoveredConnectorRef.current = hoveredConn;
+            setHoveredConnector(hoveredConn);
+          }
+        }
 
         if (isPinching && !wasPinching) {
-          // Release any touched objects when pinching starts
-          if (newTouchedObjects.has(handIndex)) {
-            const touched = newTouchedObjects.get(handIndex);
-            if (touched) {
-              newTouchedObjects.delete(handIndex);
-              hasTouchChanges = true;
-              setObjects(prev => prev.map(obj => obj.id === touched.id ? { 
-                ...obj, 
-                isPhysicsEnabled: true, 
-                velocity: { x: 0, y: 0 } 
-              } : obj));
-            }
-          }
+          // Check if hovering over a connector first
+          const hoveredConn = checkConnectorHover(handX, handY);
           
-          const targetObject = objects.find((obj) => {
-            const adjustedX = obj.position.x + canvasOffset.x;
-            const adjustedY = obj.position.y + canvasOffset.y;
-            return Math.abs(handX - adjustedX) < 16 && Math.abs(handY - adjustedY) < 12;
-          });
-
-          if (targetObject) {
-            const adjustedX = targetObject.position.x + canvasOffset.x;
-            const adjustedY = targetObject.position.y + canvasOffset.y;
-            newGrabbedObjects.set(handIndex, { id: targetObject.id, offsetX: handX - adjustedX, offsetY: handY - adjustedY });
-            hasChanges = true;
-            maxZIndexRef.current += 1;
-            objectUpdates.set(targetObject.id, { ...(objectUpdates.get(targetObject.id) || {}), zIndex: maxZIndexRef.current });
-            setObjects(prev => prev.map(obj => obj.id === targetObject.id ? { ...obj, isPhysicsEnabled: false, velocity: { x: 0, y: 0 } } : obj));
+          if (hoveredConn) {
+            // Start wire connection instead of grabbing card
+            const [cardId, position] = hoveredConn.split('-');
+            setActiveWire({ startCardId: cardId, startConnector: position, handIndex });
           } else {
-            if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
+            // Release any touched objects when pinching starts
+            if (newTouchedObjects.has(handIndex)) {
+              const touched = newTouchedObjects.get(handIndex);
+              if (touched) {
+                newTouchedObjects.delete(handIndex);
+                hasTouchChanges = true;
+                setObjects(prev => prev.map(obj => obj.id === touched.id ? { 
+                  ...obj, 
+                  isPhysicsEnabled: true, 
+                  velocity: { x: 0, y: 0 } 
+                } : obj));
+              }
+            }
+            
+            const targetObject = objects.find((obj) => {
+              const adjustedX = obj.position.x + canvasOffset.x;
+              const adjustedY = obj.position.y + canvasOffset.y;
+              return Math.abs(handX - adjustedX) < 16 && Math.abs(handY - adjustedY) < 12;
+            });
+
+            if (targetObject) {
+              const adjustedX = targetObject.position.x + canvasOffset.x;
+              const adjustedY = targetObject.position.y + canvasOffset.y;
+              newGrabbedObjects.set(handIndex, { id: targetObject.id, offsetX: handX - adjustedX, offsetY: handY - adjustedY });
+              hasChanges = true;
+              maxZIndexRef.current += 1;
+              objectUpdates.set(targetObject.id, { ...(objectUpdates.get(targetObject.id) || {}), zIndex: maxZIndexRef.current });
+              setObjects(prev => prev.map(obj => obj.id === targetObject.id ? { ...obj, isPhysicsEnabled: false, velocity: { x: 0, y: 0 } } : obj));
+            } else {
+              if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
+            }
           }
         }
 
@@ -797,6 +818,51 @@ const Index = () => {
     }
   };
 
+  // Check if hand is hovering over any connector
+  const checkConnectorHover = useCallback((handX: number, handY: number): string | null => {
+    const CONNECTOR_THRESHOLD = 8; // Distance threshold in percentage
+    
+    for (const obj of objects) {
+      if (obj.type !== 'card') continue;
+      
+      const connectors = ['left', 'right', 'top', 'bottom'];
+      for (const conn of connectors) {
+        const connectorId = `${obj.id}-${conn}`;
+        const cardX = obj.position.x + canvasOffset.x;
+        const cardY = obj.position.y + canvasOffset.y;
+        
+        // Calculate connector position in percentage
+        let connX = cardX;
+        let connY = cardY;
+        
+        switch (conn) {
+          case 'left':
+            connX = cardX - 13; // Approximate offset for card width
+            break;
+          case 'right':
+            connX = cardX + 13;
+            break;
+          case 'top':
+            connY = cardY - 8; // Approximate offset for card height
+            break;
+          case 'bottom':
+            connY = cardY + 8;
+            break;
+        }
+        
+        const distance = Math.sqrt(
+          Math.pow(handX - connX, 2) + Math.pow(handY - connY, 2)
+        );
+        
+        if (distance < CONNECTOR_THRESHOLD) {
+          return connectorId;
+        }
+      }
+    }
+    
+    return null;
+  }, [objects, canvasOffset]);
+
   // Update wire end position based on hand position when actively dragging
   useEffect(() => {
     if (!activeWire || handPositions.length === 0) return;
@@ -808,46 +874,36 @@ const Index = () => {
     const gesture = gestureStates[activeWire.handIndex];
     if (gesture && !gesture.isPinching) {
       // Check if near any connector to complete connection
-      const handX = hand.x * window.innerWidth;
-      const handY = hand.y * window.innerHeight;
+      const handX = hand.x * 100;
+      const handY = hand.y * 100;
+      const hoveredConn = checkConnectorHover(handX, handY);
       
-      let foundConnection = false;
-      for (const obj of objects) {
-        if (obj.id === activeWire.startCardId) continue; // Can't connect to self
+      if (hoveredConn) {
+        const [targetCardId, targetConnector] = hoveredConn.split('-');
         
-        const connectors = ['left', 'right', 'top', 'bottom'];
-        for (const conn of connectors) {
-          const connPos = getConnectorPosition(obj.id, conn);
-          const distance = Math.sqrt(
-            Math.pow(handX - connPos.x, 2) + Math.pow(handY - connPos.y, 2)
-          );
-          
-          if (distance < 50) { // 50px threshold
-            // Create connection
-            setConnections(prev => [
-              ...prev,
-              {
-                id: Date.now().toString(),
-                fromCardId: activeWire.startCardId,
-                fromConnector: activeWire.startConnector,
-                toCardId: obj.id,
-                toConnector: conn,
-              }
-            ]);
-            foundConnection = true;
-            toast({
-              title: "Connection created",
-              description: `Connected ${activeWire.startCardId} to ${obj.id}`,
-            });
-            break;
-          }
+        // Can't connect to the same card or if it's the same connector we started from
+        if (targetCardId !== activeWire.startCardId) {
+          // Create connection
+          setConnections(prev => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              fromCardId: activeWire.startCardId,
+              fromConnector: activeWire.startConnector,
+              toCardId: targetCardId,
+              toConnector: targetConnector,
+            }
+          ]);
+          toast({
+            title: "Connection created",
+            description: `Connected ${activeWire.startCardId} to ${targetCardId}`,
+          });
         }
-        if (foundConnection) break;
       }
       
       setActiveWire(null);
     }
-  }, [activeWire, handPositions, gestureStates, objects, canvasOffset, toast]);
+  }, [activeWire, handPositions, gestureStates, checkConnectorHover, toast]);
 
   // Physics loop disabled - cards no longer have inertia
   useEffect(() => {
@@ -982,6 +1038,8 @@ const Index = () => {
                   allGestureStates={gestureStates}
                   onConnectorGrab={handleConnectorGrab}
                   activeConnector={activeWire ? `${activeWire.startCardId}-${activeWire.startConnector}` : null}
+                  hoveredConnector={hoveredConnector}
+                  onConnectorHover={setHoveredConnector}
                 />;
               })}
               
