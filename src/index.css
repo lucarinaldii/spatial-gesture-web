@@ -70,8 +70,10 @@ All colors MUST be HSL.
 
 @layer utilities {
   .glass-panel {
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card) / 0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
   }
   
   .cursor-hand {

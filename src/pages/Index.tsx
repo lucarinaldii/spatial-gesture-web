@@ -7,7 +7,7 @@ import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2 } from 'lucide-react';
+import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2, Image } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -57,6 +57,7 @@ const createPlaceholderHandLandmarks = (hand: 'Left' | 'Right') => {
 const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [hasStartedTracking, setHasStartedTracking] = useState(false);
+  const [canvasBackground, setCanvasBackground] = useState<string | null>(null);
   const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
   
@@ -97,6 +98,7 @@ const Index = () => {
   ]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
   const importButtonRef = useRef<HTMLButtonElement>(null);
   const restartButtonRef = useRef<HTMLButtonElement>(null);
   const [grabbedObjects, setGrabbedObjects] = useState<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
@@ -186,6 +188,22 @@ const Index = () => {
     }]);
     
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleBackgroundUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Invalid file", description: "Please upload an image file" });
+      return;
+    }
+    
+    const fileUrl = URL.createObjectURL(file);
+    setCanvasBackground(fileUrl);
+    
+    if (backgroundInputRef.current) backgroundInputRef.current.value = '';
+    toast({ title: "Background updated!", description: "Canvas background has been set" });
   };
 
   const handleRestart = useCallback(() => {
@@ -904,8 +922,16 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background" />
+    <div 
+      className="relative min-h-screen bg-background overflow-hidden"
+      style={canvasBackground ? {
+        backgroundImage: `url(${canvasBackground})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      } : undefined}
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {!isTracking ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-8">
@@ -936,6 +962,7 @@ const Index = () => {
             {/* Bottom center buttons - pointer-events-auto ensures they're clickable */}
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-4 pointer-events-auto">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
+              <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
               <Button 
                 ref={restartButtonRef}
                 onClick={handleRestart} 
@@ -952,6 +979,14 @@ const Index = () => {
                 className={`rounded-full neon-glow transition-all duration-200 px-6 py-6 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
               >
                 <Plus className="w-5 h-5 mr-2" />Import File
+              </Button>
+              <Button 
+                onClick={() => backgroundInputRef.current?.click()} 
+                size="lg" 
+                variant="outline"
+                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
+              >
+                <Image className="w-5 h-5 mr-2" />Background
               </Button>
               <Button 
                 onClick={() => setShow3DHand(!show3DHand)} 
