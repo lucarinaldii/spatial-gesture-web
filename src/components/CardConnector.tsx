@@ -29,7 +29,7 @@ export const CardConnector: React.FC<CardConnectorProps> = ({
     >
       <div
         className={`
-          w-4 h-4 rounded-full border-2 transition-all duration-200
+          w-6 h-6 rounded-full border-2 transition-all duration-200
           ${isActive ? 'bg-primary border-primary scale-125 shadow-lg shadow-primary/50' : 'bg-background border-primary/50'}
           ${isHovered ? 'scale-150 border-primary bg-primary/20' : ''}
         `}

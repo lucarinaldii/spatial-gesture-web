@@ -43,7 +43,6 @@ export const WireConnection: React.FC<WireConnectionProps> = ({
         stroke="hsl(var(--primary))"
         strokeWidth="6"
         opacity="0.3"
-        className="animate-pulse"
       />
       {/* Main wire */}
       <path
@@ -52,19 +51,7 @@ export const WireConnection: React.FC<WireConnectionProps> = ({
         stroke={isActive ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.6)"}
         strokeWidth="3"
         strokeLinecap="round"
-        className={isActive ? "animate-pulse" : ""}
       />
-      {/* Animated dots along the wire */}
-      {!isActive && (
-        <>
-          <circle r="3" fill="hsl(var(--primary))">
-            <animateMotion dur="2s" repeatCount="indefinite" path={path} />
-          </circle>
-          <circle r="3" fill="hsl(var(--primary))">
-            <animateMotion dur="2s" repeatCount="indefinite" path={path} begin="0.5s" />
-          </circle>
-        </>
-      )}
     </svg>
   );
 };
