@@ -246,10 +246,17 @@ const Index = () => {
   }, [grabbedObjects, toast]);
 
   // Voice commands hook
-  const { isListening, startListening, stopListening, isSupported } = useVoiceCommands({
+  const { isListening, startListening, stopListening, isSupported, commandRecognized } = useVoiceCommands({
     onAddCard: handleAddCard,
     onDeleteCard: handleDeleteCard,
   });
+
+  // Auto-start voice recognition on mount
+  useEffect(() => {
+    if (isSupported && !isListening) {
+      startListening();
+    }
+  }, [isSupported]);
 
   const handleRestart = useCallback(() => {
     // Clear all refs and state
@@ -1048,7 +1055,7 @@ const Index = () => {
                   onClick={() => isListening ? stopListening() : startListening()} 
                   size="lg" 
                   variant={isListening ? "default" : "outline"}
-                  className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
+                  className={`rounded-full neon-glow transition-all duration-200 px-6 py-6 ${commandRecognized ? 'animate-pulse scale-110' : ''}`}
                 >
                   {isListening ? <Mic className="w-5 h-5 mr-2" /> : <MicOff className="w-5 h-5 mr-2" />}
                   Voice {isListening ? 'On' : 'Off'}

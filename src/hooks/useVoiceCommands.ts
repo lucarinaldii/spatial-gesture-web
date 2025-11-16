@@ -5,6 +5,7 @@ interface VoiceCommandsHook {
   startListening: () => void;
   stopListening: () => void;
   isSupported: boolean;
+  commandRecognized: boolean;
 }
 
 interface VoiceCommandsProps {
@@ -15,7 +16,9 @@ interface VoiceCommandsProps {
 export const useVoiceCommands = ({ onAddCard, onDeleteCard }: VoiceCommandsProps): VoiceCommandsHook => {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
+  const [commandRecognized, setCommandRecognized] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const commandTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if browser supports Web Speech API
@@ -104,6 +107,9 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard }: VoiceCommandsProps
         // Check for add card command
         if (addCardPatterns.some(pattern => pattern.test(transcript))) {
           console.log('Add card command detected!');
+          setCommandRecognized(true);
+          if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);
+          commandTimeoutRef.current = setTimeout(() => setCommandRecognized(false), 1000);
           onAddCard?.();
           return;
         }
@@ -111,6 +117,9 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard }: VoiceCommandsProps
         // Check for delete card command
         if (deleteCardPatterns.some(pattern => pattern.test(transcript))) {
           console.log('Delete card command detected!');
+          setCommandRecognized(true);
+          if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);
+          commandTimeoutRef.current = setTimeout(() => setCommandRecognized(false), 1000);
           onDeleteCard?.();
           return;
         }
@@ -147,6 +156,9 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard }: VoiceCommandsProps
           console.error('Error stopping recognition:', e);
         }
       }
+      if (commandTimeoutRef.current) {
+        clearTimeout(commandTimeoutRef.current);
+      }
     };
   }, [isListening, onAddCard, onDeleteCard]);
 
@@ -179,5 +191,6 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard }: VoiceCommandsProps
     startListening,
     stopListening,
     isSupported,
+    commandRecognized,
   };
 };
