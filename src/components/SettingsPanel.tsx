@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Plus, RotateCcw, Image, Link, Mic, MicOff, Eye, EyeOff, Settings as SettingsIcon, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AlignmentParams } from '@/components/AlignmentSettings';
 
 export interface SettingsPanelProps {
   showConnectors: boolean;
@@ -23,6 +24,7 @@ export interface SettingsPanelProps {
   onClose: () => void;
   commandRecognized: boolean;
   onShowAdvancedSettings: () => void;
+  alignmentParams: AlignmentParams;
 }
 
 export const SettingsPanel = ({
@@ -42,6 +44,7 @@ export const SettingsPanel = ({
   onClose,
   commandRecognized,
   onShowAdvancedSettings,
+  alignmentParams,
 }: SettingsPanelProps) => {
   const { toast } = useToast();
 
@@ -51,12 +54,13 @@ export const SettingsPanel = ({
       show3DHand,
       showSkeleton,
       isListening,
+      alignmentParams,
     };
     
     localStorage.setItem('spatialUISettings', JSON.stringify(settings));
     toast({
       title: "Settings saved!",
-      description: "Your preferences have been saved as defaults",
+      description: "Your preferences including hand calibration have been saved as defaults",
     });
   };
 
