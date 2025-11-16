@@ -9,12 +9,14 @@ import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettin
 import WireConnection from '@/components/WireConnection';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { VoiceVisualizer } from '@/components/VoiceVisualizer';
+import { OBJImporter } from '@/components/OBJImporter';
+import { OBJ3DModel } from '@/components/OBJ3DModel';
 import { useToast } from '@/hooks/use-toast';
 import { Settings } from 'lucide-react';
 
 interface ObjectData {
   id: string;
-  type: 'card' | 'image' | 'pdf' | 'model3d';
+  type: 'card' | 'image' | 'pdf' | 'model3d' | 'obj';
   title?: string;
   description?: string;
   fileUrl?: string;
@@ -23,6 +25,7 @@ interface ObjectData {
   rotation: { x: number; y: number; z: number };
   velocity: { x: number; y: number };
   isPhysicsEnabled: boolean;
+  scale?: number;
 }
 
 // Helper function to create placeholder hand landmarks in open pose
@@ -296,6 +299,26 @@ const Index = () => {
       description: "All cards removed by voice command" 
     });
   }, [toast]);
+
+  const handleOBJImport = useCallback((file: File, fileName: string) => {
+    const fileUrl = URL.createObjectURL(file);
+    maxZIndexRef.current += 1;
+    
+    const newObject: ObjectData = {
+      id: Date.now().toString(),
+      type: 'obj',
+      title: fileName,
+      fileUrl,
+      position: { x: 50, y: 50 },
+      zIndex: maxZIndexRef.current,
+      rotation: { x: 0, y: 0, z: 0 },
+      velocity: { x: 0, y: 0 },
+      isPhysicsEnabled: false,
+      scale: 1,
+    };
+    
+    setObjects(prev => [...prev, newObject]);
+  }, []);
 
   // Voice commands hook
   const grabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
@@ -1029,9 +1052,10 @@ const Index = () => {
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
             {/* Settings button - bottom right */}
-            <div className="fixed bottom-8 right-8 z-50 pointer-events-auto">
+            <div className="fixed bottom-8 right-8 z-50 pointer-events-auto flex flex-col gap-3">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
               <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
+              <OBJImporter onImport={handleOBJImport} />
               <Button 
                 onClick={() => setShowSettingsPanel(!showSettingsPanel)} 
                 size="lg" 
@@ -1118,6 +1142,23 @@ const Index = () => {
                   onConnectorHover={setHoveredConnector}
                   showConnectors={showConnectors}
                 />;
+              })}
+              
+              {/* Render OBJ 3D Models separately */}
+              {objects.filter(obj => obj.type === 'obj').map((obj) => {
+                const isBeingDragged = Array.from(grabbedObjects.values()).some(g => g.id === obj.id);
+                return (
+                  <OBJ3DModel
+                    key={obj.id}
+                    objUrl={obj.fileUrl || ''}
+                    position={obj.position}
+                    rotation={obj.rotation}
+                    scale={obj.scale || 1}
+                    isGrabbed={isBeingDragged}
+                    width={300}
+                    height={300}
+                  />
+                );
               })}
               
               {/* Render wire connections */}
