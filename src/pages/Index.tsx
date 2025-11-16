@@ -518,11 +518,33 @@ const Index = () => {
               }
             }
             
-            const targetObject = objects.find((obj) => {
+            // Check for 3D objects first (use world space coordinates)
+            const target3DObject = objects.find((obj) => {
+              if (obj.type !== 'obj') return false;
+              
+              // Convert hand position to 3D world space (same as Scene3D)
+              const handWorldX = (handPos.x - 0.5) * 20;
+              const handWorldY = -(handPos.y - 0.5) * 15;
+              
+              // Check distance in 3D space
+              const distance = Math.sqrt(
+                Math.pow(handWorldX - obj.position.x, 2) + 
+                Math.pow(handWorldY - obj.position.y, 2)
+              );
+              
+              return distance < 3; // Grab threshold in world units
+            });
+            
+            // Check for 2D objects (cards, images, etc.)
+            const target2DObject = objects.find((obj) => {
+              if (obj.type === 'obj') return false; // Skip 3D objects
+              
               const adjustedX = obj.position.x + canvasOffset.x;
               const adjustedY = obj.position.y + canvasOffset.y;
               return Math.abs(handX - adjustedX) < 16 && Math.abs(handY - adjustedY) < 12;
             });
+            
+            const targetObject = target3DObject || target2DObject;
 
             if (targetObject) {
               const adjustedX = targetObject.position.x + canvasOffset.x;
