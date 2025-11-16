@@ -109,7 +109,7 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
         if (handPos && gesture) {
           // Convert screen coordinates to 3D world coordinates
           const x = (handPos.x - 0.5) * 20; // Scale to world space
-          const y = -(handPos.y - 0.5) * 15; // Invert Y and scale
+          const y = (handPos.y - 0.5) * 15; // Natural Y movement (not inverted)
           const z = obj.position.z;
 
           // Smooth movement
@@ -162,7 +162,8 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
             }
 
             const baseDistance = baseDistanceRef.current.get(baseKey)!;
-            const newScale = (distance / baseDistance) * obj.scale;
+            const scaleFactor = (distance / baseDistance - 1) * 0.3 + 1; // Reduced sensitivity
+            const newScale = scaleFactor * obj.scale;
             
             onUpdateObject(obj.id, {
               scale: Math.max(0.1, Math.min(5, newScale))
