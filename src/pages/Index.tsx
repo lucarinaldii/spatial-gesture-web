@@ -1069,6 +1069,7 @@ const Index = () => {
               grabbedObjects={grabbedObjects}
               handPositions={handPositions}
               gestureStates={gestureStates}
+              landmarks={landmarks}
               onUpdateObject={handleUpdate3DObject}
             />
             
