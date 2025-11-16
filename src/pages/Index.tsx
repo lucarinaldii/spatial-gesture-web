@@ -158,6 +158,30 @@ const Index = () => {
   
   const [alignmentParams, setAlignmentParams] = useState<AlignmentParams>(defaultAlignmentParams);
 
+  // Load saved settings on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('spatialUISettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        if (parsed.alignmentParams) {
+          setAlignmentParams(parsed.alignmentParams);
+        }
+        if (typeof parsed.showConnectors === 'boolean') {
+          setShowConnectors(parsed.showConnectors);
+        }
+        if (typeof parsed.show3DHand === 'boolean') {
+          setShow3DHand(parsed.show3DHand);
+        }
+        if (typeof parsed.showSkeleton === 'boolean') {
+          setShowSkeleton(parsed.showSkeleton);
+        }
+      } catch (error) {
+        console.error('Error loading saved settings:', error);
+      }
+    }
+  }, []);
+
   const handleStartTracking = async () => {
     setIsTracking(true);
     setHasStartedTracking(true);
@@ -1020,6 +1044,7 @@ const Index = () => {
                   onClose={() => setShowSettingsPanel(false)}
                   commandRecognized={commandRecognized}
                   onShowAdvancedSettings={() => setShowSettings(!showSettings)}
+                  alignmentParams={alignmentParams}
                 />
               </div>
             )}
