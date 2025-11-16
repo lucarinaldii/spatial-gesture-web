@@ -7,8 +7,9 @@ import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
+import { SettingsPanel } from '@/components/SettingsPanel';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2, Image, Link, Mic, MicOff } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -59,7 +60,7 @@ const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [hasStartedTracking, setHasStartedTracking] = useState(false);
   const [canvasBackground, setCanvasBackground] = useState<string | null>(null);
-  const [showConnectors, setShowConnectors] = useState(true);
+  const [showConnectors, setShowConnectors] = useState(false);
   const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
   
@@ -101,16 +102,10 @@ const Index = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
-  const importButtonRef = useRef<HTMLButtonElement>(null);
-  const restartButtonRef = useRef<HTMLButtonElement>(null);
   const [grabbedObjects, setGrabbedObjects] = useState<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
   const [canvasZoom, setCanvasZoom] = useState(1);
-  const [isImportButtonHovered, setIsImportButtonHovered] = useState(false);
-  const [isRestartButtonHovered, setIsRestartButtonHovered] = useState(false);
   const lastPinchStates = useRef<Map<number, boolean>>(new Map());
-  const lastImportButtonPinchState = useRef(false);
-  const lastRestartButtonPinchState = useRef(false);
   const animationFrameRef = useRef<number>();
   const maxZIndexRef = useRef(3);
   const baseDistanceRef = useRef<Map<string, number>>(new Map());
@@ -126,6 +121,7 @@ const Index = () => {
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   
   // Wire connection state
   const [activeWire, setActiveWire] = useState<{ startCardId: string; startConnector: string; handIndex: number } | null>(null);
@@ -251,14 +247,25 @@ const Index = () => {
     onDeleteCard: handleDeleteCard,
   });
 
-  // Auto-start voice recognition on mount
+  // Load saved settings on mount
   useEffect(() => {
-    if (isSupported && !isListening) {
-      // Delay to ensure everything is mounted
-      const timer = setTimeout(() => {
-        startListening();
-      }, 500);
-      return () => clearTimeout(timer);
+    const savedSettings = localStorage.getItem('spatialUISettings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        if (typeof settings.showConnectors === 'boolean') setShowConnectors(settings.showConnectors);
+        if (typeof settings.show3DHand === 'boolean') setShow3DHand(settings.show3DHand);
+        if (typeof settings.showSkeleton === 'boolean') setShowSkeleton(settings.showSkeleton);
+        // Auto-start voice if it was enabled in saved settings
+        if (settings.isListening && isSupported) {
+          setTimeout(() => startListening(), 500);
+        }
+      } catch (e) {
+        console.error('Failed to load saved settings:', e);
+      }
+    } else if (isSupported) {
+      // Default: auto-start voice if no saved settings
+      setTimeout(() => startListening(), 500);
     }
   }, [isSupported]);
 
@@ -326,78 +333,6 @@ const Index = () => {
     // Reset alignment parameters
     setAlignmentParams(defaultAlignmentParams);
   }, []);
-
-  // Hand gesture detection for import button
-  useEffect(() => {
-    if (!importButtonRef.current || handPositions.length === 0 || !isTracking) {
-      setIsImportButtonHovered(false);
-      return;
-    }
-
-    const buttonRect = importButtonRef.current.getBoundingClientRect();
-    let isHovering = false;
-    let anyPinching = false;
-    
-    handPositions.forEach((handPos, handIndex) => {
-      const handX = handPos.x * window.innerWidth;
-      const handY = handPos.y * window.innerHeight;
-      const isInBounds = handX >= buttonRect.left && handX <= buttonRect.right &&
-                        handY >= buttonRect.top && handY <= buttonRect.bottom;
-      
-      if (isInBounds) {
-        isHovering = true;
-        const gesture = gestureStates[handIndex];
-        const isPinching = gesture?.isPinching || false;
-        
-        // Trigger on pinch transition (from not pinching to pinching)
-        if (isPinching && !lastImportButtonPinchState.current) {
-          console.log('Import button pinched!');
-          fileInputRef.current?.click();
-        }
-        
-        if (isPinching) anyPinching = true;
-      }
-    });
-    
-    setIsImportButtonHovered(isHovering);
-    lastImportButtonPinchState.current = anyPinching;
-  }, [handPositions, gestureStates, isTracking]);
-
-  // Hand gesture detection for restart button
-  useEffect(() => {
-    if (!restartButtonRef.current || handPositions.length === 0 || !isTracking) {
-      setIsRestartButtonHovered(false);
-      return;
-    }
-
-    const buttonRect = restartButtonRef.current.getBoundingClientRect();
-    let isHovering = false;
-    let anyPinching = false;
-    
-    handPositions.forEach((handPos, handIndex) => {
-      const handX = handPos.x * window.innerWidth;
-      const handY = handPos.y * window.innerHeight;
-      const isInBounds = handX >= buttonRect.left && handX <= buttonRect.right &&
-                        handY >= buttonRect.top && handY <= buttonRect.bottom;
-      
-      if (isInBounds) {
-        isHovering = true;
-        const gesture = gestureStates[handIndex];
-        const isPinching = gesture?.isPinching || false;
-        
-        // Trigger on pinch transition (from not pinching to pinching)
-        if (isPinching && !lastRestartButtonPinchState.current) {
-          console.log('Restart button pinched!');
-          handleRestart();
-        }
-        
-        if (isPinching) anyPinching = true;
-      }
-    });
-    
-    setIsRestartButtonHovered(isHovering);
-    lastRestartButtonPinchState.current = anyPinching;
-  }, [handPositions, gestureStates, isTracking, handleRestart]);
 
   useEffect(() => {
     if (handPositions.length === 0) {
@@ -1017,82 +952,42 @@ const Index = () => {
           <div className="relative min-h-screen">
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
-            {/* Bottom center buttons - pointer-events-auto ensures they're clickable */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex gap-4 pointer-events-auto">
+            {/* Settings button - bottom right */}
+            <div className="fixed bottom-8 right-8 z-50 pointer-events-auto">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
               <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
               <Button 
-                ref={restartButtonRef}
-                onClick={handleRestart} 
+                onClick={() => setShowSettingsPanel(!showSettingsPanel)} 
                 size="lg" 
-                variant="destructive"
-                className={`rounded-full neon-glow transition-all duration-200 px-6 py-6 ${isRestartButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
+                className="rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0"
               >
-                <RotateCcw className="w-5 h-5 mr-2" />Restart
-              </Button>
-              <Button 
-                ref={importButtonRef}
-                onClick={() => fileInputRef.current?.click()} 
-                size="lg" 
-                className={`rounded-full neon-glow transition-all duration-200 px-6 py-6 ${isImportButtonHovered ? 'scale-110 ring-2 ring-primary' : ''}`}
-              >
-                <Plus className="w-5 h-5 mr-2" />Import File
-              </Button>
-              <Button 
-                onClick={() => backgroundInputRef.current?.click()} 
-                size="lg" 
-                variant="outline"
-                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
-              >
-                <Image className="w-5 h-5 mr-2" />Background
-              </Button>
-              <Button 
-                onClick={() => setShowConnectors(!showConnectors)} 
-                size="lg" 
-                variant="outline"
-                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
-              >
-                <Link className="w-5 h-5 mr-2" />{showConnectors ? 'Hide' : 'Show'} Connectors
-              </Button>
-              {isSupported && (
-                <Button 
-                  onClick={() => isListening ? stopListening() : startListening()} 
-                  size="lg" 
-                  variant={isListening ? "default" : "outline"}
-                  className={`rounded-full neon-glow transition-all duration-200 px-6 py-6 ${commandRecognized ? 'animate-pulse scale-110' : ''}`}
-                >
-                  {isListening ? <Mic className="w-5 h-5 mr-2" /> : <MicOff className="w-5 h-5 mr-2" />}
-                  Voice {isListening ? 'On' : 'Off'}
-                </Button>
-              )}
-              <Button 
-                onClick={() => setShow3DHand(!show3DHand)} 
-                size="lg" 
-                variant="outline"
-                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
-              >
-                {show3DHand ? <Eye className="w-5 h-5 mr-2" /> : <EyeOff className="w-5 h-5 mr-2" />}
-                3D Hand
-              </Button>
-              <Button 
-                onClick={() => setShowSkeleton(!showSkeleton)} 
-                size="lg" 
-                variant="outline"
-                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
-              >
-                {showSkeleton ? <Eye className="w-5 h-5 mr-2" /> : <EyeOff className="w-5 h-5 mr-2" />}
-                Skeleton
-              </Button>
-              <Button 
-                onClick={() => setShowSettings(!showSettings)} 
-                size="lg" 
-                variant="outline"
-                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
-              >
-                <Settings className="w-5 h-5 mr-2" />
-                Settings
+                <Settings className="w-6 h-6" />
               </Button>
             </div>
+
+            {/* Settings Panel */}
+            {showSettingsPanel && (
+              <div className="fixed top-8 right-8 z-50 pointer-events-auto animate-scale-in">
+                <SettingsPanel
+                  showConnectors={showConnectors}
+                  setShowConnectors={setShowConnectors}
+                  show3DHand={show3DHand}
+                  setShow3DHand={setShow3DHand}
+                  showSkeleton={showSkeleton}
+                  setShowSkeleton={setShowSkeleton}
+                  isListening={isListening}
+                  startListening={startListening}
+                  stopListening={stopListening}
+                  isVoiceSupported={isSupported}
+                  onRestart={handleRestart}
+                  onImportFile={() => fileInputRef.current?.click()}
+                  onBackgroundUpload={() => backgroundInputRef.current?.click()}
+                  onClose={() => setShowSettingsPanel(false)}
+                  commandRecognized={commandRecognized}
+                  onShowAdvancedSettings={() => setShowSettings(!showSettings)}
+                />
+              </div>
+            )}
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
               {objects.sort((a, b) => a.zIndex - b.zIndex).map((obj) => {
                 const isBeingDragged = Array.from(grabbedObjects.values()).some(g => g.id === obj.id);
@@ -1248,7 +1143,7 @@ const Index = () => {
             
             {/* Alignment Settings Panel */}
             {showSettings && (
-              <div className="fixed top-8 right-8 z-50">
+              <div className={`fixed top-8 z-50 transition-all duration-300 ${showSettingsPanel ? 'right-[26rem]' : 'right-8'}`}>
                 <AlignmentSettings params={alignmentParams} onParamsChange={setAlignmentParams} />
               </div>
             )}
