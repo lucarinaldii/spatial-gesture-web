@@ -299,7 +299,7 @@ const Index = () => {
 
   // Voice commands hook
   const grabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
-  const { isListening, startListening, stopListening, isSupported, commandRecognized, commandSuccess, commandError } = useVoiceCommands({
+  const { isListening, startListening, stopListening, isSupported, commandRecognized, commandSuccess, commandError, transcriptText } = useVoiceCommands({
     onAddCard: handleAddCard,
     onDeleteCard: handleDeleteCard,
     onClearAll: handleClearAll,
@@ -1231,6 +1231,7 @@ const Index = () => {
               commandRecognized={commandRecognized}
               commandSuccess={commandSuccess}
               commandError={commandError}
+              transcriptText={transcriptText}
             />
           </div>
         )}

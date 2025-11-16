@@ -6,13 +6,15 @@ interface VoiceVisualizerProps {
   commandRecognized: boolean;
   commandSuccess?: boolean;
   commandError?: boolean;
+  transcriptText?: string;
 }
 
 export const VoiceVisualizer = ({ 
   isListening, 
   commandRecognized,
   commandSuccess = false,
-  commandError = false 
+  commandError = false,
+  transcriptText = ''
 }: VoiceVisualizerProps) => {
   const [audioLevel, setAudioLevel] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -160,6 +162,14 @@ export const VoiceVisualizer = ({
         </div>
 
         {/* Text feedback */}
+        {transcriptText && !commandSuccess && !commandError && (
+          <div className="absolute inset-x-0 top-2 flex justify-center">
+            <div className="px-4 py-2 bg-background/90 backdrop-blur-sm rounded-full text-sm font-medium animate-in fade-in slide-in-from-bottom-2">
+              <span className="text-foreground">{transcriptText}</span>
+            </div>
+          </div>
+        )}
+        
         {(commandSuccess || commandError || isProcessing) && (
           <div className="absolute inset-x-0 top-2 flex justify-center">
             <div className="px-4 py-1 bg-background/90 backdrop-blur-sm rounded-full text-xs font-medium animate-in fade-in slide-in-from-bottom-2">
