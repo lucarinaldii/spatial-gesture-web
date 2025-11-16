@@ -10,7 +10,7 @@ import WireConnection from '@/components/WireConnection';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { VoiceVisualizer } from '@/components/VoiceVisualizer';
 import { OBJImporter } from '@/components/OBJImporter';
-import { OBJ3DModel } from '@/components/OBJ3DModel';
+import { Scene3D } from '@/components/Scene3D';
 import { useToast } from '@/hooks/use-toast';
 import { Settings } from 'lucide-react';
 
@@ -20,7 +20,7 @@ interface ObjectData {
   title?: string;
   description?: string;
   fileUrl?: string;
-  position: { x: number; y: number };
+  position: { x: number; y: number; z?: number };
   zIndex: number;
   rotation: { x: number; y: number; z: number };
   velocity: { x: number; y: number };
@@ -309,7 +309,7 @@ const Index = () => {
       type: 'obj',
       title: fileName,
       fileUrl,
-      position: { x: 50, y: 50 },
+      position: { x: 0, y: 0, z: 0 }, // 3D position
       zIndex: maxZIndexRef.current,
       rotation: { x: 0, y: 0, z: 0 },
       velocity: { x: 0, y: 0 },
@@ -318,6 +318,12 @@ const Index = () => {
     };
     
     setObjects(prev => [...prev, newObject]);
+  }, []);
+
+  const handleUpdate3DObject = useCallback((id: string, updates: Partial<ObjectData>) => {
+    setObjects(prev => prev.map(obj => 
+      obj.id === id ? { ...obj, ...updates } : obj
+    ));
   }, []);
 
   // Voice commands hook
@@ -1051,6 +1057,21 @@ const Index = () => {
           <div className="relative min-h-screen">
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
+            {/* Full-screen 3D Scene for OBJ models */}
+            <Scene3D
+              objects={objects.filter(obj => obj.type === 'obj').map(obj => ({
+                id: obj.id,
+                objUrl: obj.fileUrl || '',
+                position: { x: obj.position.x, y: obj.position.y, z: obj.position.z || 0 },
+                rotation: obj.rotation,
+                scale: obj.scale || 1,
+              }))}
+              grabbedObjects={grabbedObjects}
+              handPositions={handPositions}
+              gestureStates={gestureStates}
+              onUpdateObject={handleUpdate3DObject}
+            />
+            
             {/* Settings button - bottom right */}
             <div className="fixed bottom-8 right-8 z-50 pointer-events-auto flex flex-col gap-3">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
@@ -1142,23 +1163,6 @@ const Index = () => {
                   onConnectorHover={setHoveredConnector}
                   showConnectors={showConnectors}
                 />;
-              })}
-              
-              {/* Render OBJ 3D Models separately */}
-              {objects.filter(obj => obj.type === 'obj').map((obj) => {
-                const isBeingDragged = Array.from(grabbedObjects.values()).some(g => g.id === obj.id);
-                return (
-                  <OBJ3DModel
-                    key={obj.id}
-                    objUrl={obj.fileUrl || ''}
-                    position={obj.position}
-                    rotation={obj.rotation}
-                    scale={obj.scale || 1}
-                    isGrabbed={isBeingDragged}
-                    width={300}
-                    height={300}
-                  />
-                );
               })}
               
               {/* Render wire connections */}
