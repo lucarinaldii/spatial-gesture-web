@@ -161,7 +161,7 @@ export const SettingsPanel = ({
               </div>
               
               <p className="text-xs text-muted-foreground">
-                Say "add card" to create new cards or "delete card" while grabbing to remove them
+                Say commands like "add new card", "delete the card" (while grabbing), or "clear all"
               </p>
             </div>
 

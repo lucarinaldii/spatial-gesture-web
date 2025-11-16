@@ -224,27 +224,40 @@ const Index = () => {
 
   const handleDeleteCard = useCallback(() => {
     // Find the card currently being grabbed by any hand
-    const grabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
+    const currentGrabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
     
-    if (grabbedCardIds.length === 0) {
+    if (currentGrabbedCardIds.length === 0) {
       toast({ title: "No card selected", description: "Please grab a card with pinch to delete it" });
       return;
     }
     
     // Delete all grabbed cards
-    setObjects(prev => prev.filter(obj => !grabbedCardIds.includes(obj.id)));
+    setObjects(prev => prev.filter(obj => !currentGrabbedCardIds.includes(obj.id)));
     setGrabbedObjects(new Map());
     
     toast({ 
       title: "Card deleted!", 
-      description: `${grabbedCardIds.length} card${grabbedCardIds.length > 1 ? 's' : ''} deleted by voice command` 
+      description: `${currentGrabbedCardIds.length} card${currentGrabbedCardIds.length > 1 ? 's' : ''} deleted by voice command` 
     });
   }, [grabbedObjects, toast]);
 
+  const handleClearAll = useCallback(() => {
+    setObjects([]);
+    setConnections([]);
+    setGrabbedObjects(new Map());
+    toast({ 
+      title: "Canvas cleared!", 
+      description: "All cards removed by voice command" 
+    });
+  }, [toast]);
+
   // Voice commands hook
+  const grabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
   const { isListening, startListening, stopListening, isSupported, commandRecognized } = useVoiceCommands({
     onAddCard: handleAddCard,
     onDeleteCard: handleDeleteCard,
+    onClearAll: handleClearAll,
+    grabbedCardIds,
   });
 
   // Load saved settings on mount
