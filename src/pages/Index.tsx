@@ -302,23 +302,32 @@ const Index = () => {
   }, [toast]);
 
   const handleOBJImport = useCallback((file: File, fileName: string) => {
-    const fileUrl = URL.createObjectURL(file);
-    maxZIndexRef.current += 1;
-    
-    const newObject: ObjectData = {
-      id: Date.now().toString(),
-      type: 'obj',
-      title: fileName,
-      fileUrl,
-      position: { x: 0, y: 0, z: 0 }, // 3D position
-      zIndex: maxZIndexRef.current,
-      rotation: { x: 0, y: 0, z: 0 },
-      velocity: { x: 0, y: 0 },
-      isPhysicsEnabled: false,
-      scale: 1,
+    // Read file and create blob with correct MIME type for OBJ files
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result;
+      if (content) {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const fileUrl = URL.createObjectURL(blob);
+        maxZIndexRef.current += 1;
+        
+        const newObject: ObjectData = {
+          id: Date.now().toString(),
+          type: 'obj',
+          title: fileName,
+          fileUrl,
+          position: { x: 0, y: 0, z: 0 }, // 3D position
+          zIndex: maxZIndexRef.current,
+          rotation: { x: 0, y: 0, z: 0 },
+          velocity: { x: 0, y: 0 },
+          isPhysicsEnabled: false,
+          scale: 1,
+        };
+        
+        setObjects(prev => [...prev, newObject]);
+      }
     };
-    
-    setObjects(prev => [...prev, newObject]);
+    reader.readAsText(file);
   }, []);
 
   const handleUpdate3DObject = useCallback((id: string, updates: Partial<ObjectData>) => {
