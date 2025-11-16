@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Plus, RotateCcw, Image, Link, Mic, MicOff, Eye, EyeOff, Settings as SettingsIcon, Save, X } from 'lucide-react';
+import { Plus, RotateCcw, Image, Link, Mic, MicOff, Eye, EyeOff, Settings as SettingsIcon, Save, X, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlignmentParams } from '@/components/AlignmentSettings';
 
@@ -47,6 +48,71 @@ export const SettingsPanel = ({
   alignmentParams,
 }: SettingsPanelProps) => {
   const { toast } = useToast();
+  const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
+
+  const handleCheckPermissions = async () => {
+    setIsCheckingPermissions(true);
+    
+    try {
+      // Check if Speech Recognition API is supported
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        toast({
+          title: "Not supported",
+          description: "Speech recognition is not supported in this browser. Try Chrome, Edge, or Safari.",
+          variant: "destructive",
+        });
+        setIsCheckingPermissions(false);
+        return;
+      }
+
+      // Try to request microphone permission
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Test if we can create and start recognition
+        const testRecognition = new SpeechRecognition();
+        testRecognition.continuous = false;
+        testRecognition.interimResults = false;
+        
+        testRecognition.onstart = () => {
+          testRecognition.stop();
+          toast({
+            title: "✓ All permissions granted!",
+            description: "Speech recognition is ready to use. You can now enable voice commands.",
+          });
+          setIsCheckingPermissions(false);
+        };
+        
+        testRecognition.onerror = (event: any) => {
+          toast({
+            title: "Permission denied",
+            description: "Please allow speech recognition and microphone access in your browser settings.",
+            variant: "destructive",
+          });
+          setIsCheckingPermissions(false);
+        };
+        
+        testRecognition.start();
+      } catch (error) {
+        toast({
+          title: "Microphone access denied",
+          description: "Please allow microphone access in your browser settings.",
+          variant: "destructive",
+        });
+        setIsCheckingPermissions(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to check permissions. Please try again.",
+        variant: "destructive",
+      });
+      setIsCheckingPermissions(false);
+    }
+  };
 
   const handleSaveSettings = () => {
     const settings = {
@@ -148,6 +214,18 @@ export const SettingsPanel = ({
           <>
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-foreground">Voice Control</h3>
+              
+              {/* Permission Check Button */}
+              <Button
+                onClick={handleCheckPermissions}
+                disabled={isCheckingPermissions}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                {isCheckingPermissions ? 'Checking...' : 'Test Permissions'}
+              </Button>
               
               <div className="flex items-center justify-between">
                 <Label htmlFor="voice" className="flex items-center gap-2 cursor-pointer">
