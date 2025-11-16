@@ -8,6 +8,7 @@ import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
 import { SettingsPanel } from '@/components/SettingsPanel';
+import { VoiceVisualizer } from '@/components/VoiceVisualizer';
 import { useToast } from '@/hooks/use-toast';
 import { Settings } from 'lucide-react';
 
@@ -253,7 +254,7 @@ const Index = () => {
 
   // Voice commands hook
   const grabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
-  const { isListening, startListening, stopListening, isSupported, commandRecognized } = useVoiceCommands({
+  const { isListening, startListening, stopListening, isSupported, commandRecognized, commandSuccess, commandError } = useVoiceCommands({
     onAddCard: handleAddCard,
     onDeleteCard: handleDeleteCard,
     onClearAll: handleClearAll,
@@ -1160,6 +1161,14 @@ const Index = () => {
                 <AlignmentSettings params={alignmentParams} onParamsChange={setAlignmentParams} />
               </div>
             )}
+
+            {/* Voice Visualizer */}
+            <VoiceVisualizer 
+              isListening={isListening}
+              commandRecognized={commandRecognized}
+              commandSuccess={commandSuccess}
+              commandError={commandError}
+            />
           </div>
         )}
       </div>

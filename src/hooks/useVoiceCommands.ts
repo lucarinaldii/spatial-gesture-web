@@ -7,6 +7,8 @@ interface VoiceCommandsHook {
   stopListening: () => void;
   isSupported: boolean;
   commandRecognized: boolean;
+  commandSuccess: boolean;
+  commandError: boolean;
 }
 
 interface VoiceCommandsProps {
@@ -20,6 +22,8 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [commandRecognized, setCommandRecognized] = useState(false);
+  const [commandSuccess, setCommandSuccess] = useState(false);
+  const [commandError, setCommandError] = useState(false);
   const recognitionRef = useRef<any>(null);
   const commandTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -68,6 +72,8 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
 
         if (!action) {
           console.log('No valid action recognized');
+          setCommandError(true);
+          setTimeout(() => setCommandError(false), 1500);
           return;
         }
 
@@ -77,21 +83,32 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
         commandTimeoutRef.current = setTimeout(() => setCommandRecognized(false), 1000);
 
         // Execute action
+        let success = false;
         switch (action) {
           case 'add_card':
             onAddCard?.();
+            success = true;
             break;
           case 'delete_card':
             onDeleteCard?.();
+            success = true;
             break;
           case 'clear_all':
             onClearAll?.();
+            success = true;
             break;
           default:
             console.log('Unknown action:', action);
         }
+
+        if (success) {
+          setCommandSuccess(true);
+          setTimeout(() => setCommandSuccess(false), 1500);
+        }
       } catch (err) {
         console.error('Error processing voice command:', err);
+        setCommandError(true);
+        setTimeout(() => setCommandError(false), 1500);
       }
     };
 
@@ -165,5 +182,7 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
     stopListening,
     isSupported,
     commandRecognized,
+    commandSuccess,
+    commandError,
   };
 };
