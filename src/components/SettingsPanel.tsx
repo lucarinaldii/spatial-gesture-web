@@ -161,7 +161,8 @@ export const SettingsPanel = ({
               </div>
               
               <p className="text-xs text-muted-foreground">
-                Say commands like "add new card", "delete the card" (while grabbing), or "clear all"
+                Say commands like "add new card", "delete the card" (while grabbing), or "clear all". 
+                <span className="block mt-1 text-amber-500">Note: Voice commands require an internet connection for speech recognition.</span>
               </p>
             </div>
 
