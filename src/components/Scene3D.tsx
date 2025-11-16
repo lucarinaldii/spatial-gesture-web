@@ -63,19 +63,37 @@ interface Scene3DProps {
   grabbedObjects: Map<number, { id: string }>;
   handPositions: HandPosition[];
   gestureStates: GestureState[];
+  landmarks: any;
   onUpdateObject: (id: string, updates: Partial<Object3DData>) => void;
 }
 
-const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates, onUpdateObject }: Omit<Scene3DProps, 'objects'> & { objects: Object3DData[] }) => {
+const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates, landmarks, onUpdateObject }: Omit<Scene3DProps, 'objects'> & { objects: Object3DData[] }) => {
   const { camera } = useThree();
   const lastPositionsRef = useRef<Map<string, { x: number; y: number; z: number }>>(new Map());
   const baseDistanceRef = useRef<Map<string, number>>(new Map());
+  const baseRotationRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     // Fixed camera position
     camera.position.set(0, 0, 10);
     camera.lookAt(0, 0, 0);
   }, [camera]);
+
+  // Calculate hand roll angle from landmarks
+  const calculateHandRoll = (handLandmarks: any): number => {
+    if (!handLandmarks || handLandmarks.length < 10) return 0;
+    
+    // Use wrist (0) and middle finger base (9) to calculate hand roll
+    const wrist = handLandmarks[0];
+    const middleBase = handLandmarks[9];
+    
+    // Calculate angle in radians
+    const dx = middleBase.x - wrist.x;
+    const dy = middleBase.y - wrist.y;
+    const angle = Math.atan2(dy, dx);
+    
+    return angle;
+  };
 
   useFrame(() => {
     // Update object positions based on hand tracking
@@ -86,6 +104,7 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
         const [handIndex, grabData] = grabbed;
         const handPos = handPositions[handIndex];
         const gesture = gestureStates[handIndex];
+        const handLandmarks = landmarks?.[handIndex];
 
         if (handPos && gesture) {
           // Convert screen coordinates to 3D world coordinates
@@ -105,15 +124,27 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
             position: { x: newX, y: newY, z }
           });
 
-          // Handle rotation with hand twist
-          if (gesture.fingers.thumb.isExtended && gesture.fingers.middle.isExtended) {
-            const thumbPos = gesture.fingers.thumb.tipPosition;
-            const middlePos = gesture.fingers.middle.tipPosition;
-            const angle = Math.atan2(middlePos.y - thumbPos.y, middlePos.x - thumbPos.x);
+          // Handle Y-axis rotation with hand roll angle
+          if (handLandmarks) {
+            const currentRoll = calculateHandRoll(handLandmarks);
+            
+            const baseKey = `${obj.id}-rotation`;
+            if (!baseRotationRef.current.has(baseKey)) {
+              baseRotationRef.current.set(baseKey, currentRoll);
+            }
+
+            const baseRoll = baseRotationRef.current.get(baseKey)!;
+            const rotationDelta = currentRoll - baseRoll;
+            
+            // Update Y rotation based on hand roll
+            const newRotationY = obj.rotation.y + rotationDelta;
             
             onUpdateObject(obj.id, {
-              rotation: { ...obj.rotation, z: angle }
+              rotation: { ...obj.rotation, y: newRotationY }
             });
+
+            // Update base rotation for smooth continuous rotation
+            baseRotationRef.current.set(baseKey, currentRoll);
           }
 
           // Handle scale with two-hand pinch distance
@@ -140,6 +171,10 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
             baseDistanceRef.current.delete(`${obj.id}-scale`);
           }
         }
+      } else {
+        // Clear base references when object is released
+        baseRotationRef.current.delete(`${obj.id}-rotation`);
+        baseDistanceRef.current.delete(`${obj.id}-scale`);
       }
     });
   });
@@ -169,7 +204,7 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
   );
 };
 
-export const Scene3D = ({ objects, grabbedObjects, handPositions, gestureStates, onUpdateObject }: Scene3DProps) => {
+export const Scene3D = ({ objects, grabbedObjects, handPositions, gestureStates, landmarks, onUpdateObject }: Scene3DProps) => {
   return (
     <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
       <Canvas
@@ -181,6 +216,7 @@ export const Scene3D = ({ objects, grabbedObjects, handPositions, gestureStates,
           grabbedObjects={grabbedObjects}
           handPositions={handPositions}
           gestureStates={gestureStates}
+          landmarks={landmarks}
           onUpdateObject={onUpdateObject}
         />
       </Canvas>
