@@ -109,7 +109,7 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
         if (handPos && gesture) {
           // Convert screen coordinates to 3D world coordinates
           const x = (handPos.x - 0.5) * 20; // Scale to world space
-          const y = (handPos.y - 0.5) * 15; // Natural Y movement (not inverted)
+          const y = -(handPos.y - 0.5) * 10; // Inverted Y with reduced sensitivity
           const z = obj.position.z;
 
           // Smooth movement
