@@ -254,7 +254,11 @@ const Index = () => {
   // Auto-start voice recognition on mount
   useEffect(() => {
     if (isSupported && !isListening) {
-      startListening();
+      // Delay to ensure everything is mounted
+      const timer = setTimeout(() => {
+        startListening();
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [isSupported]);
 
