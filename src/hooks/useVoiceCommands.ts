@@ -220,18 +220,28 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
     };
   }, [isListening, onAddCard, onDeleteCard, onClearAll, grabbedCardIds]);
 
-  const startListening = () => {
+  const startListening = async () => {
     if (!isSupported || !recognitionRef.current) {
       console.warn('[Voice] Speech recognition not supported');
+      setCommandError(true);
+      setTimeout(() => setCommandError(false), 2000);
       return;
     }
     
     try {
+      // Request microphone permission first
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop the stream immediately, we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+      
       recognitionRef.current.start();
       setIsListening(true);
       console.log('[Voice] Voice recognition started successfully');
-    } catch (e) {
-      console.error('[Voice] Error starting recognition:', e);
+    } catch (error) {
+      console.error('[Voice] Error requesting microphone access:', error);
+      setIsListening(false);
+      setCommandError(true);
+      setTimeout(() => setCommandError(false), 3000);
     }
   };
 
