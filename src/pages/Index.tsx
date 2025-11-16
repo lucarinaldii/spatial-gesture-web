@@ -403,7 +403,7 @@ const Index = () => {
           // Check if hovering over a connector first
           const hoveredConn = checkConnectorHover(handX, handY);
           
-          if (hoveredConn) {
+          if (hoveredConn && showConnectors) {
             // Start wire connection instead of grabbing card
             const [cardId, position] = hoveredConn.split('-');
             setActiveWire({ startCardId: cardId, startConnector: position, handIndex });
@@ -831,6 +831,8 @@ const Index = () => {
 
   // Check if hand is hovering over any connector
   const checkConnectorHover = useCallback((handX: number, handY: number): string | null => {
+    if (!showConnectors) return null;
+    
     const CONNECTOR_THRESHOLD = 8; // Distance threshold in percentage
     
     for (const obj of objects) {
@@ -872,11 +874,11 @@ const Index = () => {
     }
     
     return null;
-  }, [objects, canvasOffset]);
+  }, [objects, canvasOffset, showConnectors]);
 
   // Update wire end position based on hand position when actively dragging
   useEffect(() => {
-    if (!activeWire || handPositions.length === 0) return;
+    if (!activeWire || handPositions.length === 0 || !showConnectors) return;
     
     const hand = handPositions[activeWire.handIndex];
     if (!hand) return;
@@ -914,7 +916,7 @@ const Index = () => {
       
       setActiveWire(null);
     }
-  }, [activeWire, handPositions, gestureStates, checkConnectorHover, toast]);
+  }, [activeWire, handPositions, gestureStates, checkConnectorHover, toast, showConnectors]);
 
   // Physics loop disabled - cards no longer have inertia
   useEffect(() => {
@@ -1081,7 +1083,7 @@ const Index = () => {
               })}
               
               {/* Render wire connections */}
-              {connections.map((conn) => {
+              {showConnectors && connections.map((conn) => {
                 const startPos = getConnectorPosition(conn.fromCardId, conn.fromConnector);
                 const endPos = getConnectorPosition(conn.toCardId, conn.toConnector);
                 return (
@@ -1096,7 +1098,7 @@ const Index = () => {
               })}
               
               {/* Render active wire being dragged */}
-              {activeWire && handPositions[activeWire.handIndex] && (
+              {activeWire && handPositions[activeWire.handIndex] && showConnectors && (
                 <WireConnection
                   startX={getConnectorPosition(activeWire.startCardId, activeWire.startConnector).x}
                   startY={getConnectorPosition(activeWire.startCardId, activeWire.startConnector).y}
