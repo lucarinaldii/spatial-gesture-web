@@ -51,9 +51,14 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
       
       // Get the best transcript
       const transcript = results[0].transcript.trim();
-      console.log(`Voice command detected: "${transcript}"`);
+      console.log(`[Voice] Transcript received: "${transcript}"`);
 
       try {
+        console.log('[Voice] Sending to AI for interpretation...', { 
+          command: transcript, 
+          grabbedCards: grabbedCardIds.length 
+        });
+
         // Send to AI for interpretation
         const { data, error } = await supabase.functions.invoke('interpret-voice-command', {
           body: { 
@@ -62,16 +67,20 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
           }
         });
 
+        console.log('[Voice] AI response:', { data, error });
+
         if (error) {
-          console.error('Error interpreting command:', error);
+          console.error('[Voice] Error from edge function:', error);
+          setCommandError(true);
+          setTimeout(() => setCommandError(false), 1500);
           return;
         }
 
         const { action } = data;
-        console.log('AI interpreted action:', action);
+        console.log('[Voice] AI interpreted action:', action);
 
         if (!action) {
-          console.log('No valid action recognized');
+          console.log('[Voice] No valid action recognized');
           setCommandError(true);
           setTimeout(() => setCommandError(false), 1500);
           return;
@@ -84,21 +93,26 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
 
         // Execute action
         let success = false;
+        console.log('[Voice] Executing action:', action);
+        
         switch (action) {
           case 'add_card':
             onAddCard?.();
             success = true;
+            console.log('[Voice] Card added');
             break;
           case 'delete_card':
             onDeleteCard?.();
             success = true;
+            console.log('[Voice] Card deleted');
             break;
           case 'clear_all':
             onClearAll?.();
             success = true;
+            console.log('[Voice] All cards cleared');
             break;
           default:
-            console.log('Unknown action:', action);
+            console.log('[Voice] Unknown action:', action);
         }
 
         if (success) {
@@ -106,21 +120,22 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
           setTimeout(() => setCommandSuccess(false), 1500);
         }
       } catch (err) {
-        console.error('Error processing voice command:', err);
+        console.error('[Voice] Error processing voice command:', err);
         setCommandError(true);
         setTimeout(() => setCommandError(false), 1500);
       }
     };
 
     recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('[Voice] Speech recognition error:', event.error);
       // Don't stop on common transient errors
       if (event.error === 'no-speech' || event.error === 'audio-capture' || event.error === 'network') {
+        console.log('[Voice] Transient error, continuing...');
         return;
       }
       // Only stop on critical errors
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        console.warn('Microphone access denied. Please grant microphone permissions.');
+        console.warn('[Voice] Microphone access denied. Please grant microphone permissions.');
         setIsListening(false);
       }
     };
@@ -153,14 +168,17 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
   }, [isListening, onAddCard, onDeleteCard, onClearAll, grabbedCardIds]);
 
   const startListening = () => {
-    if (!isSupported || !recognitionRef.current) return;
+    if (!isSupported || !recognitionRef.current) {
+      console.warn('[Voice] Speech recognition not supported');
+      return;
+    }
     
     try {
       recognitionRef.current.start();
       setIsListening(true);
-      console.log('Voice recognition started');
+      console.log('[Voice] Voice recognition started successfully');
     } catch (e) {
-      console.error('Error starting recognition:', e);
+      console.error('[Voice] Error starting recognition:', e);
     }
   };
 
