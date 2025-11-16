@@ -9,6 +9,7 @@ interface VoiceCommandsHook {
   commandRecognized: boolean;
   commandSuccess: boolean;
   commandError: boolean;
+  transcriptText: string;
 }
 
 interface VoiceCommandsProps {
@@ -24,6 +25,7 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
   const [commandRecognized, setCommandRecognized] = useState(false);
   const [commandSuccess, setCommandSuccess] = useState(false);
   const [commandError, setCommandError] = useState(false);
+  const [transcriptText, setTranscriptText] = useState('');
   const recognitionRef = useRef<any>(null);
   const commandTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -54,7 +56,7 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
     setIsSupported(true);
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true; // Enable live transcription
     recognition.maxAlternatives = 3;
 
     // Support multiple languages
@@ -62,10 +64,17 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
 
     recognition.onresult = async (event: any) => {
       const results = event.results[event.results.length - 1];
-      
-      // Get the best transcript
       const transcript = results[0].transcript.trim();
-      console.log(`[Voice] Transcript received: "${transcript}"`);
+      
+      // Show live transcription
+      setTranscriptText(transcript);
+      
+      // Only process final results
+      if (!results.isFinal) {
+        return;
+      }
+      
+      console.log(`[Voice] Final transcript: "${transcript}"`);
 
       try {
         console.log('[Voice] Sending to AI for interpretation...', { 
@@ -86,7 +95,10 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
         if (error) {
           console.error('[Voice] Error from edge function:', error);
           setCommandError(true);
-          setTimeout(() => setCommandError(false), 1500);
+          setTimeout(() => {
+            setCommandError(false);
+            setTranscriptText(''); // Clear text after error
+          }, 1500);
           return;
         }
 
@@ -96,14 +108,20 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
         if (!action) {
           console.log('[Voice] No valid action recognized');
           setCommandError(true);
-          setTimeout(() => setCommandError(false), 1500);
+          setTimeout(() => {
+            setCommandError(false);
+            setTranscriptText(''); // Clear text after error
+          }, 1500);
           return;
         }
 
         // Visual feedback
         setCommandRecognized(true);
         if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);
-        commandTimeoutRef.current = setTimeout(() => setCommandRecognized(false), 1000);
+        commandTimeoutRef.current = setTimeout(() => {
+          setCommandRecognized(false);
+          setTranscriptText(''); // Clear text after recognition
+        }, 1000);
 
         // Execute action
         let success = false;
@@ -131,12 +149,18 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
 
         if (success) {
           setCommandSuccess(true);
-          setTimeout(() => setCommandSuccess(false), 1500);
+          setTimeout(() => {
+            setCommandSuccess(false);
+            setTranscriptText(''); // Clear text after success
+          }, 1500);
         }
       } catch (err) {
         console.error('[Voice] Error processing voice command:', err);
         setCommandError(true);
-        setTimeout(() => setCommandError(false), 1500);
+        setTimeout(() => {
+          setCommandError(false);
+          setTranscriptText(''); // Clear text after error
+        }, 1500);
       }
     };
 
@@ -238,6 +262,7 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
     }
     
     try {
+      setTranscriptText(''); // Clear any previous text
       recognitionRef.current.start();
       setIsListening(true);
       console.log('[Voice] Voice recognition started successfully');
@@ -255,6 +280,7 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
     try {
       recognitionRef.current.stop();
       setIsListening(false);
+      setTranscriptText(''); // Clear text when stopping
       console.log('Voice recognition stopped');
     } catch (e) {
       console.error('Error stopping recognition:', e);
@@ -269,5 +295,6 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
     commandRecognized,
     commandSuccess,
     commandError,
+    transcriptText,
   };
 };
