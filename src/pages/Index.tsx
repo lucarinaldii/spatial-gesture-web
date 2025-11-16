@@ -7,7 +7,7 @@ import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2, Image } from 'lucide-react';
+import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2, Image, Link } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -58,6 +58,7 @@ const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [hasStartedTracking, setHasStartedTracking] = useState(false);
   const [canvasBackground, setCanvasBackground] = useState<string | null>(null);
+  const [showConnectors, setShowConnectors] = useState(true);
   const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
   
@@ -989,6 +990,14 @@ const Index = () => {
                 <Image className="w-5 h-5 mr-2" />Background
               </Button>
               <Button 
+                onClick={() => setShowConnectors(!showConnectors)} 
+                size="lg" 
+                variant="outline"
+                className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
+              >
+                <Link className="w-5 h-5 mr-2" />{showConnectors ? 'Hide' : 'Show'} Connectors
+              </Button>
+              <Button 
                 onClick={() => setShow3DHand(!show3DHand)} 
                 size="lg" 
                 variant="outline"
@@ -1067,6 +1076,7 @@ const Index = () => {
                   activeConnector={activeWire ? `${activeWire.startCardId}-${activeWire.startConnector}` : null}
                   hoveredConnector={hoveredConnector}
                   onConnectorHover={setHoveredConnector}
+                  showConnectors={showConnectors}
                 />;
               })}
               

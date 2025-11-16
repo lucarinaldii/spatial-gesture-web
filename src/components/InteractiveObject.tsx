@@ -34,6 +34,7 @@ interface InteractiveObjectProps {
   activeConnector?: string | null;
   hoveredConnector?: string | null;
   onConnectorHover?: (connectorId: string | null) => void;
+  showConnectors?: boolean;
 }
 
 const Model3D = ({ url }: { url: string }) => {
@@ -63,6 +64,7 @@ const InteractiveObject = memo(({
   activeConnector,
   hoveredConnector,
   onConnectorHover,
+  showConnectors = true,
 }: InteractiveObjectProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
@@ -205,7 +207,7 @@ const InteractiveObject = memo(({
           {renderContent()}
           
           {/* Connector points */}
-          {type === 'card' && !isBeingDragged && (
+          {type === 'card' && !isBeingDragged && showConnectors && (
             <>
               <CardConnector
                 position="left"
