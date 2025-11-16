@@ -26,6 +26,20 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
   const [commandError, setCommandError] = useState(false);
   const recognitionRef = useRef<any>(null);
   const commandTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Store latest callbacks in refs so we always use the current version
+  const onAddCardRef = useRef(onAddCard);
+  const onDeleteCardRef = useRef(onDeleteCard);
+  const onClearAllRef = useRef(onClearAll);
+  const grabbedCardIdsRef = useRef(grabbedCardIds);
+  
+  // Update refs when props change
+  useEffect(() => {
+    onAddCardRef.current = onAddCard;
+    onDeleteCardRef.current = onDeleteCard;
+    onClearAllRef.current = onClearAll;
+    grabbedCardIdsRef.current = grabbedCardIds;
+  }, [onAddCard, onDeleteCard, onClearAll, grabbedCardIds]);
 
   useEffect(() => {
     // Check if browser supports Web Speech API
@@ -56,14 +70,14 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
       try {
         console.log('[Voice] Sending to AI for interpretation...', { 
           command: transcript, 
-          grabbedCards: grabbedCardIds.length 
+          grabbedCards: grabbedCardIdsRef.current.length 
         });
 
         // Send to AI for interpretation
         const { data, error } = await supabase.functions.invoke('interpret-voice-command', {
           body: { 
             command: transcript,
-            grabbedCardIds 
+            grabbedCardIds: grabbedCardIdsRef.current 
           }
         });
 
@@ -97,17 +111,17 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
         
         switch (action) {
           case 'add_card':
-            onAddCard?.();
+            onAddCardRef.current?.();
             success = true;
             console.log('[Voice] Card added');
             break;
           case 'delete_card':
-            onDeleteCard?.();
+            onDeleteCardRef.current?.();
             success = true;
             console.log('[Voice] Card deleted');
             break;
           case 'clear_all':
-            onClearAll?.();
+            onClearAllRef.current?.();
             success = true;
             console.log('[Voice] All cards cleared');
             break;
