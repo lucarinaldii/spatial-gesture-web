@@ -128,25 +128,64 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
 
     recognition.onerror = (event: any) => {
       console.error('[Voice] Speech recognition error:', event.error);
+      
       // Don't stop on common transient errors
-      if (event.error === 'no-speech' || event.error === 'audio-capture' || event.error === 'network') {
-        console.log('[Voice] Transient error, continuing...');
+      if (event.error === 'no-speech') {
+        console.log('[Voice] No speech detected, continuing...');
         return;
       }
+      
+      if (event.error === 'audio-capture') {
+        console.warn('[Voice] Microphone not accessible');
+        setIsListening(false);
+        return;
+      }
+      
+      if (event.error === 'network') {
+        console.log('[Voice] Network error - browser speech service unavailable, retrying...');
+        // Try to restart after a delay
+        setTimeout(() => {
+          if (isListening && recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+              console.log('[Voice] Restarted after network error');
+            } catch (e) {
+              console.error('[Voice] Failed to restart:', e);
+            }
+          }
+        }, 1000);
+        return;
+      }
+      
       // Only stop on critical errors
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         console.warn('[Voice] Microphone access denied. Please grant microphone permissions.');
         setIsListening(false);
+        setCommandError(true);
+        setTimeout(() => setCommandError(false), 2000);
       }
     };
 
     recognition.onend = () => {
+      console.log('[Voice] Recognition ended, isListening:', isListening);
       // Auto-restart if still supposed to be listening
       if (isListening) {
         try {
+          console.log('[Voice] Attempting to restart...');
           recognition.start();
         } catch (e) {
-          console.error('Error restarting recognition:', e);
+          console.error('[Voice] Error restarting recognition:', e);
+          // If we can't restart, wait a bit and try again
+          setTimeout(() => {
+            if (isListening) {
+              try {
+                recognition.start();
+                console.log('[Voice] Successfully restarted after delay');
+              } catch (err) {
+                console.error('[Voice] Still cannot restart:', err);
+              }
+            }
+          }, 500);
         }
       }
     };
