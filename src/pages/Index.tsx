@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import HandSkeleton from '@/components/HandSkeleton';
 import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2, Image, Link } from 'lucide-react';
+import { Plus, RotateCcw, Eye, EyeOff, Settings, Trash2, Image, Link, Mic, MicOff } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -206,6 +207,49 @@ const Index = () => {
     if (backgroundInputRef.current) backgroundInputRef.current.value = '';
     toast({ title: "Background updated!", description: "Canvas background has been set" });
   };
+
+  const handleAddCard = useCallback(() => {
+    maxZIndexRef.current += 1;
+    const newCard: ObjectData = {
+      id: Date.now().toString(),
+      type: 'card',
+      title: 'New Card',
+      description: 'Created by voice command',
+      position: { x: 50, y: 50 },
+      zIndex: maxZIndexRef.current,
+      rotation: { x: 0, y: 0, z: 0 },
+      velocity: { x: 0, y: 0 },
+      isPhysicsEnabled: false,
+    };
+    
+    setObjects(prev => [...prev, newCard]);
+    toast({ title: "Card added!", description: "New card created by voice command" });
+  }, [toast]);
+
+  const handleDeleteCard = useCallback(() => {
+    // Find the card currently being grabbed by any hand
+    const grabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
+    
+    if (grabbedCardIds.length === 0) {
+      toast({ title: "No card selected", description: "Please grab a card with pinch to delete it" });
+      return;
+    }
+    
+    // Delete all grabbed cards
+    setObjects(prev => prev.filter(obj => !grabbedCardIds.includes(obj.id)));
+    setGrabbedObjects(new Map());
+    
+    toast({ 
+      title: "Card deleted!", 
+      description: `${grabbedCardIds.length} card${grabbedCardIds.length > 1 ? 's' : ''} deleted by voice command` 
+    });
+  }, [grabbedObjects, toast]);
+
+  // Voice commands hook
+  const { isListening, startListening, stopListening, isSupported } = useVoiceCommands({
+    onAddCard: handleAddCard,
+    onDeleteCard: handleDeleteCard,
+  });
 
   const handleRestart = useCallback(() => {
     // Clear all refs and state
@@ -999,6 +1043,17 @@ const Index = () => {
               >
                 <Link className="w-5 h-5 mr-2" />{showConnectors ? 'Hide' : 'Show'} Connectors
               </Button>
+              {isSupported && (
+                <Button 
+                  onClick={() => isListening ? stopListening() : startListening()} 
+                  size="lg" 
+                  variant={isListening ? "default" : "outline"}
+                  className="rounded-full neon-glow transition-all duration-200 px-6 py-6"
+                >
+                  {isListening ? <Mic className="w-5 h-5 mr-2" /> : <MicOff className="w-5 h-5 mr-2" />}
+                  Voice {isListening ? 'On' : 'Off'}
+                </Button>
+              )}
               <Button 
                 onClick={() => setShow3DHand(!show3DHand)} 
                 size="lg" 
