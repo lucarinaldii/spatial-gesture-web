@@ -215,7 +215,9 @@ const InteractiveObject = memo(({
                 isHovered={hoveredConnector === `${id}-left`}
                 onMouseDown={(e) => {
                   e.stopPropagation();
-                  onConnectorGrab?.(`${id}-left`);
+                  if (showConnectors) {
+                    onConnectorGrab?.(`${id}-left`);
+                  }
                 }}
               />
               <CardConnector
@@ -224,7 +226,9 @@ const InteractiveObject = memo(({
                 isHovered={hoveredConnector === `${id}-right`}
                 onMouseDown={(e) => {
                   e.stopPropagation();
-                  onConnectorGrab?.(`${id}-right`);
+                  if (showConnectors) {
+                    onConnectorGrab?.(`${id}-right`);
+                  }
                 }}
               />
               <CardConnector
@@ -233,7 +237,9 @@ const InteractiveObject = memo(({
                 isHovered={hoveredConnector === `${id}-top`}
                 onMouseDown={(e) => {
                   e.stopPropagation();
-                  onConnectorGrab?.(`${id}-top`);
+                  if (showConnectors) {
+                    onConnectorGrab?.(`${id}-top`);
+                  }
                 }}
               />
               <CardConnector
@@ -242,7 +248,9 @@ const InteractiveObject = memo(({
                 isHovered={hoveredConnector === `${id}-bottom`}
                 onMouseDown={(e) => {
                   e.stopPropagation();
-                  onConnectorGrab?.(`${id}-bottom`);
+                  if (showConnectors) {
+                    onConnectorGrab?.(`${id}-bottom`);
+                  }
                 }}
               />
             </>
