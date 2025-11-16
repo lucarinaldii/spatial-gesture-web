@@ -14,7 +14,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface InteractiveObjectProps {
   id: string;
-  type: 'card' | 'image' | 'pdf' | 'model3d';
+  type: 'card' | 'image' | 'pdf' | 'model3d' | 'obj';
   title?: string;
   description?: string;
   fileUrl?: string;
@@ -156,6 +156,16 @@ const InteractiveObject = memo(({
                 handPositions={allHandPositions} 
               />
             </Canvas>
+          </div>
+        );
+      
+      case 'obj':
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-sm text-muted-foreground">
+              <p className="font-semibold">{title || 'OBJ Model'}</p>
+              <p className="text-xs mt-1">3D object loaded</p>
+            </div>
           </div>
         );
       
