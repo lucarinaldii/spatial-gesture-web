@@ -306,6 +306,17 @@ const Index = () => {
     grabbedCardIds,
   });
 
+  // Show toast for voice command errors
+  useEffect(() => {
+    if (commandError) {
+      toast({
+        title: "Voice command error",
+        description: "Please allow microphone access in your browser settings to use voice commands.",
+        variant: "destructive",
+      });
+    }
+  }, [commandError, toast]);
+
   // Load saved settings on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem('spatialUISettings');
