@@ -128,11 +128,15 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard }: VoiceCommandsProps
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
-      if (event.error === 'no-speech' || event.error === 'audio-capture') {
-        // Don't stop on these errors, just continue
+      // Don't stop on common transient errors
+      if (event.error === 'no-speech' || event.error === 'audio-capture' || event.error === 'network') {
         return;
       }
-      setIsListening(false);
+      // Only stop on critical errors
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        console.warn('Microphone access denied. Please grant microphone permissions.');
+        setIsListening(false);
+      }
     };
 
     recognition.onend = () => {
