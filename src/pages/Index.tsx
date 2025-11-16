@@ -161,7 +161,28 @@ const Index = () => {
   const handleStartTracking = async () => {
     setIsTracking(true);
     setHasStartedTracking(true);
-    setTimeout(async () => { await startCamera(); }, 200);
+    
+    // Wait for React to render the video element before starting camera
+    setTimeout(async () => { 
+      if (videoRef.current) {
+        await startCamera();
+      } else {
+        console.error('Video element not ready, retrying...');
+        // Retry after another delay
+        setTimeout(async () => {
+          if (videoRef.current) {
+            await startCamera();
+          } else {
+            console.error('Failed to initialize video element');
+            toast({
+              title: "Camera Error",
+              description: "Failed to access video element. Please refresh and try again.",
+              variant: "destructive"
+            });
+          }
+        }, 500);
+      }
+    }, 300);
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {

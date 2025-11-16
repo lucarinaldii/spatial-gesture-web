@@ -232,9 +232,10 @@ export const useHandTracking = () => {
       
       if (!videoRef.current) {
         console.error('❌ Video element not found!');
-        return;
+        throw new Error('Video element not available');
       }
 
+      console.log('📹 Requesting camera access...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 640 },
@@ -273,7 +274,8 @@ export const useHandTracking = () => {
       console.log('✓ Starting frame processing...');
       processFrame();
     } catch (error) {
-      console.error('Error accessing camera:', error);
+      console.error('❌ Error accessing camera:', error);
+      throw error; // Re-throw to be caught by handleStartTracking
     }
   }, [processFrame]);
 
