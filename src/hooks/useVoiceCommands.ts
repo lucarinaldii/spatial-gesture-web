@@ -173,30 +173,39 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
       
       // Only stop on critical errors
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        console.warn('[Voice] Microphone access denied. Please grant microphone permissions.');
-        setIsListening(false);
+        console.warn('[Voice] Speech recognition access denied. Please grant permissions in your browser.');
+        setIsListening(false);  // Immediately set to false to prevent restart loop
         setCommandError(true);
-        setTimeout(() => setCommandError(false), 2000);
+        setTimeout(() => setCommandError(false), 3000);
       }
     };
 
     recognition.onend = () => {
       console.log('[Voice] Recognition ended, isListening:', isListening);
-      // Auto-restart if still supposed to be listening
-      if (isListening) {
+      // Only auto-restart if still supposed to be listening AND we haven't had permission errors
+      if (isListening && recognitionRef.current) {
         try {
           console.log('[Voice] Attempting to restart...');
           recognition.start();
         } catch (e) {
+          const error = e as Error;
+          // Don't retry if it's a permission issue
+          if (error.message?.includes('not-allowed')) {
+            console.error('[Voice] Cannot restart - permission denied');
+            setIsListening(false);
+            return;
+          }
+          
           console.error('[Voice] Error restarting recognition:', e);
           // If we can't restart, wait a bit and try again
           setTimeout(() => {
-            if (isListening) {
+            if (isListening && recognitionRef.current) {
               try {
                 recognition.start();
                 console.log('[Voice] Successfully restarted after delay');
               } catch (err) {
                 console.error('[Voice] Still cannot restart:', err);
+                setIsListening(false);
               }
             }
           }, 500);
@@ -220,7 +229,7 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
     };
   }, [isListening, onAddCard, onDeleteCard, onClearAll, grabbedCardIds]);
 
-  const startListening = async () => {
+  const startListening = () => {
     if (!isSupported || !recognitionRef.current) {
       console.warn('[Voice] Speech recognition not supported');
       setCommandError(true);
@@ -229,16 +238,11 @@ export const useVoiceCommands = ({ onAddCard, onDeleteCard, onClearAll, grabbedC
     }
     
     try {
-      // Request microphone permission first
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Stop the stream immediately, we just needed permission
-      stream.getTracks().forEach(track => track.stop());
-      
       recognitionRef.current.start();
       setIsListening(true);
       console.log('[Voice] Voice recognition started successfully');
     } catch (error) {
-      console.error('[Voice] Error requesting microphone access:', error);
+      console.error('[Voice] Error starting voice recognition:', error);
       setIsListening(false);
       setCommandError(true);
       setTimeout(() => setCommandError(false), 3000);

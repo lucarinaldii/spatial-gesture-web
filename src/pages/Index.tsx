@@ -306,14 +306,20 @@ const Index = () => {
     grabbedCardIds,
   });
 
-  // Show toast for voice command errors
+  // Show toast for voice command errors (only once per error)
+  const errorShownRef = useRef(false);
   useEffect(() => {
-    if (commandError) {
+    if (commandError && !errorShownRef.current) {
+      errorShownRef.current = true;
       toast({
-        title: "Voice command error",
-        description: "Please allow microphone access in your browser settings to use voice commands.",
+        title: "Voice command unavailable",
+        description: "Please allow speech recognition in your browser settings and refresh the page.",
         variant: "destructive",
       });
+      // Reset after showing toast
+      setTimeout(() => {
+        errorShownRef.current = false;
+      }, 5000);
     }
   }, [commandError, toast]);
 
