@@ -11,6 +11,7 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { VoiceVisualizer } from '@/components/VoiceVisualizer';
 import { OBJImporter } from '@/components/OBJImporter';
 import { Scene3D } from '@/components/Scene3D';
+import { ObjectManipulationIndicator } from '@/components/ObjectManipulationIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { Settings } from 'lucide-react';
 
@@ -1279,6 +1280,29 @@ const Index = () => {
               commandError={commandError}
               transcriptText={transcriptText}
             />
+
+            {/* Object Manipulation Indicators for 3D objects */}
+            {objects.filter(obj => obj.type === 'obj').map((obj) => {
+              const grabbed = Array.from(grabbedObjects.entries()).find(([_, g]) => g.id === obj.id);
+              if (!grabbed) return null;
+
+              const [handIndex] = grabbed;
+              const handPos = handPositions[handIndex];
+              if (!handPos) return null;
+
+              return (
+                <ObjectManipulationIndicator
+                  key={`indicator-${obj.id}`}
+                  rotation={obj.rotation.y}
+                  scale={obj.scale || 1}
+                  position={{ 
+                    x: handPos.x * 100, 
+                    y: handPos.y * 100 
+                  }}
+                  isVisible={true}
+                />
+              );
+            })}
           </div>
         )}
       </div>

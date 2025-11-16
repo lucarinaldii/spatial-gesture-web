@@ -205,11 +205,18 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
 };
 
 export const Scene3D = ({ objects, grabbedObjects, handPositions, gestureStates, landmarks, onUpdateObject }: Scene3DProps) => {
+  if (objects.length === 0) return null; // Don't render if no objects
+  
   return (
     <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
       <Canvas
         camera={{ position: [0, 0, 10], fov: 50 }}
-        gl={{ alpha: true, antialias: true }}
+        gl={{ 
+          alpha: true, 
+          antialias: true,
+          preserveDrawingBuffer: true,
+          powerPreference: "high-performance"
+        }}
       >
         <Scene3DContent
           objects={objects}
