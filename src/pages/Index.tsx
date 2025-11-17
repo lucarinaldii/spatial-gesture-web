@@ -960,12 +960,15 @@ const Index = () => {
                     holdStartTimeRef.current.set(grabbed.id, Date.now());
                     holdStartPositionRef.current.set(grabbed.id, { x: handX, y: handY });
                     setShowHoldDeleteButton(null);
-                  } else if (Date.now() - holdStart > 2500) {
+                  } else if (Date.now() - holdStart > 2500 && showHoldDeleteButton !== grabbed.id) {
                     // Held for 2.5 seconds in same position
                     setShowHoldDeleteButton(grabbed.id);
                   }
                 } else {
-                  setShowHoldDeleteButton(null);
+                  // Don't reset if already showing delete button
+                  if (!showHoldDeleteButton) {
+                    setShowHoldDeleteButton(null);
+                  }
                 }
                 
                 objectUpdates.set(grabbed.id, { 
@@ -1014,10 +1017,7 @@ const Index = () => {
             newGrabbedObjects.delete(handIndex);
             hasChanges = true;
             
-            // Reset hold state when releasing
-            holdStartTimeRef.current.delete(grabbed.id);
-            holdStartPositionRef.current.delete(grabbed.id);
-            setShowHoldDeleteButton(null);
+            // Don't reset hold state when releasing - keep the shake and delete button visible
             
             if (!Array.from(newGrabbedObjects.values()).some(g => g.id === grabbed.id)) {
               baseDistanceRef.current.delete(grabbed.id);
@@ -1497,6 +1497,7 @@ const Index = () => {
                         }
                       : null
                   }
+                  isPinching={gestureStates[0]?.isPinching || false}
                 />
               )}
               
