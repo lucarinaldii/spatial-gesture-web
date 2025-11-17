@@ -26,6 +26,7 @@ export interface SettingsPanelProps {
   commandRecognized: boolean;
   onShowAdvancedSettings: () => void;
   alignmentParams: AlignmentParams;
+  onImportOBJ: () => void;
 }
 
 export const SettingsPanel = ({
@@ -46,6 +47,7 @@ export const SettingsPanel = ({
   commandRecognized,
   onShowAdvancedSettings,
   alignmentParams,
+  onImportOBJ,
 }: SettingsPanelProps) => {
   const { toast } = useToast();
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
@@ -152,6 +154,10 @@ export const SettingsPanel = ({
             <Button onClick={onImportFile} variant="outline" className="w-full justify-start">
               <Plus className="w-4 h-4 mr-2" />
               Import File
+            </Button>
+            <Button onClick={onImportOBJ} variant="outline" className="w-full justify-start">
+              <Plus className="w-4 h-4 mr-2" />
+              Import OBJ
             </Button>
             <Button onClick={onBackgroundUpload} variant="outline" className="w-full justify-start">
               <Image className="w-4 h-4 mr-2" />

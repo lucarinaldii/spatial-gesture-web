@@ -9,11 +9,12 @@ import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettin
 import WireConnection from '@/components/WireConnection';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { VoiceVisualizer } from '@/components/VoiceVisualizer';
-import { OBJImporter } from '@/components/OBJImporter';
 import { Scene3D } from '@/components/Scene3D';
 import { ObjectManipulationIndicator } from '@/components/ObjectManipulationIndicator';
+import { DeleteZone } from '@/components/DeleteZone';
+import { CardHoldDeleteButton } from '@/components/CardHoldDeleteButton';
 import { useToast } from '@/hooks/use-toast';
-import { Settings } from 'lucide-react';
+import { Settings, Plus } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -107,6 +108,7 @@ const Index = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
+  const objInputRef = useRef<HTMLInputElement>(null);
   const [grabbedObjects, setGrabbedObjects] = useState<Map<number, { id: string; offsetX: number; offsetY: number; }>>(new Map());
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
   const [canvasZoom, setCanvasZoom] = useState(1);
@@ -127,6 +129,13 @@ const Index = () => {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showDeleteZone, setShowDeleteZone] = useState(false);
+  const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
+  const [holdingCardId, setHoldingCardId] = useState<string | null>(null);
+  const [showHoldDeleteButton, setShowHoldDeleteButton] = useState<string | null>(null);
+  const holdStartTimeRef = useRef<Map<string, number>>(new Map());
+  const [resizingCardId, setResizingCardId] = useState<string | null>(null);
+  const cardBaseScaleRef = useRef<Map<string, number>>(new Map());
   
   // Wire connection state
   const [activeWire, setActiveWire] = useState<{ startCardId: string; startConnector: string; handIndex: number } | null>(null);
@@ -325,10 +334,35 @@ const Index = () => {
         };
         
         setObjects(prev => [...prev, newObject]);
+        toast({
+          title: "Object imported",
+          description: `${fileName} loaded successfully`,
+        });
       }
     };
     reader.readAsText(file);
-  }, []);
+  }, [toast]);
+
+  const handleOBJFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.obj')) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an OBJ file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    handleOBJImport(file, file.name);
+    
+    // Reset input
+    if (objInputRef.current) {
+      objInputRef.current.value = '';
+    }
+  }, [handleOBJImport, toast]);
 
   const handleUpdate3DObject = useCallback((id: string, updates: Partial<ObjectData>) => {
     setObjects(prev => prev.map(obj => 
@@ -563,7 +597,29 @@ const Index = () => {
               maxZIndexRef.current += 1;
               objectUpdates.set(targetObject.id, { ...(objectUpdates.get(targetObject.id) || {}), zIndex: maxZIndexRef.current });
               setObjects(prev => prev.map(obj => obj.id === targetObject.id ? { ...obj, isPhysicsEnabled: false, velocity: { x: 0, y: 0 } } : obj));
+              
+              // Track hold start time for delete functionality
+              if (!holdStartTimeRef.current.has(targetObject.id)) {
+                holdStartTimeRef.current.set(targetObject.id, Date.now());
+              }
             } else {
+              // Pinch-to-add card when not grabbing an object
+              if (!newGrabbedObjects.has(handIndex)) {
+                maxZIndexRef.current += 1;
+                const newCard: ObjectData = {
+                  id: Date.now().toString() + handIndex,
+                  type: 'card',
+                  title: `Card ${objects.length + 1}`,
+                  description: 'Created with hand pinch',
+                  position: { x: handX - canvasOffset.x, y: handY - canvasOffset.y },
+                  zIndex: maxZIndexRef.current,
+                  rotation: { x: 0, y: 0, z: 0 },
+                  velocity: { x: 0, y: 0 },
+                  isPhysicsEnabled: false,
+                };
+                setObjects(prev => [...prev, newCard]);
+                toast({ title: "Card created!", description: "New card created with pinch gesture" });
+              }
               if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
             }
           }
@@ -574,35 +630,98 @@ const Index = () => {
           const obj1 = newGrabbedObjects.get(1);
           
           if (obj0 && obj1 && obj0.id === obj1.id && handPositions.length === 2 && handPositions[0] && handPositions[1]) {
-            // Two hands grabbing the same card - check for splitting
+            // Two hands grabbing the same card - check for resizing (for 2D cards) or splitting
+            const currentObj = objects.find(o => o.id === obj0.id);
             const hand1X = handPositions[0].x * 100, hand1Y = handPositions[0].y * 100;
             const hand2X = handPositions[1].x * 100, hand2Y = handPositions[1].y * 100;
             const distance = Math.sqrt(Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2));
             
-            // Track initial distance for split detection
-            if (!splitDistanceRef.current.has(obj0.id)) {
-              splitDistanceRef.current.set(obj0.id, distance);
+            if (currentObj && currentObj.type === 'card') {
+              // Two-hand card resizing
+              if (!cardBaseScaleRef.current.has(obj0.id)) {
+                cardBaseScaleRef.current.set(obj0.id, currentObj.scale || 1);
+              }
+              
+              if (!baseDistanceRef.current.has(`resize-${obj0.id}`)) {
+                baseDistanceRef.current.set(`resize-${obj0.id}`, distance);
+              }
+              
+              const baseDistance = baseDistanceRef.current.get(`resize-${obj0.id}`)!;
+              const baseScale = cardBaseScaleRef.current.get(obj0.id)!;
+              const scaleFactor = distance / baseDistance;
+              const newScale = Math.max(0.5, Math.min(3, baseScale * scaleFactor));
+              
+              setResizingCardId(obj0.id);
+              scaleUpdate = { id: obj0.id, scale: newScale };
+            } else {
+              // Track initial distance for split detection
+              if (!splitDistanceRef.current.has(obj0.id)) {
+                splitDistanceRef.current.set(obj0.id, distance);
+              }
+              
+              const initialDistance = splitDistanceRef.current.get(obj0.id)!;
+              const SPLIT_THRESHOLD = 15; // Distance increase needed to trigger split
+              
+              if (distance > initialDistance + SPLIT_THRESHOLD && !splittingCards.has(obj0.id)) {
+                // Split the card into two
+                const currentObj = objects.find(o => o.id === obj0.id);
+                if (currentObj) {
+                  setSplittingCards(prev => new Set(prev).add(obj0.id));
+                  
+                  // Create two new cards from the split
+                  // Ensure we have valid default values for all properties
+                  const safeCurrentObj = {
+                    ...currentObj,
+                    position: currentObj.position || { x: 50, y: 50 },
+                    rotation: currentObj.rotation || { x: 0, y: 0, z: 0 },
+                    velocity: currentObj.velocity || { x: 0, y: 0 }
+                  };
+                  
+                  maxZIndexRef.current += 2;
+                  const newCard1: ObjectData = {
+                    ...safeCurrentObj,
+                    id: Date.now().toString(),
+                    position: { x: hand1X - canvasOffset.x, y: hand1Y - canvasOffset.y },
+                    zIndex: maxZIndexRef.current - 1,
+                    title: safeCurrentObj.title ? safeCurrentObj.title + ' (A)' : 'Split Card A',
+                    velocity: { x: 0, y: 0 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    isPhysicsEnabled: false
+                  };
+                  const newCard2: ObjectData = {
+                    ...safeCurrentObj,
+                    id: (Date.now() + 1).toString(),
+                    position: { x: hand2X - canvasOffset.x, y: hand2Y - canvasOffset.y },
+                    zIndex: maxZIndexRef.current,
+                    title: safeCurrentObj.title ? safeCurrentObj.title + ' (B)' : 'Split Card B',
+                    velocity: { x: 0, y: 0 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                    isPhysicsEnabled: false
+                  };
+                  
+                  // Remove original card and add split cards
+                  setObjects(prev => [...prev.filter(o => o.id !== obj0.id), newCard1, newCard2]);
+                  
+                  // Update grabbed objects to point to new cards
+                  newGrabbedObjects.set(0, { id: newCard1.id, offsetX: 0, offsetY: 0 });
+                  newGrabbedObjects.set(1, { id: newCard2.id, offsetX: 0, offsetY: 0 });
+                  hasChanges = true;
+                  
+                  setTimeout(() => {
+                    setSplittingCards(prev => {
+                      const next = new Set(prev);
+                      next.delete(obj0.id);
+                      return next;
+                    });
+                  }, 500);
+                  
+                  toast({ title: "Card split!", description: "Card divided into two" });
+                }
+              } else {
+                // Normal two-hand manipulation (scale and rotate) - DISABLED
+                // Resize disabled per user request
+              }
             }
-            
-            const initialDistance = splitDistanceRef.current.get(obj0.id)!;
-            const SPLIT_THRESHOLD = 15; // Distance increase needed to trigger split
-            
-            if (distance > initialDistance + SPLIT_THRESHOLD && !splittingCards.has(obj0.id)) {
-              // Split the card into two
-              const currentObj = objects.find(o => o.id === obj0.id);
-              if (currentObj) {
-                setSplittingCards(prev => new Set(prev).add(obj0.id));
-                
-                // Create two new cards from the split
-                // Ensure we have valid default values for all properties
-                const safeCurrentObj = {
-                  ...currentObj,
-                  position: currentObj.position || { x: 50, y: 50 },
-                  rotation: currentObj.rotation || { x: 0, y: 0, z: 0 },
-                  velocity: currentObj.velocity || { x: 0, y: 0 }
-                };
-                
-                maxZIndexRef.current += 2;
                 const newCard1: ObjectData = {
                   ...safeCurrentObj,
                   id: Date.now().toString(),
@@ -738,11 +857,24 @@ const Index = () => {
               }
             }
           } else {
-            // Single hand grab - move card with hand
+            // Single hand grab - move card with hand and check delete zone
             const grabbed = newGrabbedObjects.get(handIndex);
             if (grabbed) {
               const hand = handPositions[handIndex];
               if (hand) {
+                // Check for delete zone (bottom left corner)
+                const isInDeleteZone = handX < 20 && handY > 80;
+                setShowDeleteZone(true);
+                setIsOverDeleteZone(isInDeleteZone);
+                
+                // Check hold time for hold-to-delete
+                const holdStart = holdStartTimeRef.current.get(grabbed.id);
+                if (holdStart && Date.now() - holdStart > 3000) {
+                  setShowHoldDeleteButton(grabbed.id);
+                } else {
+                  setShowHoldDeleteButton(null);
+                }
+                
                 objectUpdates.set(grabbed.id, { 
                   ...(objectUpdates.get(grabbed.id) || {}), 
                   position: { 
@@ -751,6 +883,9 @@ const Index = () => {
                   } 
                 });
               }
+            } else {
+              setShowDeleteZone(false);
+              setIsOverDeleteZone(false);
             }
           }
         }
@@ -1109,13 +1244,35 @@ const Index = () => {
             <div className="fixed bottom-8 right-8 z-50 pointer-events-auto flex flex-col gap-3">
               <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
               <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
-              <OBJImporter onImport={handleOBJImport} />
+              <input ref={objInputRef} type="file" accept=".obj" onChange={handleOBJFileSelect} className="hidden" />
               <Button 
                 onClick={() => setShowSettingsPanel(!showSettingsPanel)} 
                 size="lg" 
                 className="rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0"
               >
                 <Settings className="w-6 h-6" />
+              </Button>
+              <Button 
+                onClick={() => {
+                  maxZIndexRef.current += 1;
+                  const newCard: ObjectData = {
+                    id: Date.now().toString(),
+                    type: 'card',
+                    title: `Card ${objects.length + 1}`,
+                    description: 'New spatial card',
+                    position: { x: 50, y: 50 },
+                    zIndex: maxZIndexRef.current,
+                    rotation: { x: 0, y: 0, z: 0 },
+                    velocity: { x: 0, y: 0 },
+                    isPhysicsEnabled: false,
+                  };
+                  setObjects(prev => [...prev, newCard]);
+                }}
+                size="lg" 
+                className="rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0"
+                title="Add Card (or pinch with hand)"
+              >
+                <Plus className="w-6 h-6" />
               </Button>
             </div>
 
@@ -1136,6 +1293,7 @@ const Index = () => {
                   onRestart={handleRestart}
                   onImportFile={() => fileInputRef.current?.click()}
                   onBackgroundUpload={() => backgroundInputRef.current?.click()}
+                  onImportOBJ={() => objInputRef.current?.click()}
                   onClose={() => setShowSettingsPanel(false)}
                   commandRecognized={commandRecognized}
                   onShowAdvancedSettings={() => setShowSettings(!showSettings)}
