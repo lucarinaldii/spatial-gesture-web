@@ -62,6 +62,20 @@ const createPlaceholderHandLandmarks = (hand: 'Left' | 'Right') => {
   ];
 };
 
+// Random words for card titles
+const CARD_WORDS = [
+  'Spark', 'Wave', 'Echo', 'Flow', 'Drift', 'Pulse', 'Bloom', 'Shift', 'Glow', 'Breeze',
+  'Ripple', 'Flare', 'Surge', 'Frost', 'Dawn', 'Ember', 'Mist', 'Storm', 'Zen', 'Aura',
+  'Dream', 'Void', 'Nova', 'Shade', 'Prism', 'Tide', 'Vibe', 'Halo', 'Nexus', 'Zephyr',
+  'Nexus', 'Cipher', 'Flux', 'Orbit', 'Pixel', 'Echo', 'Matrix', 'Quantum', 'Nebula', 'Crystal'
+];
+
+const getRandomWord = () => CARD_WORDS[Math.floor(Math.random() * CARD_WORDS.length)];
+const getRandomPosition = () => ({
+  x: Math.random() * 70 + 15, // Random x between 15% and 85%
+  y: Math.random() * 60 + 20  // Random y between 20% and 80%
+});
+
 const Index = () => {
   const [isTracking, setIsTracking] = useState(false);
   const [hasStartedTracking, setHasStartedTracking] = useState(false);
@@ -643,12 +657,13 @@ const Index = () => {
               if (distanceToPlusButton < buttonRadius && now - plusButtonCooldownRef.current > 100) {
                 plusButtonCooldownRef.current = now;
                 maxZIndexRef.current += 1;
+                const randomPos = getRandomPosition();
                 const newCard: ObjectData = {
                   id: Date.now().toString() + handIndex,
                   type: 'card',
-                  title: `Card ${objects.length + 1}`,
+                  title: getRandomWord(),
                   description: 'Created with hand pinch',
-                  position: { x: 50, y: 50 },
+                  position: randomPos,
                   zIndex: maxZIndexRef.current,
                   rotation: { x: 0, y: 0, z: 0 },
                   velocity: { x: 0, y: 0 },
@@ -1322,12 +1337,13 @@ const Index = () => {
               <Button 
                 onClick={() => {
                   maxZIndexRef.current += 1;
+                  const randomPos = getRandomPosition();
                   const newCard: ObjectData = {
                     id: Date.now().toString(),
                     type: 'card',
-                    title: `Card ${objects.length + 1}`,
+                    title: getRandomWord(),
                     description: 'New spatial card',
-                    position: { x: 50, y: 50 },
+                    position: randomPos,
                     zIndex: maxZIndexRef.current,
                     rotation: { x: 0, y: 0, z: 0 },
                     velocity: { x: 0, y: 0 },
