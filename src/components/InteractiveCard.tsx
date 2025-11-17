@@ -13,6 +13,7 @@ interface InteractiveCardProps {
   onInteract: () => void;
   isBeingDragged?: boolean;
   scale?: number;
+  isShaking?: boolean;
 }
 
 const InteractiveCard = memo(({
@@ -26,6 +27,7 @@ const InteractiveCard = memo(({
   onInteract,
   isBeingDragged = false,
   scale = 1,
+  isShaking = false,
 }: InteractiveCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
@@ -72,11 +74,11 @@ const InteractiveCard = memo(({
     >
       <div
         ref={cardRef}
-        className="will-change-transform"
+        className={`will-change-transform ${isShaking ? 'animate-shake' : ''}`}
         style={{
-          transform: `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
+          transform: isShaking ? undefined : `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
           transformStyle: 'preserve-3d',
-          transition: isBeingDragged ? 'none' : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transition: isBeingDragged || isShaking ? 'none' : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
       >
         <Card

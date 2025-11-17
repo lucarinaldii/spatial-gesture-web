@@ -35,6 +35,7 @@ interface InteractiveObjectProps {
   hoveredConnector?: string | null;
   onConnectorHover?: (connectorId: string | null) => void;
   showConnectors?: boolean;
+  isShaking?: boolean;
 }
 
 const Model3D = ({ url }: { url: string }) => {
@@ -65,6 +66,7 @@ const InteractiveObject = memo(({
   hoveredConnector,
   onConnectorHover,
   showConnectors = true,
+  isShaking = false,
 }: InteractiveObjectProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
@@ -191,11 +193,11 @@ const InteractiveObject = memo(({
     >
       <div
         ref={objectRef}
-        className={`will-change-transform ${isMerging ? 'animate-scale-out' : ''} ${isSplitting ? 'animate-scale-out' : ''}`}
+        className={`will-change-transform ${isMerging ? 'animate-scale-out' : ''} ${isSplitting ? 'animate-scale-out' : ''} ${isShaking ? 'animate-shake' : ''}`}
         style={{
-          transform: `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
+          transform: isShaking ? undefined : `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
           transformStyle: 'preserve-3d',
-          transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: isBeingDragged || isShaking ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           opacity: isMerging || isSplitting ? 0.5 : 1,
         }}
       >

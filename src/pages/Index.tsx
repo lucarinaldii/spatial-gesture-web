@@ -148,6 +148,7 @@ const Index = () => {
   const [holdingCardId, setHoldingCardId] = useState<string | null>(null);
   const [showHoldDeleteButton, setShowHoldDeleteButton] = useState<string | null>(null);
   const holdStartTimeRef = useRef<Map<string, number>>(new Map());
+  const holdStartPositionRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const [resizingCardId, setResizingCardId] = useState<string | null>(null);
   const cardBaseScaleRef = useRef<Map<string, number>>(new Map());
   const [isPlusButtonHovered, setIsPlusButtonHovered] = useState(false);
@@ -637,6 +638,7 @@ const Index = () => {
               // Track hold start time for delete functionality
               if (!holdStartTimeRef.current.has(targetObject.id)) {
                 holdStartTimeRef.current.set(targetObject.id, Date.now());
+                holdStartPositionRef.current.set(targetObject.id, { x: handX, y: handY });
               }
             } else {
               // Pinch-to-add card when pinching on the plus button (top center)
@@ -943,10 +945,25 @@ const Index = () => {
                 setShowDeleteZone(true);
                 setIsOverDeleteZone(isInDeleteZone);
                 
-                // Check hold time for hold-to-delete
+                // Check hold time for hold-to-delete (2.5 seconds)
                 const holdStart = holdStartTimeRef.current.get(grabbed.id);
-                if (holdStart && Date.now() - holdStart > 3000) {
-                  setShowHoldDeleteButton(grabbed.id);
+                const holdStartPos = holdStartPositionRef.current.get(grabbed.id);
+                if (holdStart && holdStartPos) {
+                  // Check if card has moved significantly
+                  const distance = Math.sqrt(
+                    Math.pow(handX - holdStartPos.x, 2) + 
+                    Math.pow(handY - holdStartPos.y, 2)
+                  );
+                  
+                  if (distance > 2) {
+                    // Card moved, reset hold timer
+                    holdStartTimeRef.current.set(grabbed.id, Date.now());
+                    holdStartPositionRef.current.set(grabbed.id, { x: handX, y: handY });
+                    setShowHoldDeleteButton(null);
+                  } else if (Date.now() - holdStart > 2500) {
+                    // Held for 2.5 seconds in same position
+                    setShowHoldDeleteButton(grabbed.id);
+                  }
                 } else {
                   setShowHoldDeleteButton(null);
                 }
@@ -996,6 +1013,12 @@ const Index = () => {
             
             newGrabbedObjects.delete(handIndex);
             hasChanges = true;
+            
+            // Reset hold state when releasing
+            holdStartTimeRef.current.delete(grabbed.id);
+            holdStartPositionRef.current.delete(grabbed.id);
+            setShowHoldDeleteButton(null);
+            
             if (!Array.from(newGrabbedObjects.values()).some(g => g.id === grabbed.id)) {
               baseDistanceRef.current.delete(grabbed.id);
               baseAngleRef.current.delete(grabbed.id);
@@ -1448,8 +1471,34 @@ const Index = () => {
                   hoveredConnector={hoveredConnector}
                   onConnectorHover={setHoveredConnector}
                   showConnectors={showConnectors}
+                  isShaking={showHoldDeleteButton === obj.id}
                 />;
               })}
+              
+              {/* Hold-to-delete button */}
+              {showHoldDeleteButton && objects.find(obj => obj.id === showHoldDeleteButton) && (
+                <CardHoldDeleteButton
+                  position={{
+                    x: ((objects.find(obj => obj.id === showHoldDeleteButton)!.position.x + canvasOffset.x) * window.innerWidth) / 100,
+                    y: ((objects.find(obj => obj.id === showHoldDeleteButton)!.position.y + canvasOffset.y) * window.innerHeight) / 100,
+                  }}
+                  onDelete={() => {
+                    setObjects(prev => prev.filter(o => o.id !== showHoldDeleteButton));
+                    setShowHoldDeleteButton(null);
+                    holdStartTimeRef.current.delete(showHoldDeleteButton);
+                    holdStartPositionRef.current.delete(showHoldDeleteButton);
+                    toast({ title: "Card deleted", description: "Card moved to trash" });
+                  }}
+                  handPosition={
+                    handPositions[0]
+                      ? {
+                          x: handPositions[0].x * window.innerWidth,
+                          y: handPositions[0].y * window.innerHeight,
+                        }
+                      : null
+                  }
+                />
+              )}
               
               {/* Render wire connections */}
               {showConnectors && connections.map((conn) => {
