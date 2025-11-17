@@ -603,8 +603,35 @@ const Index = () => {
                 holdStartTimeRef.current.set(targetObject.id, Date.now());
               }
             } else {
-              // Start canvas drag when pinching on empty space
-              if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
+              // Pinch-to-add card when pinching on the plus button (top center)
+              const plusButtonX = window.innerWidth / 2;
+              const plusButtonY = 32 + 40; // top-8 (32px) + half button height (40px)
+              const buttonRadius = 40; // Half of w-20 (80px)
+              
+              const distanceToPlusButton = Math.sqrt(
+                Math.pow((handX * window.innerWidth / 100) - plusButtonX, 2) + 
+                Math.pow((handY * window.innerHeight / 100) - plusButtonY, 2)
+              );
+              
+              if (distanceToPlusButton < buttonRadius && !newGrabbedObjects.has(handIndex)) {
+                maxZIndexRef.current += 1;
+                const newCard: ObjectData = {
+                  id: Date.now().toString() + handIndex,
+                  type: 'card',
+                  title: `Card ${objects.length + 1}`,
+                  description: 'Created with hand pinch',
+                  position: { x: 50, y: 50 },
+                  zIndex: maxZIndexRef.current,
+                  rotation: { x: 0, y: 0, z: 0 },
+                  velocity: { x: 0, y: 0 },
+                  isPhysicsEnabled: false,
+                };
+                setObjects(prev => [...prev, newCard]);
+                toast({ title: "Card created!", description: "New card created with pinch gesture" });
+              } else {
+                // Start canvas drag when pinching on empty space
+                if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
+              }
             }
           }
         }
