@@ -1346,12 +1346,12 @@ const Index = () => {
                   isPlusButtonClicked 
                     ? 'scale-90' 
                     : isPlusButtonHovered 
-                    ? 'scale-110 animate-pulse-scale' 
+                    ? 'scale-110' 
                     : 'scale-100'
                 }`}
                 title="Add Card (or pinch with hand)"
               >
-                <Plus className="w-8 h-8" />
+                <Plus className="w-10 h-10" />
               </Button>
             </div>
 
