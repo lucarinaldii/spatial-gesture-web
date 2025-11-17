@@ -101,12 +101,18 @@ export default {
             transform: "scale(1.05)",
           },
         },
+        "shake": {
+          "0%, 100%": { transform: "translate(-50%, -50%) rotate(0deg)" },
+          "10%, 30%, 50%, 70%, 90%": { transform: "translate(-50%, -50%) rotate(-2deg)" },
+          "20%, 40%, 60%, 80%": { transform: "translate(-50%, -50%) rotate(2deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "float": "float 3s ease-in-out infinite",
         "pulse-scale": "pulse-scale 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "shake": "shake 0.5s ease-in-out infinite",
       },
     },
   },
