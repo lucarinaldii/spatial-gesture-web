@@ -615,9 +615,10 @@ const Index = () => {
               return distance < 3; // Grab threshold in world units
             });
             
-            // Check for 2D objects (cards, images, etc.)
+            // Check for 2D objects (cards, images, etc.) - exclude shaking cards
             const target2DObject = objects.find((obj) => {
               if (obj.type === 'obj') return false; // Skip 3D objects
+              if (showHoldDeleteButton === obj.id) return false; // Skip shaking cards
               
               const adjustedX = obj.position.x + canvasOffset.x;
               const adjustedY = obj.position.y + canvasOffset.y;
@@ -683,8 +684,15 @@ const Index = () => {
                 setTimeout(() => setIsPlusButtonClicked(false), 200);
                 toast({ title: "Card created!", description: "New card created with pinch gesture" });
               } else if (distanceToPlusButton >= buttonRadius) {
-                // Start canvas drag when pinching on empty space
-                if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
+                // Pinch on canvas (not on button, not on object) - cancel shake mode if active
+                if (showHoldDeleteButton) {
+                  setShowHoldDeleteButton(null);
+                  holdStartTimeRef.current.delete(showHoldDeleteButton);
+                  holdStartPositionRef.current.delete(showHoldDeleteButton);
+                } else {
+                  // Start canvas drag when pinching on empty space (if not canceling shake)
+                  if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
+                }
               }
             }
           }
@@ -960,8 +968,8 @@ const Index = () => {
                     holdStartTimeRef.current.set(grabbed.id, Date.now());
                     holdStartPositionRef.current.set(grabbed.id, { x: handX, y: handY });
                     setShowHoldDeleteButton(null);
-                  } else if (Date.now() - holdStart > 2500 && showHoldDeleteButton !== grabbed.id) {
-                    // Held for 2.5 seconds in same position
+                  } else if (Date.now() - holdStart > 1500 && showHoldDeleteButton !== grabbed.id) {
+                    // Held for 1.5 seconds in same position
                     setShowHoldDeleteButton(grabbed.id);
                   }
                 } else {
