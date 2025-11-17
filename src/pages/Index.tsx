@@ -603,23 +603,7 @@ const Index = () => {
                 holdStartTimeRef.current.set(targetObject.id, Date.now());
               }
             } else {
-              // Pinch-to-add card when not grabbing an object
-              if (!newGrabbedObjects.has(handIndex)) {
-                maxZIndexRef.current += 1;
-                const newCard: ObjectData = {
-                  id: Date.now().toString() + handIndex,
-                  type: 'card',
-                  title: `Card ${objects.length + 1}`,
-                  description: 'Created with hand pinch',
-                  position: { x: handX - canvasOffset.x, y: handY - canvasOffset.y },
-                  zIndex: maxZIndexRef.current,
-                  rotation: { x: 0, y: 0, z: 0 },
-                  velocity: { x: 0, y: 0 },
-                  isPhysicsEnabled: false,
-                };
-                setObjects(prev => [...prev, newCard]);
-                toast({ title: "Card created!", description: "New card created with pinch gesture" });
-              }
+              // Start canvas drag when pinching on empty space
               if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
             }
           }
