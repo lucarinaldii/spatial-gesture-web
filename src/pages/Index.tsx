@@ -1193,11 +1193,13 @@ const Index = () => {
               onUpdateObject={handleUpdate3DObject}
             />
             
+            {/* Hidden file inputs */}
+            <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
+            <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
+            <input ref={objInputRef} type="file" accept=".obj" onChange={handleOBJFileSelect} className="hidden" />
+            
             {/* Settings button - bottom right */}
-            <div className="fixed bottom-8 right-8 z-50 pointer-events-auto flex flex-col gap-3">
-              <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
-              <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
-              <input ref={objInputRef} type="file" accept=".obj" onChange={handleOBJFileSelect} className="hidden" />
+            <div className="fixed bottom-8 right-8 z-50 pointer-events-auto">
               <Button 
                 onClick={() => setShowSettingsPanel(!showSettingsPanel)} 
                 size="lg" 
@@ -1205,6 +1207,10 @@ const Index = () => {
               >
                 <Settings className="w-6 h-6" />
               </Button>
+            </div>
+            
+            {/* Add card button - bottom center */}
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
               <Button 
                 onClick={() => {
                   maxZIndexRef.current += 1;
@@ -1222,10 +1228,10 @@ const Index = () => {
                   setObjects(prev => [...prev, newCard]);
                 }}
                 size="lg" 
-                className="rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0"
+                className="rounded-full neon-glow transition-all duration-200 w-20 h-20 p-0"
                 title="Add Card (or pinch with hand)"
               >
-                <Plus className="w-6 h-6" />
+                <Plus className="w-8 h-8" />
               </Button>
             </div>
 
