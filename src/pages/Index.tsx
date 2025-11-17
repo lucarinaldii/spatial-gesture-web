@@ -722,53 +722,6 @@ const Index = () => {
                 // Resize disabled per user request
               }
             }
-                const newCard1: ObjectData = {
-                  ...safeCurrentObj,
-                  id: Date.now().toString(),
-                  position: { x: hand1X - canvasOffset.x, y: hand1Y - canvasOffset.y },
-                  zIndex: maxZIndexRef.current - 1,
-                  title: safeCurrentObj.title ? safeCurrentObj.title + ' (A)' : 'Split Card A',
-                  velocity: { x: 0, y: 0 },
-                  rotation: { x: 0, y: 0, z: 0 },
-                  isPhysicsEnabled: false
-                };
-                const newCard2: ObjectData = {
-                  ...safeCurrentObj,
-                  id: (Date.now() + 1).toString(),
-                  position: { x: hand2X - canvasOffset.x, y: hand2Y - canvasOffset.y },
-                  zIndex: maxZIndexRef.current,
-                  title: safeCurrentObj.title ? safeCurrentObj.title + ' (B)' : 'Split Card B',
-                  velocity: { x: 0, y: 0 },
-                  rotation: { x: 0, y: 0, z: 0 },
-                  isPhysicsEnabled: false
-                };
-                
-                // Remove original card and add split cards
-                setObjects(prev => [...prev.filter(o => o.id !== obj0.id), newCard1, newCard2]);
-                
-                // Update grabbed objects to point to new cards
-                newGrabbedObjects.set(0, { id: newCard1.id, offsetX: 0, offsetY: 0 });
-                newGrabbedObjects.set(1, { id: newCard2.id, offsetX: 0, offsetY: 0 });
-                hasChanges = true;
-                
-                splitDistanceRef.current.delete(obj0.id);
-                baseDistanceRef.current.delete(obj0.id);
-                baseAngleRef.current.delete(obj0.id);
-                
-                setTimeout(() => {
-                  setSplittingCards(prev => {
-                    const next = new Set(prev);
-                    next.delete(obj0.id);
-                    return next;
-                  });
-                }, 500);
-                
-                toast({ title: "Card split!", description: "Card divided into two" });
-              }
-            } else {
-              // Normal two-hand manipulation (scale and rotate) - DISABLED
-              // Resize disabled per user request
-            }
           } else if (obj0 && obj1 && obj0.id !== obj1.id && handPositions.length === 2) {
             // Two hands grabbing different cards - check for merging
             const card1 = objects.find(o => o.id === obj0.id);
