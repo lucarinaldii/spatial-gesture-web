@@ -638,9 +638,9 @@ const Index = () => {
                 Math.pow(handScreenY - plusButtonY, 2)
               );
               
-              // Check cooldown to prevent multiple cards being created
+              // Check cooldown to prevent rapid-fire (very short cooldown)
               const now = Date.now();
-              if (distanceToPlusButton < buttonRadius && now - plusButtonCooldownRef.current > 500) {
+              if (distanceToPlusButton < buttonRadius && now - plusButtonCooldownRef.current > 100) {
                 plusButtonCooldownRef.current = now;
                 maxZIndexRef.current += 1;
                 const newCard: ObjectData = {
@@ -685,22 +685,82 @@ const Index = () => {
             const distance = Math.sqrt(Math.pow(hand2X - hand1X, 2) + Math.pow(hand2Y - hand1Y, 2));
             
             if (currentObj && currentObj.type === 'card') {
-              // Two-hand card resizing
-              if (!cardBaseScaleRef.current.has(obj0.id)) {
-                cardBaseScaleRef.current.set(obj0.id, currentObj.scale || 1);
+              // Track initial distance for split detection
+              if (!splitDistanceRef.current.has(obj0.id)) {
+                splitDistanceRef.current.set(obj0.id, distance);
               }
               
-              if (!baseDistanceRef.current.has(`resize-${obj0.id}`)) {
-                baseDistanceRef.current.set(`resize-${obj0.id}`, distance);
+              const initialDistance = splitDistanceRef.current.get(obj0.id)!;
+              const SPLIT_THRESHOLD = 20; // Distance increase needed to trigger split
+              
+              // Check if hands are pulling apart for split
+              if (distance > initialDistance + SPLIT_THRESHOLD && !splittingCards.has(obj0.id)) {
+                // Split the card into two
+                setSplittingCards(prev => new Set(prev).add(obj0.id));
+                
+                const safeCurrentObj = {
+                  ...currentObj,
+                  position: currentObj.position || { x: 50, y: 50 },
+                  rotation: currentObj.rotation || { x: 0, y: 0, z: 0 },
+                  velocity: currentObj.velocity || { x: 0, y: 0 }
+                };
+                
+                maxZIndexRef.current += 2;
+                const newCard1: ObjectData = {
+                  ...safeCurrentObj,
+                  id: Date.now().toString(),
+                  position: { x: hand1X - canvasOffset.x, y: hand1Y - canvasOffset.y },
+                  zIndex: maxZIndexRef.current - 1,
+                  title: safeCurrentObj.title ? safeCurrentObj.title + ' (A)' : 'Split Card A',
+                  velocity: { x: 0, y: 0 },
+                  rotation: { x: 0, y: 0, z: 0 },
+                  isPhysicsEnabled: false,
+                  scale: 1
+                };
+                const newCard2: ObjectData = {
+                  ...safeCurrentObj,
+                  id: (Date.now() + 1).toString(),
+                  position: { x: hand2X - canvasOffset.x, y: hand2Y - canvasOffset.y },
+                  zIndex: maxZIndexRef.current,
+                  title: safeCurrentObj.title ? safeCurrentObj.title + ' (B)' : 'Split Card B',
+                  velocity: { x: 0, y: 0 },
+                  rotation: { x: 0, y: 0, z: 0 },
+                  isPhysicsEnabled: false,
+                  scale: 1
+                };
+                
+                setObjects(prev => [...prev.filter(o => o.id !== obj0.id), newCard1, newCard2]);
+                newGrabbedObjects.set(0, { id: newCard1.id, offsetX: 0, offsetY: 0 });
+                newGrabbedObjects.set(1, { id: newCard2.id, offsetX: 0, offsetY: 0 });
+                hasChanges = true;
+                
+                setTimeout(() => {
+                  setSplittingCards(prev => {
+                    const next = new Set(prev);
+                    next.delete(obj0.id);
+                    return next;
+                  });
+                }, 500);
+                
+                toast({ title: "Card split!", description: "Card divided into two" });
+              } else if (distance <= initialDistance + SPLIT_THRESHOLD) {
+                // Two-hand card resizing when not pulling apart
+                if (!cardBaseScaleRef.current.has(obj0.id)) {
+                  cardBaseScaleRef.current.set(obj0.id, currentObj.scale || 1);
+                }
+                
+                if (!baseDistanceRef.current.has(`resize-${obj0.id}`)) {
+                  baseDistanceRef.current.set(`resize-${obj0.id}`, distance);
+                }
+                
+                const baseDistance = baseDistanceRef.current.get(`resize-${obj0.id}`)!;
+                const baseScale = cardBaseScaleRef.current.get(obj0.id)!;
+                const scaleFactor = distance / baseDistance;
+                const newScale = Math.max(0.5, Math.min(3, baseScale * scaleFactor));
+                
+                setResizingCardId(obj0.id);
+                scaleUpdate = { id: obj0.id, scale: newScale };
               }
-              
-              const baseDistance = baseDistanceRef.current.get(`resize-${obj0.id}`)!;
-              const baseScale = cardBaseScaleRef.current.get(obj0.id)!;
-              const scaleFactor = distance / baseDistance;
-              const newScale = Math.max(0.5, Math.min(3, baseScale * scaleFactor));
-              
-              setResizingCardId(obj0.id);
-              scaleUpdate = { id: obj0.id, scale: newScale };
             } else {
               // Track initial distance for split detection
               if (!splitDistanceRef.current.has(obj0.id)) {
@@ -1286,7 +1346,7 @@ const Index = () => {
                   isPlusButtonClicked 
                     ? 'scale-90' 
                     : isPlusButtonHovered 
-                    ? 'scale-110 animate-pulse' 
+                    ? 'scale-110 animate-pulse-scale' 
                     : 'scale-100'
                 }`}
                 title="Add Card (or pinch with hand)"
