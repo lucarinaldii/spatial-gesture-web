@@ -640,7 +640,7 @@ const Index = () => {
               
               // Check cooldown to prevent multiple cards being created
               const now = Date.now();
-              if (distanceToPlusButton < buttonRadius && now - plusButtonCooldownRef.current > 1000) {
+              if (distanceToPlusButton < buttonRadius && now - plusButtonCooldownRef.current > 500) {
                 plusButtonCooldownRef.current = now;
                 maxZIndexRef.current += 1;
                 const newCard: ObjectData = {
@@ -653,8 +653,15 @@ const Index = () => {
                   rotation: { x: 0, y: 0, z: 0 },
                   velocity: { x: 0, y: 0 },
                   isPhysicsEnabled: false,
+                  scale: 0.5, // Start small for animation
                 };
                 setObjects(prev => [...prev, newCard]);
+                // Animate scale up
+                setTimeout(() => {
+                  setObjects(prev => prev.map(obj => 
+                    obj.id === newCard.id ? { ...obj, scale: 1 } : obj
+                  ));
+                }, 10);
                 setIsPlusButtonClicked(true);
                 setTimeout(() => setIsPlusButtonClicked(false), 200);
                 toast({ title: "Card created!", description: "New card created with pinch gesture" });
@@ -1265,15 +1272,21 @@ const Index = () => {
                     rotation: { x: 0, y: 0, z: 0 },
                     velocity: { x: 0, y: 0 },
                     isPhysicsEnabled: false,
+                    scale: 0.5,
                   };
                   setObjects(prev => [...prev, newCard]);
+                  setTimeout(() => {
+                    setObjects(prev => prev.map(obj => 
+                      obj.id === newCard.id ? { ...obj, scale: 1 } : obj
+                    ));
+                  }, 10);
                 }}
                 size="lg" 
                 className={`rounded-full neon-glow transition-all duration-200 w-20 h-20 p-0 ${
                   isPlusButtonClicked 
-                    ? 'scale-90 brightness-125' 
+                    ? 'scale-90' 
                     : isPlusButtonHovered 
-                    ? 'scale-110 animate-pulse brightness-110 shadow-lg shadow-primary/50' 
+                    ? 'scale-110 animate-pulse' 
                     : 'scale-100'
                 }`}
                 title="Add Card (or pinch with hand)"
@@ -1349,8 +1362,8 @@ const Index = () => {
                   gestureState={handIndex !== undefined ? gestureStates[handIndex] : { isPinching: false, isPointing: false, pinchStrength: 0, handIndex: 0, fingers: { thumb: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, index: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, middle: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, ring: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } }, pinky: { isExtended: false, tipPosition: { x: 0, y: 0, z: 0 } } } }} 
                   onInteract={() => {}} 
                   isBeingDragged={isBeingDragged} 
-                  scale={1} 
-                  isMerging={isMerging} 
+                  scale={obj.scale || 1} 
+                  isMerging={isMerging}
                   isSplitting={isSplitting} 
                   allHandPositions={handPositions} 
                   allGestureStates={gestureStates}

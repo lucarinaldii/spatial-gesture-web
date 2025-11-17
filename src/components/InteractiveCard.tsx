@@ -76,7 +76,7 @@ const InteractiveCard = memo(({
         style={{
           transform: `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
           transformStyle: 'preserve-3d',
-          transition: isBeingDragged ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: isBeingDragged ? 'none' : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
       >
         <Card
