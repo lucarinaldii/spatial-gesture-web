@@ -136,6 +136,9 @@ const Index = () => {
   const holdStartTimeRef = useRef<Map<string, number>>(new Map());
   const [resizingCardId, setResizingCardId] = useState<string | null>(null);
   const cardBaseScaleRef = useRef<Map<string, number>>(new Map());
+  const [isPlusButtonHovered, setIsPlusButtonHovered] = useState(false);
+  const [isPlusButtonClicked, setIsPlusButtonClicked] = useState(false);
+  const plusButtonCooldownRef = useRef<number>(0);
   
   // Wire connection state
   const [activeWire, setActiveWire] = useState<{ startCardId: string; startConnector: string; handIndex: number } | null>(null);
@@ -521,6 +524,25 @@ const Index = () => {
       const objectUpdates = new Map<string, { position?: { x: number; y: number }, zIndex?: number, rotation?: { x: number; y: number; z: number } }>();
       let scaleUpdate: { id: string; scale: number } | null = null;
 
+      // Check hover state for plus button with all hands
+      const plusButtonX = window.innerWidth / 2;
+      const plusButtonY = 32 + 40; // top-8 (32px) + half button height (40px)
+      const buttonRadius = 50; // Slightly larger for hover detection
+      
+      let isAnyHandOverButton = false;
+      handPositions.forEach((handPos, handIndex) => {
+        const handX = handPos.x * window.innerWidth;
+        const handY = handPos.y * window.innerHeight;
+        const distanceToPlusButton = Math.sqrt(
+          Math.pow(handX - plusButtonX, 2) + 
+          Math.pow(handY - plusButtonY, 2)
+        );
+        if (distanceToPlusButton < buttonRadius) {
+          isAnyHandOverButton = true;
+        }
+      });
+      setIsPlusButtonHovered(isAnyHandOverButton);
+
       handPositions.forEach((handPos, handIndex) => {
         const gesture = gestureStates[handIndex];
         if (!gesture) return;
@@ -606,14 +628,20 @@ const Index = () => {
               // Pinch-to-add card when pinching on the plus button (top center)
               const plusButtonX = window.innerWidth / 2;
               const plusButtonY = 32 + 40; // top-8 (32px) + half button height (40px)
-              const buttonRadius = 40; // Half of w-20 (80px)
+              const buttonRadius = 50; // Detection radius
+              
+              const handScreenX = handX * window.innerWidth / 100;
+              const handScreenY = handY * window.innerHeight / 100;
               
               const distanceToPlusButton = Math.sqrt(
-                Math.pow((handX * window.innerWidth / 100) - plusButtonX, 2) + 
-                Math.pow((handY * window.innerHeight / 100) - plusButtonY, 2)
+                Math.pow(handScreenX - plusButtonX, 2) + 
+                Math.pow(handScreenY - plusButtonY, 2)
               );
               
-              if (distanceToPlusButton < buttonRadius && !newGrabbedObjects.has(handIndex)) {
+              // Check cooldown to prevent multiple cards being created
+              const now = Date.now();
+              if (distanceToPlusButton < buttonRadius && now - plusButtonCooldownRef.current > 1000) {
+                plusButtonCooldownRef.current = now;
                 maxZIndexRef.current += 1;
                 const newCard: ObjectData = {
                   id: Date.now().toString() + handIndex,
@@ -627,8 +655,10 @@ const Index = () => {
                   isPhysicsEnabled: false,
                 };
                 setObjects(prev => [...prev, newCard]);
+                setIsPlusButtonClicked(true);
+                setTimeout(() => setIsPlusButtonClicked(false), 200);
                 toast({ title: "Card created!", description: "New card created with pinch gesture" });
-              } else {
+              } else if (distanceToPlusButton >= buttonRadius) {
                 // Start canvas drag when pinching on empty space
                 if (!canvasDragStartRef.current) canvasDragStartRef.current = { x: handX, y: handY };
               }
@@ -1239,7 +1269,13 @@ const Index = () => {
                   setObjects(prev => [...prev, newCard]);
                 }}
                 size="lg" 
-                className="rounded-full neon-glow transition-all duration-200 w-20 h-20 p-0 hover:animate-pulse"
+                className={`rounded-full neon-glow transition-all duration-200 w-20 h-20 p-0 ${
+                  isPlusButtonClicked 
+                    ? 'scale-90 brightness-125' 
+                    : isPlusButtonHovered 
+                    ? 'scale-110 animate-pulse brightness-110 shadow-lg shadow-primary/50' 
+                    : 'scale-100'
+                }`}
                 title="Add Card (or pinch with hand)"
               >
                 <Plus className="w-8 h-8" />
