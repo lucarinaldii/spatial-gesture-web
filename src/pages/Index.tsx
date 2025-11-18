@@ -142,6 +142,7 @@ const Index = () => {
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
   const [show3DHand, setShow3DHand] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [showPlane, setShowPlane] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showDeleteZone, setShowDeleteZone] = useState(false);
@@ -207,6 +208,9 @@ const Index = () => {
         }
         if (typeof parsed.showSkeleton === 'boolean') {
           setShowSkeleton(parsed.showSkeleton);
+        }
+        if (typeof parsed.showPlane === 'boolean') {
+          setShowPlane(parsed.showPlane);
         }
       } catch (error) {
         console.error('Error loading saved settings:', error);
@@ -424,6 +428,7 @@ const Index = () => {
         if (typeof settings.showConnectors === 'boolean') setShowConnectors(settings.showConnectors);
         if (typeof settings.show3DHand === 'boolean') setShow3DHand(settings.show3DHand);
         if (typeof settings.showSkeleton === 'boolean') setShowSkeleton(settings.showSkeleton);
+        if (typeof settings.showPlane === 'boolean') setShowPlane(settings.showPlane);
         // Auto-start voice if it was enabled in saved settings
         if (settings.isListening && isSupported) {
           setTimeout(() => startListening(), 500);
@@ -1347,6 +1352,7 @@ const Index = () => {
               gestureStates={gestureStates}
               landmarks={landmarks}
               onUpdateObject={handleUpdate3DObject}
+              showPlane={showPlane}
             />
             
             {/* Hidden file inputs */}
@@ -1414,6 +1420,8 @@ const Index = () => {
                   setShow3DHand={setShow3DHand}
                   showSkeleton={showSkeleton}
                   setShowSkeleton={setShowSkeleton}
+                  showPlane={showPlane}
+                  setShowPlane={setShowPlane}
                   isListening={isListening}
                   startListening={startListening}
                   stopListening={stopListening}

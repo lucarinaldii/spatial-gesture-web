@@ -65,9 +65,10 @@ interface Scene3DProps {
   gestureStates: GestureState[];
   landmarks: any;
   onUpdateObject: (id: string, updates: Partial<Object3DData>) => void;
+  showPlane?: boolean;
 }
 
-const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates, landmarks, onUpdateObject }: Omit<Scene3DProps, 'objects'> & { objects: Object3DData[] }) => {
+const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates, landmarks, onUpdateObject, showPlane }: Omit<Scene3DProps, 'objects'> & { objects: Object3DData[]; showPlane?: boolean }) => {
   const { camera } = useThree();
   const lastPositionsRef = useRef<Map<string, { x: number; y: number; z: number }>>(new Map());
   const baseDistanceRef = useRef<Map<string, number>>(new Map());
@@ -187,6 +188,17 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
       <directionalLight position={[-10, -10, -5]} intensity={0.3} />
       <pointLight position={[0, 0, 5]} intensity={0.5} />
       
+      {showPlane && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]} receiveShadow>
+          <planeGeometry args={[50, 50]} />
+          <meshStandardMaterial 
+            color="hsl(var(--muted))" 
+            transparent 
+            opacity={0.3}
+          />
+        </mesh>
+      )}
+      
       {objects.map((obj) => {
         const isGrabbed = Array.from(grabbedObjects.values()).some(g => g.id === obj.id);
         
@@ -205,7 +217,7 @@ const Scene3DContent = ({ objects, grabbedObjects, handPositions, gestureStates,
   );
 };
 
-export const Scene3D = ({ objects, grabbedObjects, handPositions, gestureStates, landmarks, onUpdateObject }: Scene3DProps) => {
+export const Scene3D = ({ objects, grabbedObjects, handPositions, gestureStates, landmarks, onUpdateObject, showPlane = false }: Scene3DProps) => {
   if (objects.length === 0) return null; // Don't render if no objects
   
   return (
@@ -226,6 +238,7 @@ export const Scene3D = ({ objects, grabbedObjects, handPositions, gestureStates,
           gestureStates={gestureStates}
           landmarks={landmarks}
           onUpdateObject={onUpdateObject}
+          showPlane={showPlane}
         />
       </Canvas>
     </div>

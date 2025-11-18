@@ -15,6 +15,8 @@ export interface SettingsPanelProps {
   setShow3DHand: (show: boolean) => void;
   showSkeleton: boolean;
   setShowSkeleton: (show: boolean) => void;
+  showPlane: boolean;
+  setShowPlane: (show: boolean) => void;
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;
@@ -36,6 +38,8 @@ export const SettingsPanel = ({
   setShow3DHand,
   showSkeleton,
   setShowSkeleton,
+  showPlane,
+  setShowPlane,
   isListening,
   startListening,
   stopListening,
@@ -209,6 +213,18 @@ export const SettingsPanel = ({
               id="skeleton"
               checked={showSkeleton}
               onCheckedChange={setShowSkeleton}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="plane" className="flex items-center gap-2 cursor-pointer">
+              {showPlane ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              3D Plane
+            </Label>
+            <Switch
+              id="plane"
+              checked={showPlane}
+              onCheckedChange={setShowPlane}
             />
           </div>
         </div>
