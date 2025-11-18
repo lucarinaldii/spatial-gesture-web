@@ -8,6 +8,55 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 5%;
+
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+
+    --primary: 0 0% 10%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 0 0% 93%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 0% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 95%;
+    --ring: 0 0% 10%;
+
+    --radius: 0.375rem;
+    
+    /* Minimal flat UI colors */
+    --neon-cyan: 0 0% 20%;
+    --neon-purple: 0 0% 30%;
+    --neon-pink: 0 0% 40%;
+    
+    /* Animation */
+    --transition-smooth: all 0.2s ease;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 5%;
+    --sidebar-primary: 0 0% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 95%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 10%;
+  }
+
+  .dark {
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 
@@ -36,35 +85,18 @@ All colors MUST be HSL.
     --input: 0 0% 20%;
     --ring: 0 0% 100%;
 
-    --radius: 0.375rem;
-    
-    /* Minimal flat UI colors */
     --neon-cyan: 0 0% 100%;
     --neon-purple: 0 0% 80%;
     --neon-pink: 0 0% 70%;
-    
-    /* Animation */
-    --transition-smooth: all 0.2s ease;
 
     --sidebar-background: 0 0% 10%;
-
     --sidebar-foreground: 0 0% 100%;
-
     --sidebar-primary: 0 0% 100%;
-
     --sidebar-primary-foreground: 0 0% 0%;
-
     --sidebar-accent: 0 0% 20%;
-
     --sidebar-accent-foreground: 0 0% 100%;
-
     --sidebar-border: 0 0% 25%;
-
     --sidebar-ring: 0 0% 100%;
-  }
-
-  .dark {
-    /* Same as root for consistency */
   }
 }
 
