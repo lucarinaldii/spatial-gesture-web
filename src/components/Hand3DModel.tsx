@@ -1,4 +1,4 @@
-import { useRef, memo } from 'react';
+import { useRef, memo, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { NormalizedLandmark } from '@mediapipe/tasks-vision';
@@ -51,14 +51,18 @@ interface HandModelProps {
   handIndex: number;
   alignmentParams: AlignmentParams;
   handParams: AlignmentParams['leftHand']; // Use interpolated params
+  themeColor: string;
+  themeEmissive: string;
 }
 
 // Create a smooth finger segment using capsule-like geometry - flatter and more human
-function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13 }: {
+function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13, color, emissive }: {
   start: THREE.Vector3; 
   end: THREE.Vector3; 
   startRadius?: number;
   endRadius?: number;
+  color: string;
+  emissive: string;
 }) {
   const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
   const distance = start.distanceTo(end);
@@ -73,8 +77,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13 
       <mesh position={midpoint} quaternion={quaternion}>
         <cylinderGeometry args={[endRadius, startRadius, distance, 16, 1, false]} />
         <meshStandardMaterial 
-          color="#ffffff"
-          emissive="#f8f8f8"
+          color={color}
+          emissive={emissive}
           emissiveIntensity={0.15}
           roughness={0.3}
           metalness={0.05}
@@ -86,8 +90,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13 
       <mesh position={start}>
         <sphereGeometry args={[startRadius, 16, 16]} />
         <meshStandardMaterial 
-          color="#ffffff"
-          emissive="#f8f8f8"
+          color={color}
+          emissive={emissive}
           emissiveIntensity={0.15}
           roughness={0.3}
           metalness={0.05}
@@ -96,8 +100,8 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13 
       <mesh position={end}>
         <sphereGeometry args={[endRadius, 16, 16]} />
         <meshStandardMaterial 
-          color="#ffffff"
-          emissive="#f8f8f8"
+          color={color}
+          emissive={emissive}
           emissiveIntensity={0.15}
           roughness={0.3}
           metalness={0.05}
@@ -108,7 +112,7 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13 
 }
 
 // Create palm surface connecting all finger bases
-function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
+function PalmMesh({ vectors, color, emissive }: { vectors: THREE.Vector3[]; color: string; emissive: string }) {
   const geometry = new THREE.BufferGeometry();
   
   // Create palm surface vertices
@@ -138,8 +142,8 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
   return (
     <mesh geometry={geometry}>
       <meshStandardMaterial 
-        color="#ffffff"
-        emissive="#f8f8f8"
+        color={color}
+        emissive={emissive}
         emissiveIntensity={0.15}
         roughness={0.3}
         metalness={0.05}
@@ -150,7 +154,7 @@ function PalmMesh({ vectors }: { vectors: THREE.Vector3[] }) {
 }
 
 // Smooth, realistic hand model
-function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: HandModelProps) {
+function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, themeColor, themeEmissive }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   
   // Validate all landmarks exist before processing
@@ -215,14 +219,14 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: 
   return (
     <group ref={groupRef}>
       {/* Palm surface */}
-      <PalmMesh vectors={vectors} />
+      <PalmMesh vectors={vectors} color={themeColor} emissive={themeEmissive} />
       
       {/* Connection from wrist to finger bases */}
-      <SmoothFingerSegment start={vectors[0]} end={vectors[1]} startRadius={0.26} endRadius={0.21} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[5]} startRadius={0.23} endRadius={0.20} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[9]} startRadius={0.23} endRadius={0.20} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[13]} startRadius={0.22} endRadius={0.18} />
-      <SmoothFingerSegment start={vectors[0]} end={vectors[17]} startRadius={0.21} endRadius={0.17} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[1]} startRadius={0.26} endRadius={0.21} color={themeColor} emissive={themeEmissive} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[5]} startRadius={0.23} endRadius={0.20} color={themeColor} emissive={themeEmissive} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[9]} startRadius={0.23} endRadius={0.20} color={themeColor} emissive={themeEmissive} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[13]} startRadius={0.22} endRadius={0.18} color={themeColor} emissive={themeEmissive} />
+      <SmoothFingerSegment start={vectors[0]} end={vectors[17]} startRadius={0.21} endRadius={0.17} color={themeColor} emissive={themeEmissive} />
       
       {/* Render each finger with smooth segments */}
       {fingers.map((finger) => (
@@ -239,6 +243,8 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: 
                 end={vectors[nextIdx]}
                 startRadius={startRadius}
                 endRadius={endRadius}
+                color={themeColor}
+                emissive={themeEmissive}
               />
             );
           })}
@@ -247,8 +253,8 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: 
           <mesh position={vectors[finger.indices[finger.indices.length - 1]]}>
             <sphereGeometry args={[finger.radii[finger.radii.length - 1][1], 12, 12]} />
             <meshStandardMaterial 
-              color="#ffffff"
-              emissive="#f8f8f8"
+              color={themeColor}
+              emissive={themeEmissive}
               emissiveIntensity={0.15}
               roughness={0.3}
               metalness={0.05}
@@ -261,8 +267,8 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: 
       <mesh position={vectors[0]}>
         <sphereGeometry args={[0.27, 12, 12]} />
         <meshStandardMaterial 
-          color="#ffffff"
-          emissive="#f8f8f8"
+          color={themeColor}
+          emissive={themeEmissive}
           emissiveIntensity={0.15}
           roughness={0.3}
           metalness={0.05}
@@ -273,6 +279,27 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams }: 
 }
 
 const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams, handedness }: Hand3DModelProps) {
+  const [themeColors, setThemeColors] = useState({ color: '#ffffff', emissive: '#f8f8f8' });
+  
+  useEffect(() => {
+    const updateThemeColors = () => {
+      const rootStyles = getComputedStyle(document.documentElement);
+      const foregroundHSL = rootStyles.getPropertyValue('--foreground').trim();
+      const [h, s, l] = foregroundHSL.split(' ').map(v => parseFloat(v.replace('%', '')));
+      const color = `hsl(${h}, ${s}%, ${l}%)`;
+      const emissive = `hsl(${h}, ${s}%, ${Math.max(l - 3, 0)}%)`;
+      setThemeColors({ color, emissive });
+    };
+    
+    updateThemeColors();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(updateThemeColors);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    return () => observer.disconnect();
+  }, []);
+  
   if (!landmarks || landmarks.length === 0) return null;
   
   return (
@@ -335,6 +362,8 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
               handIndex={index}
               alignmentParams={alignmentParams}
               handParams={interpolatedParams}
+              themeColor={themeColors.color}
+              themeEmissive={themeColors.emissive}
             />
           );
         })}
