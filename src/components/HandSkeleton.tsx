@@ -79,6 +79,12 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // Get theme color from CSS variable
+    const rootStyles = getComputedStyle(document.documentElement);
+    const foregroundHSL = rootStyles.getPropertyValue('--foreground').trim();
+    const [h, s, l] = foregroundHSL.split(' ').map(v => parseFloat(v.replace('%', '')));
+    const skeletonColor = `hsla(${h}, ${s}%, ${l}%, 0.9)`;
+    
     // Flip context horizontally to match mirrored video  
     ctx.save();
     ctx.scale(-1, 1);
@@ -110,8 +116,8 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
       ctx.scale(scaleFactor, scaleFactor);
       ctx.translate(-centerX, -centerY);
       
-      // Draw connections with white opaque (thinner lines)
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      // Draw connections with theme-aware color (thinner lines)
+      ctx.strokeStyle = skeletonColor;
       ctx.lineWidth = 1.5;
       ctx.shadowBlur = 0;
       ctx.shadowColor = 'transparent';
@@ -134,7 +140,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
 
       // Draw all fingertip landmarks (smaller)
       ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillStyle = skeletonColor;
       
       // Draw all fingertips: Thumb(4), Index(8), Middle(12), Ring(16), Pinky(20)
       const fingertips = [4, 8, 12, 16, 20];
@@ -154,7 +160,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
       });
 
       // Draw wrist (smaller)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillStyle = skeletonColor;
       const wrist = hand[0];
       const wristZ = wrist.z || 0;
       const wristDepthScale = 1 + wristZ * handParams.skeletonZDepth;
