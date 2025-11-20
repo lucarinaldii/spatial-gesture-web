@@ -2,12 +2,23 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Smartphone } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const QRCodeConnection = () => {
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const [connectionUrl, setConnectionUrl] = useState('');
 
   useEffect(() => {
+    // Enable anonymous auth for realtime features
+    const setupAnonymousAuth = async () => {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        console.error('Anonymous sign in error:', error);
+      }
+    };
+    
+    setupAnonymousAuth();
+
     // Get current URL and create mobile camera URL
     const baseUrl = window.location.origin;
     const mobileUrl = `${baseUrl}/mobile-camera?session=${sessionId}`;

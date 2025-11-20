@@ -15,16 +15,28 @@ const MobileCamera = () => {
       return;
     }
 
-    // Set up realtime channel for WebRTC signaling
-    const channel = supabase.channel(`camera-${sessionId}`);
-    channelRef.current = channel;
+    const setupChannel = async () => {
+      // Sign in anonymously for realtime access
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        console.error('Anonymous sign in error:', error);
+      }
 
-    channel.subscribe((status) => {
-      console.log('Channel status:', status);
-    });
+      // Set up realtime channel for WebRTC signaling
+      const channel = supabase.channel(`camera-${sessionId}`);
+      channelRef.current = channel;
+
+      channel.subscribe((status) => {
+        console.log('Channel status:', status);
+      });
+    };
+
+    setupChannel();
 
     return () => {
-      channel.unsubscribe();
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+      }
     };
   }, [sessionId, navigate]);
 
