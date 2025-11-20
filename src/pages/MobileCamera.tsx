@@ -129,16 +129,46 @@ const MobileCamera = () => {
             <p className="text-sm text-green-600 dark:text-green-400 font-medium">
               ✓ Tracking Active - Move your hands
             </p>
-            <div className="relative w-full max-w-md mx-auto">
+            <div className="relative w-full max-w-md mx-auto aspect-video bg-background/50 rounded-lg border-2 border-primary">
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
-                className="hidden"
+                className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-30"
               />
-              <div className="text-sm text-muted-foreground">
-                Landmarks detected: {landmarks?.length || 0}
+              {landmarks && landmarks.length > 0 && (
+                <HandSkeleton
+                  landmarks={landmarks}
+                  videoWidth={videoRef.current?.videoWidth || 640}
+                  videoHeight={videoRef.current?.videoHeight || 480}
+                  handedness={handedness}
+                  alignmentParams={{
+                    leftHand: {
+                      skeletonScale: 1,
+                      skeletonXOffset: 0,
+                      skeletonYOffset: 0,
+                      skeletonZDepth: 0,
+                      hand3DScale: 1,
+                      hand3DXOffset: 0,
+                      hand3DYOffset: 0,
+                      hand3DZDepth: 0,
+                    },
+                    rightHand: {
+                      skeletonScale: 1,
+                      skeletonXOffset: 0,
+                      skeletonYOffset: 0,
+                      skeletonZDepth: 0,
+                      hand3DScale: 1,
+                      hand3DXOffset: 0,
+                      hand3DYOffset: 0,
+                      hand3DZDepth: 0,
+                    },
+                  }}
+                />
+              )}
+              <div className="absolute bottom-2 right-2 text-xs text-primary font-mono bg-background/80 px-2 py-1 rounded">
+                {landmarks?.length || 0} landmarks
               </div>
             </div>
           </div>

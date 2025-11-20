@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
+import { useRemoteGestures } from '@/hooks/useRemoteGestures';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { supabase } from '@/integrations/supabase/client';
 import HandSkeleton from '@/components/HandSkeleton';
@@ -92,7 +93,12 @@ const Index = () => {
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const channelRef = useRef<any>(null);
-  const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
+  const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
+  const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
+  
+  // Use remote gestures if available, otherwise use local
+  const handPositions = remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandPositions : localHandPositions;
+  const gestureStates = remoteLandmarks && remoteLandmarks.length > 0 ? remoteGestureStates : localGestureStates;
   const { toast } = useToast();
   
   const [objects, setObjects] = useState<ObjectData[]>([
@@ -1659,19 +1665,27 @@ const Index = () => {
                     <p className="text-foreground/70 text-sm font-medium mt-2">Show Hands</p>
                   </div>
                 )}
-                {/* Live tracked hands */}
-                {landmarks && landmarks.length > 0 && (
+                {/* Live tracked hands - use remote landmarks if available, otherwise local */}
+                {((remoteLandmarks && remoteLandmarks.length > 0) || (landmarks && landmarks.length > 0)) && (
                   <Hand3DModel 
-                    landmarks={landmarks} 
+                    landmarks={remoteLandmarks && remoteLandmarks.length > 0 ? remoteLandmarks : landmarks} 
                     videoWidth={window.innerWidth} 
                     videoHeight={window.innerHeight} 
                     alignmentParams={alignmentParams} 
-                    handedness={handedness} 
+                    handedness={remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandedness : handedness} 
                   />
                 )}
               </>
             )}
-            {showSkeleton && landmarks && landmarks.length > 0 && <HandSkeleton landmarks={landmarks} videoWidth={window.innerWidth} videoHeight={window.innerHeight} alignmentParams={alignmentParams} handedness={handedness} />}
+            {showSkeleton && ((remoteLandmarks && remoteLandmarks.length > 0) || (landmarks && landmarks.length > 0)) && (
+              <HandSkeleton 
+                landmarks={remoteLandmarks && remoteLandmarks.length > 0 ? remoteLandmarks : landmarks} 
+                videoWidth={window.innerWidth} 
+                videoHeight={window.innerHeight} 
+                alignmentParams={alignmentParams} 
+                handedness={remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandedness : handedness} 
+              />
+            )}
             
             {/* Delete Zone - disabled
             {showDeleteZone && (
