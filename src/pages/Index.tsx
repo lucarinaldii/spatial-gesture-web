@@ -282,9 +282,12 @@ const Index = () => {
           addDebugLog('Using remote stream for hand tracking');
           videoRef.current.srcObject = remoteStream;
           await videoRef.current.play();
-        } else {
-          addDebugLog('No remote stream yet, starting local camera');
+        } else if (!sessionId) {
+          // Only use local camera when no phone session is active
+          addDebugLog('No remote stream and no phone session, starting local camera');
           await startCamera();
+        } else {
+          addDebugLog('Phone session active, waiting for remote stream (no local camera)');
         }
       } else {
         console.error('Video element not ready, retrying...');
