@@ -1,36 +1,55 @@
 import { QRCodeSVG } from 'qrcode.react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Smartphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface QRCodeConnectionProps {
   onSessionId: (sessionId: string) => void;
+  onMobileConnected: () => void;
 }
 
-export const QRCodeConnection = ({ onSessionId }: QRCodeConnectionProps) => {
+export const QRCodeConnection = ({ onSessionId, onMobileConnected }: QRCodeConnectionProps) => {
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const [connectionUrl, setConnectionUrl] = useState('');
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     // Pass session ID to parent
     onSessionId(sessionId);
 
-    // Enable anonymous auth for realtime features
-    const setupAnonymousAuth = async () => {
+    const setupConnection = async () => {
+      // Enable anonymous auth for realtime features
       const { error } = await supabase.auth.signInAnonymously();
       if (error) {
         console.error('Anonymous sign in error:', error);
       }
+
+      // Set up realtime channel to detect mobile connection
+      const channel = supabase.channel(`camera-${sessionId}`);
+      channelRef.current = channel;
+
+      channel
+        .on('broadcast', { event: 'mobile-ready' }, ({ payload }: any) => {
+          console.log('Mobile device connected and ready!');
+          onMobileConnected();
+        })
+        .subscribe((status) => {
+          console.log('Desktop channel status:', status);
+        });
     };
     
-    setupAnonymousAuth();
+    setupConnection();
 
     // Get current URL and create mobile camera URL
     const baseUrl = window.location.origin;
     const mobileUrl = `${baseUrl}/mobile-camera?session=${sessionId}`;
     setConnectionUrl(mobileUrl);
-  }, [sessionId, onSessionId]);
+
+    return () => {
+      channelRef.current?.unsubscribe();
+    };
+  }, [sessionId, onSessionId, onMobileConnected]);
 
   return (
     <Card className="p-6 glass-panel">

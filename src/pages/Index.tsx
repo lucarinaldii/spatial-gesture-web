@@ -1366,7 +1366,10 @@ const Index = () => {
               <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Spatial UI Controller</h1>
               <p className="text-xl text-muted-foreground">Control your interface with natural hand gestures</p>
               <div className="space-y-4 pt-8">
-                <QRCodeConnection onSessionId={setSessionId} />
+                <QRCodeConnection 
+                  onSessionId={setSessionId}
+                  onMobileConnected={handleStartTracking}
+                />
                 <Button onClick={handleStartTracking} disabled={!isReady} size="lg" className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground">
                   {isReady ? 'Start Hand Tracking' : 'Loading Model...'}
                 </Button>

@@ -29,6 +29,8 @@ const MobileCamera = () => {
           description: "Could not connect to streaming service",
           variant: "destructive",
         });
+      } else {
+        console.log('Mobile: Anonymous auth successful');
       }
     };
 
@@ -48,23 +50,27 @@ const MobileCamera = () => {
     }
     
     try {
+      // Notify desktop that mobile is ready
+      const channel = supabase.channel(`camera-${sessionId}`);
+      await channel.subscribe();
+      console.log('Mobile: Sending mobile-ready signal');
+      await channel.send({
+        type: 'broadcast',
+        event: 'mobile-ready',
+        payload: { ready: true }
+      });
+      
       webrtcRef.current = new WebRTCConnection(
         sessionId!,
         undefined,
         (state) => {
-          console.log('WebRTC state changed:', state);
+          console.log('Mobile WebRTC state changed:', state);
           setConnectionState(state);
-          if (state === 'connected' && !toast) {
-            toast({
-              title: "Connected",
-              description: "Your camera is now streaming to the desktop",
-            });
-          }
         }
       );
       
       await webrtcRef.current.initializeAsOfferer(stream);
-      console.log('WebRTC initialized successfully');
+      console.log('Mobile: WebRTC initialized successfully');
     } catch (error) {
       console.error('Error setting up WebRTC:', error);
       toast({
