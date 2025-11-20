@@ -79,13 +79,13 @@ const detectGesture = (handLandmarks: Landmark[], handIndex: number): GestureSta
 };
 
 const calculateHandPosition = (handLandmarks: Landmark[], handIndex: number): HandPosition => {
-  // Use wrist as the hand center, mirror horizontally to match desktop canvas
-  const wrist = handLandmarks[0];
+  // Use index fingertip as interaction point, mirrored horizontally like desktop
+  const indexTip = handLandmarks[8];
   
   return {
-    x: 1 - wrist.x,
-    y: wrist.y,
-    z: wrist.z,
+    x: 1 - indexTip.x,
+    y: indexTip.y,
+    z: indexTip.z,
     handIndex
   };
 };
