@@ -1536,8 +1536,10 @@ const Index = () => {
                 
                 // Apply alignment offset to hand position for accurate interaction
                 let adjustedHandPosition = handIndex !== undefined ? handPositions[handIndex] : null;
-                if (adjustedHandPosition && landmarks && landmarks[handIndex]) {
-                  const hand = landmarks[handIndex];
+                const currentLandmarks = (remoteLandmarks && remoteLandmarks.length > 0) ? remoteLandmarks : landmarks;
+                
+                if (adjustedHandPosition && currentLandmarks && currentLandmarks[handIndex]) {
+                  const hand = currentLandmarks[handIndex];
                   const thumb = hand[4];
                   const pinky = hand[17];
                   const isLeftHand = thumb.x > pinky.x;
