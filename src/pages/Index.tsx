@@ -247,33 +247,36 @@ const Index = () => {
     }
   }, [remoteStream, isTracking, addDebugLog]);
 
-  const handleStartTracking = async () => {
-    addDebugLog('handleStartTracking called');
-    setIsTracking(true);
-    setHasStartedTracking(true);
-    
-    // Set up WebRTC connection to receive smartphone stream
-    if (sessionId && !webrtcRef.current) {
-      addDebugLog(`Initializing WebRTC answerer for session ${sessionId}`);
+  // Initialize WebRTC answerer whenever a phone session becomes available
+  useEffect(() => {
+    if (!sessionId) return;
+    if (webrtcRef.current) return;
+
+    const setupAnswerer = async () => {
+      addDebugLog(`Auto-initializing WebRTC answerer for session ${sessionId}`);
       webrtcRef.current = new WebRTCConnection(
         sessionId,
         (stream) => {
-          addDebugLog('Received remote stream from smartphone');
+          addDebugLog('Received remote stream from smartphone (from auto-init)');
           setRemoteStream(stream);
           setConnectionState('connected');
-          toast({
-            title: "Phone Connected",
-            description: "Now using smartphone camera for hand tracking",
-          });
         },
         (state) => {
-          addDebugLog(`WebRTC connection state: ${state}`);
+          addDebugLog(`WebRTC connection state (auto-init): ${state}`);
           setConnectionState(state);
         }
       );
       await webrtcRef.current.initializeAsAnswerer();
-      addDebugLog('WebRTC answerer initialized');
-    }
+      addDebugLog('WebRTC answerer initialized from auto-init');
+    };
+
+    setupAnswerer();
+  }, [sessionId, addDebugLog]);
+
+  const handleStartTracking = async () => {
+    addDebugLog('handleStartTracking called');
+    setIsTracking(true);
+    setHasStartedTracking(true);
     
     // Wait for React to render the video element before starting camera
     setTimeout(async () => { 
