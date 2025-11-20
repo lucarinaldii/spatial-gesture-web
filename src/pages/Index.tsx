@@ -16,6 +16,7 @@ import { CardHoldDeleteButton } from '@/components/CardHoldDeleteButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
+import { DebugPanel } from '@/components/DebugPanel';
 import { WebRTCConnection } from '@/utils/webrtc';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Plus } from 'lucide-react';
@@ -88,6 +89,7 @@ const Index = () => {
   const [sessionId, setSessionId] = useState<string>('');
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [connectionState, setConnectionState] = useState<string>('new');
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const webrtcRef = useRef<WebRTCConnection | null>(null);
   const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
@@ -225,28 +227,37 @@ const Index = () => {
     }
   }, []);
 
+  const addDebugLog = useCallback((message: string) => {
+    const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '';
+    const entry = `[DESKTOP ${timestamp}] ${message}`;
+    console.log(entry);
+    setDebugLogs((prev) => [...prev.slice(-49), entry]);
+  }, []);
+
   // Handle remote stream updates
   useEffect(() => {
     if (remoteStream && videoRef.current && isTracking) {
-      console.log('Switching to remote stream');
+      addDebugLog('Switching video element to remote stream');
       videoRef.current.srcObject = remoteStream;
       videoRef.current.play().catch(error => {
         console.error('Error playing remote stream:', error);
+        addDebugLog(`Error playing remote stream: ${String(error)}`);
       });
     }
-  }, [remoteStream, isTracking]);
+  }, [remoteStream, isTracking, addDebugLog]);
 
   const handleStartTracking = async () => {
+    addDebugLog('handleStartTracking called');
     setIsTracking(true);
     setHasStartedTracking(true);
     
     // Set up WebRTC connection to receive smartphone stream
-    if (sessionId) {
-      console.log('Setting up WebRTC connection for session:', sessionId);
+    if (sessionId && !webrtcRef.current) {
+      addDebugLog(`Initializing WebRTC answerer for session ${sessionId}`);
       webrtcRef.current = new WebRTCConnection(
         sessionId,
         (stream) => {
-          console.log('Received remote stream from smartphone');
+          addDebugLog('Received remote stream from smartphone');
           setRemoteStream(stream);
           setConnectionState('connected');
           toast({
@@ -255,10 +266,12 @@ const Index = () => {
           });
         },
         (state) => {
+          addDebugLog(`WebRTC connection state: ${state}`);
           setConnectionState(state);
         }
       );
       await webrtcRef.current.initializeAsAnswerer();
+      addDebugLog('WebRTC answerer initialized');
     }
     
     // Wait for React to render the video element before starting camera
@@ -266,11 +279,11 @@ const Index = () => {
       if (videoRef.current) {
         // If we have a remote stream, use it instead of local camera
         if (remoteStream) {
-          console.log('Using remote stream for hand tracking');
+          addDebugLog('Using remote stream for hand tracking');
           videoRef.current.srcObject = remoteStream;
           await videoRef.current.play();
         } else {
-          console.log('Using local camera for hand tracking');
+          addDebugLog('No remote stream yet, starting local camera');
           await startCamera();
         }
       } else {
@@ -1368,7 +1381,10 @@ const Index = () => {
               <div className="space-y-4 pt-8">
                 <QRCodeConnection 
                   onSessionId={setSessionId}
-                  onMobileConnected={handleStartTracking}
+                  onMobileConnected={() => {
+                    addDebugLog('mobile-ready signal received from phone');
+                    handleStartTracking();
+                  }}
                 />
                 <Button onClick={handleStartTracking} disabled={!isReady} size="lg" className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground">
                   {isReady ? 'Start Hand Tracking' : 'Loading Model...'}
@@ -1406,29 +1422,8 @@ const Index = () => {
               </div>
             )}
             
-            {/* Connection status indicator */}
-            {sessionId && !remoteStream && (
-              <div className="fixed top-20 right-4 z-50">
-                <div className={`px-4 py-2 rounded-full border ${
-                  connectionState === 'connected' 
-                    ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400'
-                    : connectionState === 'connecting'
-                    ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-600 dark:text-yellow-400'
-                    : 'bg-gray-500/10 border-gray-500/20 text-gray-600 dark:text-gray-400'
-                }`}>
-                  <p className="text-sm font-medium flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${
-                      connectionState === 'connected' ? 'bg-green-500' :
-                      connectionState === 'connecting' ? 'bg-yellow-500' :
-                      'bg-gray-500'
-                    }`} />
-                    {connectionState === 'connected' ? '📱 Phone Connected' :
-                     connectionState === 'connecting' ? '🔄 Connecting...' :
-                     '📱 Waiting for phone'}
-                  </p>
-                </div>
-              </div>
-            )}
+            {/* Debug panel */}
+            <DebugPanel title="Desktop Connection Logs" logs={debugLogs} position="bottom-left" />
             
             {/* Full-screen 3D Scene for OBJ models */}
             <Scene3D
