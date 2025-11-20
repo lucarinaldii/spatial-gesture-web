@@ -150,6 +150,7 @@ const Index = () => {
   const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
   const [show3DHand, setShow3DHand] = useState(false);
+  const [showCameraPreview, setShowCameraPreview] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showPlane, setShowPlane] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -1400,7 +1401,7 @@ const Index = () => {
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
             {/* Camera preview window */}
-            {remoteStream && (
+            {remoteStream && showCameraPreview && (
               <div className="fixed top-20 right-4 z-50">
                 <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-xl">
                   <div className="flex items-center justify-between mb-2">
@@ -1414,7 +1415,7 @@ const Index = () => {
                     autoPlay
                     playsInline
                     muted
-                    className="w-48 h-36 rounded border border-border object-cover"
+                    className="w-64 h-48 rounded border border-border object-cover"
                     ref={(el) => {
                       if (el && remoteStream) {
                         el.srcObject = remoteStream;
@@ -1512,6 +1513,8 @@ const Index = () => {
                   setShowSkeleton={setShowSkeleton}
                   showPlane={showPlane}
                   setShowPlane={setShowPlane}
+                  showCameraPreview={showCameraPreview}
+                  setShowCameraPreview={setShowCameraPreview}
                   isListening={isListening}
                   startListening={startListening}
                   stopListening={stopListening}
