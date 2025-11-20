@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
 import { useVoiceCommands } from '@/hooks/useVoiceCommands';
+import { supabase } from '@/integrations/supabase/client';
 import HandSkeleton from '@/components/HandSkeleton';
 import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
@@ -17,7 +18,6 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
-import { WebRTCConnection } from '@/utils/webrtc';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Plus } from 'lucide-react';
 
@@ -87,10 +87,11 @@ const Index = () => {
   const [canvasBackground, setCanvasBackground] = useState<string | null>(null);
   const [showConnectors, setShowConnectors] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const [connectionState, setConnectionState] = useState<string>('new');
+  const [remoteLandmarks, setRemoteLandmarks] = useState<any>(null);
+  const [remoteHandedness, setRemoteHandedness] = useState<any>(null);
+  const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const webrtcRef = useRef<WebRTCConnection | null>(null);
+  const channelRef = useRef<any>(null);
   const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
   
@@ -150,7 +151,6 @@ const Index = () => {
   const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
   const [show3DHand, setShow3DHand] = useState(false);
-  const [showCameraPreview, setShowCameraPreview] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showPlane, setShowPlane] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -235,63 +235,66 @@ const Index = () => {
     setDebugLogs((prev) => [...prev.slice(-49), entry]);
   }, []);
 
-  // Handle remote stream updates
-  useEffect(() => {
-    if (remoteStream && videoRef.current && isTracking) {
-      addDebugLog('Switching video element to remote stream');
-      videoRef.current.srcObject = remoteStream;
-      videoRef.current.play().catch(error => {
-        console.error('Error playing remote stream:', error);
-        addDebugLog(`Error playing remote stream: ${String(error)}`);
-      });
-    }
-  }, [remoteStream, isTracking, addDebugLog]);
-
-  // Initialize WebRTC answerer whenever a phone session becomes available
+  // Set up realtime channel to receive landmarks from mobile
   useEffect(() => {
     if (!sessionId) return;
-    if (webrtcRef.current) return;
 
-    const setupAnswerer = async () => {
-      addDebugLog(`Auto-initializing WebRTC answerer for session ${sessionId}`);
-      webrtcRef.current = new WebRTCConnection(
-        sessionId,
-        (stream) => {
-          addDebugLog('Received remote stream from smartphone (from auto-init)');
-          setRemoteStream(stream);
-          setConnectionState('connected');
+    const setupChannel = async () => {
+      // Sign in anonymously
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        console.error('Anonymous sign in error:', error);
+        return;
+      }
+
+      addDebugLog(`Setting up landmark channel for session ${sessionId}`);
+      
+      const channel = supabase.channel(`hand-tracking-${sessionId}`, {
+        config: {
+          broadcast: { self: false },
         },
-        (state) => {
-          addDebugLog(`WebRTC connection state (auto-init): ${state}`);
-          setConnectionState(state);
-        }
-      );
-      await webrtcRef.current.initializeAsAnswerer();
-      addDebugLog('WebRTC answerer initialized from auto-init');
+      });
+      channelRef.current = channel;
+
+      channel
+        .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
+          setRemoteLandmarks(payload.landmarks);
+          setRemoteHandedness(payload.handedness);
+          if (!isRemoteConnected) {
+            setIsRemoteConnected(true);
+            addDebugLog('Receiving landmarks from mobile');
+            toast({
+              title: "Phone Connected",
+              description: "Receiving hand tracking data from your phone",
+            });
+          }
+        })
+        .subscribe((status) => {
+          addDebugLog(`Landmark channel status: ${status}`);
+        });
     };
 
-    setupAnswerer();
-  }, [sessionId, addDebugLog]);
+    setupChannel();
+
+    return () => {
+      channelRef.current?.unsubscribe();
+    };
+  }, [sessionId, addDebugLog, isRemoteConnected, toast]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
     setIsTracking(true);
     setHasStartedTracking(true);
     
-    // Wait for React to render the video element before starting camera
+    // Wait for React to render the video element
     setTimeout(async () => { 
       if (videoRef.current) {
-        // If we have a remote stream, use it instead of local camera
-        if (remoteStream) {
-          addDebugLog('Using remote stream for hand tracking');
-          videoRef.current.srcObject = remoteStream;
-          await videoRef.current.play();
-        } else if (!sessionId) {
+        if (!sessionId) {
           // Only use local camera when no phone session is active
-          addDebugLog('No remote stream and no phone session, starting local camera');
+          addDebugLog('No phone session, starting local camera');
           await startCamera();
         } else {
-          addDebugLog('Phone session active, waiting for remote stream (no local camera)');
+          addDebugLog('Phone session active, waiting for remote landmarks');
         }
       } else {
         console.error('Video element not ready, retrying...');
@@ -1388,10 +1391,6 @@ const Index = () => {
               <div className="space-y-4 pt-8">
                 <QRCodeConnection 
                   onSessionId={setSessionId}
-                  onMobileConnected={() => {
-                    addDebugLog('mobile-ready signal received from phone');
-                    handleStartTracking();
-                  }}
                 />
                 <Button onClick={handleStartTracking} disabled={!isReady} size="lg" className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground">
                   {isReady ? 'Start Hand Tracking' : 'Loading Model...'}
@@ -1402,32 +1401,6 @@ const Index = () => {
         ) : (
           <div className="relative min-h-screen">
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
-            
-            {/* Camera preview window */}
-            {remoteStream && showCameraPreview && (
-              <div className="fixed top-20 right-4 z-50">
-                <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-medium text-muted-foreground">📱 Phone Camera</p>
-                    <div className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-xs text-green-600 dark:text-green-400">Live</span>
-                    </div>
-                  </div>
-                  <video
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-64 h-48 rounded border border-border object-cover"
-                    ref={(el) => {
-                      if (el && remoteStream) {
-                        el.srcObject = remoteStream;
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            )}
             
             {/* Debug panel */}
             <DebugPanel title="Desktop Connection Logs" logs={debugLogs} position="bottom-left" />
@@ -1516,8 +1489,6 @@ const Index = () => {
                   setShowSkeleton={setShowSkeleton}
                   showPlane={showPlane}
                   setShowPlane={setShowPlane}
-                  showCameraPreview={showCameraPreview}
-                  setShowCameraPreview={setShowCameraPreview}
                   isListening={isListening}
                   startListening={startListening}
                   stopListening={stopListening}
