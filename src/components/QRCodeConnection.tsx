@@ -4,11 +4,18 @@ import { Card } from '@/components/ui/card';
 import { Smartphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-export const QRCodeConnection = () => {
+interface QRCodeConnectionProps {
+  onSessionId: (sessionId: string) => void;
+}
+
+export const QRCodeConnection = ({ onSessionId }: QRCodeConnectionProps) => {
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const [connectionUrl, setConnectionUrl] = useState('');
 
   useEffect(() => {
+    // Pass session ID to parent
+    onSessionId(sessionId);
+
     // Enable anonymous auth for realtime features
     const setupAnonymousAuth = async () => {
       const { error } = await supabase.auth.signInAnonymously();
@@ -23,7 +30,7 @@ export const QRCodeConnection = () => {
     const baseUrl = window.location.origin;
     const mobileUrl = `${baseUrl}/mobile-camera?session=${sessionId}`;
     setConnectionUrl(mobileUrl);
-  }, [sessionId]);
+  }, [sessionId, onSessionId]);
 
   return (
     <Card className="p-6 glass-panel">

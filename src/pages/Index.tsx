@@ -16,6 +16,7 @@ import { CardHoldDeleteButton } from '@/components/CardHoldDeleteButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
+import { WebRTCConnection } from '@/utils/webrtc';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Plus } from 'lucide-react';
 
@@ -84,6 +85,10 @@ const Index = () => {
   const [hasStartedTracking, setHasStartedTracking] = useState(false);
   const [canvasBackground, setCanvasBackground] = useState<string | null>(null);
   const [showConnectors, setShowConnectors] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [connectionState, setConnectionState] = useState<string>('new');
+  const webrtcRef = useRef<WebRTCConnection | null>(null);
   const { isReady, handPositions, gestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { toast } = useToast();
   
@@ -220,14 +225,54 @@ const Index = () => {
     }
   }, []);
 
+  // Handle remote stream updates
+  useEffect(() => {
+    if (remoteStream && videoRef.current && isTracking) {
+      console.log('Switching to remote stream');
+      videoRef.current.srcObject = remoteStream;
+      videoRef.current.play().catch(error => {
+        console.error('Error playing remote stream:', error);
+      });
+    }
+  }, [remoteStream, isTracking]);
+
   const handleStartTracking = async () => {
     setIsTracking(true);
     setHasStartedTracking(true);
     
+    // Set up WebRTC connection to receive smartphone stream
+    if (sessionId) {
+      console.log('Setting up WebRTC connection for session:', sessionId);
+      webrtcRef.current = new WebRTCConnection(
+        sessionId,
+        (stream) => {
+          console.log('Received remote stream from smartphone');
+          setRemoteStream(stream);
+          setConnectionState('connected');
+          toast({
+            title: "Phone Connected",
+            description: "Now using smartphone camera for hand tracking",
+          });
+        },
+        (state) => {
+          setConnectionState(state);
+        }
+      );
+      await webrtcRef.current.initializeAsAnswerer();
+    }
+    
     // Wait for React to render the video element before starting camera
     setTimeout(async () => { 
       if (videoRef.current) {
-        await startCamera();
+        // If we have a remote stream, use it instead of local camera
+        if (remoteStream) {
+          console.log('Using remote stream for hand tracking');
+          videoRef.current.srcObject = remoteStream;
+          await videoRef.current.play();
+        } else {
+          console.log('Using local camera for hand tracking');
+          await startCamera();
+        }
       } else {
         console.error('Video element not ready, retrying...');
         // Retry after another delay
@@ -1321,7 +1366,7 @@ const Index = () => {
               <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Spatial UI Controller</h1>
               <p className="text-xl text-muted-foreground">Control your interface with natural hand gestures</p>
               <div className="space-y-4 pt-8">
-                <QRCodeConnection />
+                <QRCodeConnection onSessionId={setSessionId} />
                 <Button onClick={handleStartTracking} disabled={!isReady} size="lg" className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground">
                   {isReady ? 'Start Hand Tracking' : 'Loading Model...'}
                 </Button>
@@ -1331,6 +1376,30 @@ const Index = () => {
         ) : (
           <div className="relative min-h-screen">
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
+            
+            {/* Connection status indicator */}
+            {sessionId && (
+              <div className="fixed top-20 right-4 z-50">
+                <div className={`px-4 py-2 rounded-full border ${
+                  connectionState === 'connected' 
+                    ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400'
+                    : connectionState === 'connecting'
+                    ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+                    : 'bg-gray-500/10 border-gray-500/20 text-gray-600 dark:text-gray-400'
+                }`}>
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${
+                      connectionState === 'connected' ? 'bg-green-500' :
+                      connectionState === 'connecting' ? 'bg-yellow-500' :
+                      'bg-gray-500'
+                    }`} />
+                    {connectionState === 'connected' ? '📱 Phone Connected' :
+                     connectionState === 'connecting' ? '🔄 Connecting...' :
+                     '📱 Waiting for phone'}
+                  </p>
+                </div>
+              </div>
+            )}
             
             {/* Full-screen 3D Scene for OBJ models */}
             <Scene3D
