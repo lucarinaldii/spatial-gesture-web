@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { WebRTCConnection } from '@/utils/webrtc';
 import { useToast } from '@/hooks/use-toast';
+import { DebugPanel } from '@/components/DebugPanel';
 
 const MobileCamera = () => {
   const [searchParams] = useSearchParams();
@@ -11,6 +12,7 @@ const MobileCamera = () => {
   const sessionId = searchParams.get('session');
   const webrtcRef = useRef<WebRTCConnection | null>(null);
   const [connectionState, setConnectionState] = useState<string>('new');
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,7 +32,9 @@ const MobileCamera = () => {
           variant: "destructive",
         });
       } else {
-        console.log('Mobile: Anonymous auth successful');
+        const entry = `[MOBILE] Anonymous auth successful for session ${sessionId}`;
+        console.log(entry);
+        setDebugLogs((prev) => [...prev.slice(-49), entry]);
       }
     };
 
@@ -42,10 +46,14 @@ const MobileCamera = () => {
   }, [sessionId, navigate, toast]);
 
   const handleStream = async (stream: MediaStream) => {
-    console.log('Mobile camera stream received, setting up WebRTC');
+    const baseMsg = 'Mobile camera stream received, setting up WebRTC';
+    console.log(baseMsg);
+    setDebugLogs((prev) => [...prev.slice(-49), `[MOBILE] ${baseMsg}`]);
     
     if (webrtcRef.current) {
-      console.log('WebRTC already initialized, skipping');
+      const skipMsg = 'WebRTC already initialized, skipping';
+      console.log(skipMsg);
+      setDebugLogs((prev) => [...prev.slice(-49), `[MOBILE] ${skipMsg}`]);
       return;
     }
     
@@ -57,9 +65,13 @@ const MobileCamera = () => {
         },
       });
       await channel.subscribe((status) => {
-        console.log('Mobile signaling channel status:', status);
+        const subMsg = `Mobile signaling channel status: ${status}`;
+        console.log(subMsg);
+        setDebugLogs((prev) => [...prev.slice(-49), `[MOBILE] ${subMsg}`]);
       });
-      console.log('Mobile: Sending mobile-ready signal');
+      const readyMsg = 'Mobile: Sending mobile-ready signal';
+      console.log(readyMsg);
+      setDebugLogs((prev) => [...prev.slice(-49), `[MOBILE] ${readyMsg}`]);
       await channel.send({
         type: 'broadcast',
         event: 'mobile-ready',
@@ -70,15 +82,23 @@ const MobileCamera = () => {
         sessionId!,
         undefined,
         (state) => {
-          console.log('Mobile WebRTC state changed:', state);
+          const stateMsg = `Mobile WebRTC state changed: ${state}`;
+          console.log(stateMsg);
+          setDebugLogs((prev) => [...prev.slice(-49), `[MOBILE] ${stateMsg}`]);
           setConnectionState(state);
         }
       );
       
       await webrtcRef.current.initializeAsOfferer(stream);
-      console.log('Mobile: WebRTC initialized successfully');
+      const okMsg = 'Mobile: WebRTC initialized successfully';
+      console.log(okMsg);
+      setDebugLogs((prev) => [...prev.slice(-49), `[MOBILE] ${okMsg}`]);
     } catch (error) {
       console.error('Error setting up WebRTC:', error);
+      setDebugLogs((prev) => [
+        ...prev.slice(-49),
+        `[MOBILE] Error setting up WebRTC: ${String(error)}`,
+      ]);
       toast({
         title: "Streaming Error",
         description: "Could not start video streaming",
@@ -88,7 +108,9 @@ const MobileCamera = () => {
   };
 
   const handleStreamEnd = () => {
-    console.log('Stream ended');
+    const msg = 'Stream ended';
+    console.log(msg);
+    setDebugLogs((prev) => [...prev.slice(-49), `[MOBILE] ${msg}`]);
     webrtcRef.current?.disconnect();
   };
 
@@ -105,6 +127,7 @@ const MobileCamera = () => {
       <p className="mt-4 text-sm text-muted-foreground max-w-md text-center">
         Keep this page open and position your hands in front of the camera. The desktop will track your hand gestures.
       </p>
+      <DebugPanel title="Mobile Connection Logs" logs={debugLogs} position="bottom-right" />
     </div>
   );
 };
