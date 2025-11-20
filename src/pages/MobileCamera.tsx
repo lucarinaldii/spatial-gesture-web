@@ -51,8 +51,14 @@ const MobileCamera = () => {
     
     try {
       // Notify desktop that mobile is ready
-      const channel = supabase.channel(`camera-${sessionId}`);
-      await channel.subscribe();
+      const channel = supabase.channel(`camera-${sessionId}`, {
+        config: {
+          broadcast: { self: true },
+        },
+      });
+      await channel.subscribe((status) => {
+        console.log('Mobile signaling channel status:', status);
+      });
       console.log('Mobile: Sending mobile-ready signal');
       await channel.send({
         type: 'broadcast',

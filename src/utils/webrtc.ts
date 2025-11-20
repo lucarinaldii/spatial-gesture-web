@@ -56,8 +56,12 @@ export class WebRTCConnection {
     await this.pc.setLocalDescription(offer);
     console.log('Created and set local description (offer)');
 
-    // Set up channel
-    this.channel = supabase.channel(`camera-${this.sessionId}`);
+    // Set up channel with broadcast enabled
+    this.channel = supabase.channel(`camera-${this.sessionId}`, {
+      config: {
+        broadcast: { self: true },
+      },
+    });
     
     // Listen for answer and ICE candidates
     this.channel
@@ -75,7 +79,7 @@ export class WebRTCConnection {
         }
       })
       .subscribe(async (status) => {
-        console.log('Channel status:', status);
+        console.log('Offerer channel status:', status);
         if (status === 'SUBSCRIBED') {
           // Send offer
           console.log('Sending offer to desktop');
@@ -125,8 +129,12 @@ export class WebRTCConnection {
       }
     };
 
-    // Set up channel
-    this.channel = supabase.channel(`camera-${this.sessionId}`);
+    // Set up channel with broadcast enabled
+    this.channel = supabase.channel(`camera-${this.sessionId}`, {
+      config: {
+        broadcast: { self: true },
+      },
+    });
     
     // Listen for offer and ICE candidates
     this.channel
@@ -157,7 +165,7 @@ export class WebRTCConnection {
         }
       })
       .subscribe((status) => {
-        console.log('Channel status:', status);
+        console.log('Answerer channel status:', status);
       });
   }
 
