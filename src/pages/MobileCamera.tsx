@@ -135,7 +135,7 @@ const MobileCamera = () => {
                 autoPlay
                 playsInline
                 muted
-                className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-30"
+                className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-10"
               />
               {landmarks && landmarks.length > 0 && (
                 <HandSkeleton
