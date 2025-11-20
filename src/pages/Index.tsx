@@ -15,6 +15,7 @@ import { DeleteZone } from '@/components/DeleteZone';
 import { CardHoldDeleteButton } from '@/components/CardHoldDeleteButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
+import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Plus } from 'lucide-react';
 
@@ -1320,16 +1321,7 @@ const Index = () => {
               <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Spatial UI Controller</h1>
               <p className="text-xl text-muted-foreground">Control your interface with natural hand gestures</p>
               <div className="space-y-4 pt-8">
-                <div className="glass-panel p-6 text-left space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground">Available Gestures:</h3>
-                  <ul className="space-y-2 text-muted-foreground">
-                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-primary" /><span><strong className="text-primary">Point:</strong> Move your index finger to control the cursor</span></li>
-                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-secondary" /><span><strong className="text-secondary">Pinch:</strong> Touch thumb and index finger to click</span></li>
-                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-accent" /><span><strong className="text-accent">Touch Drag:</strong> Point with closed fist and move closer to drag cards</span></li>
-                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-primary" /><span><strong className="text-primary">Merge:</strong> Pinch two cards and bring them close together</span></li>
-                    <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-secondary" /><span><strong className="text-secondary">Split:</strong> Pinch one card with both hands and pull apart</span></li>
-                  </ul>
-                </div>
+                <QRCodeConnection />
                 <Button onClick={handleStartTracking} disabled={!isReady} size="lg" className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground">
                   {isReady ? 'Start Hand Tracking' : 'Loading Model...'}
                 </Button>
