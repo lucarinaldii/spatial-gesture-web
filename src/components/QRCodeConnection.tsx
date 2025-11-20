@@ -26,16 +26,20 @@ export const QRCodeConnection = ({ onSessionId, onMobileConnected }: QRCodeConne
       }
 
       // Set up realtime channel to detect mobile connection
-      const channel = supabase.channel(`camera-${sessionId}`);
+      const channel = supabase.channel(`camera-${sessionId}`, {
+        config: {
+          broadcast: { self: true },
+        },
+      });
       channelRef.current = channel;
 
       channel
         .on('broadcast', { event: 'mobile-ready' }, ({ payload }: any) => {
-          console.log('Mobile device connected and ready!');
+          console.log('Desktop: mobile-ready received', payload);
           onMobileConnected();
         })
         .subscribe((status) => {
-          console.log('Desktop channel status:', status);
+          console.log('Desktop QR channel status:', status);
         });
     };
     
