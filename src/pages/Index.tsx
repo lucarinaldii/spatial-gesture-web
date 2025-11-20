@@ -322,15 +322,16 @@ const Index = () => {
     setIsTracking(true);
     setHasStartedTracking(true);
     
-    // Wait for React to render the video element
+    // Always start local camera for desktop interaction
+    // It will be used when no mobile session is active
     setTimeout(async () => { 
       if (videoRef.current) {
-        if (!sessionId) {
-          // Only use local camera when no phone session is active
-          addDebugLog('No phone session, starting local camera');
+        if (!sessionId || !isRemoteConnected) {
+          // Use local camera when no phone session or not connected
+          addDebugLog('Starting local camera for desktop interaction');
           await startCamera();
         } else {
-          addDebugLog('Phone session active, waiting for remote landmarks');
+          addDebugLog('Phone session active, using remote landmarks');
         }
       } else {
         console.error('Video element not ready, retrying...');

@@ -105,9 +105,13 @@ export const useRemoteGestures = (remoteLandmarks: any, remoteHandedness: any) =
     const gestures: GestureState[] = [];
 
     remoteLandmarks.forEach((handLandmarks: Landmark[], index: number) => {
+      console.log(`Remote hand ${index}: detecting gestures`);
       positions.push(calculateHandPosition(handLandmarks, index));
       gestures.push(detectGesture(handLandmarks, index));
     });
+
+    console.log('Remote hand positions:', positions);
+    console.log('Remote gesture states:', gestures);
 
     setHandPositions(positions);
     setGestureStates(gestures);
