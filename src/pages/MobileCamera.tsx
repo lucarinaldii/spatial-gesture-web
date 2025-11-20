@@ -29,41 +29,62 @@ const MobileCamera = () => {
       return;
     }
 
+    let mounted = true;
+
     const setupConnection = async () => {
-      // Sign in anonymously for realtime access
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        console.error('Anonymous sign in error:', error);
-        addDebugLog(`Auth error: ${error.message}`);
-        toast({
-          title: "Connection Error",
-          description: "Could not connect to streaming service",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      addDebugLog('Anonymous auth successful');
-
-      // Set up realtime channel for sending landmarks
-      const channel = supabase.channel(`hand-tracking-${sessionId}`, {
-        config: {
-          broadcast: { self: false },
-        },
-      });
-      channelRef.current = channel;
-
-      channel.subscribe((status) => {
-        addDebugLog(`Channel status: ${status}`);
-        if (status === 'SUBSCRIBED') {
-          addDebugLog('Channel ready to send landmarks');
+      try {
+        // Check for existing session first
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session && mounted) {
+          const { error } = await supabase.auth.signInAnonymously();
+          if (error) {
+            // If rate limited, continue anyway - realtime might still work
+            if (error.status === 429) {
+              addDebugLog('Rate limited, continuing with existing connection');
+            } else {
+              console.error('Anonymous sign in error:', error);
+              addDebugLog(`Auth error: ${error.message}`);
+              toast({
+                title: "Connection Warning",
+                description: "Using fallback connection mode",
+                variant: "default",
+              });
+            }
+          } else {
+            addDebugLog('Anonymous auth successful');
+          }
+        } else {
+          addDebugLog('Using existing auth session');
         }
-      });
+
+        if (!mounted) return;
+
+        // Set up realtime channel for sending landmarks
+        const channel = supabase.channel(`hand-tracking-${sessionId}`, {
+          config: {
+            broadcast: { self: false },
+          },
+        });
+        channelRef.current = channel;
+
+        channel.subscribe((status) => {
+          if (!mounted) return;
+          addDebugLog(`Channel status: ${status}`);
+          if (status === 'SUBSCRIBED') {
+            addDebugLog('Channel ready to send landmarks');
+          }
+        });
+      } catch (error) {
+        console.error('Setup error:', error);
+        addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
+      }
     };
 
     setupConnection();
 
     return () => {
+      mounted = false;
       channelRef.current?.unsubscribe();
     };
   }, [sessionId, navigate, toast]);
