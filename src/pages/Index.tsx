@@ -730,13 +730,14 @@ const Index = () => {
             
             // Check for 2D objects (cards, images, etc.) - exclude shaking cards
             const target2DObject = objects.find((obj) => {
-              if (obj.type === 'obj') return false; // Skip 3D objects
-              if (showHoldDeleteButton === obj.id) return false; // Skip shaking cards
-              
-              const adjustedX = obj.position.x + canvasOffset.x;
-              const adjustedY = obj.position.y + canvasOffset.y;
-              return Math.abs(handX - adjustedX) < 16 && Math.abs(handY - adjustedY) < 12;
-            });
+               if (obj.type === 'obj') return false; // Skip 3D objects
+               if (showHoldDeleteButton === obj.id) return false; // Skip shaking cards
+               
+               const adjustedX = obj.position.x + canvasOffset.x;
+               const adjustedY = obj.position.y + canvasOffset.y;
+               // Tighter grab zone so you must be close to the card center
+               return Math.abs(handX - adjustedX) < 8 && Math.abs(handY - adjustedY) < 6;
+             });
             
             const targetObject = target3DObject || target2DObject;
 
