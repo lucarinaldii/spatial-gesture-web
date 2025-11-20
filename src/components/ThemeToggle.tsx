@@ -8,6 +8,19 @@ export const ThemeToggle = () => {
     return saved ? saved === "dark" : false;
   });
 
+  // Set initial theme on mount
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const saved = localStorage.getItem("theme");
+    const shouldBeDark = saved ? saved === "dark" : false;
+    
+    if (shouldBeDark) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, []);
+
   useEffect(() => {
     const root = window.document.documentElement;
     if (isDark) {
