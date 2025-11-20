@@ -150,7 +150,7 @@ const MobileCamera = () => {
             <p className="text-sm text-green-600 dark:text-green-400 font-medium">
               ✓ Tracking Active - Move your hands
             </p>
-            <div className="relative w-full max-w-md mx-auto aspect-video bg-background/50 rounded-lg border-2 border-primary">
+            <div className="relative w-full max-w-md mx-auto aspect-video">
               <video
                 ref={videoRef}
                 autoPlay
@@ -188,9 +188,9 @@ const MobileCamera = () => {
                   }}
                 />
               )}
-              <div className="absolute bottom-2 right-2 text-xs text-primary font-mono bg-background/80 px-2 py-1 rounded">
-                {landmarks?.length || 0} landmarks
-              </div>
+            </div>
+            <div className="text-xs text-primary font-mono text-center">
+              {landmarks?.length || 0} landmarks
             </div>
           </div>
         )}
