@@ -133,8 +133,11 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
         const endDepthScale = 1 + endZ * handParams.skeletonZDepth;
 
         ctx.beginPath();
-        ctx.moveTo(startPoint.x * canvas.width * startDepthScale, startPoint.y * canvas.height * startDepthScale);
-        ctx.lineTo(endPoint.x * canvas.width * endDepthScale, endPoint.y * canvas.height * endDepthScale);
+        // Preserve aspect ratio - use height as base to prevent horizontal stretch
+        const aspectRatio = videoWidth / videoHeight;
+        const baseScale = canvas.height / videoHeight;
+        ctx.moveTo(startPoint.x * canvas.height * aspectRatio * startDepthScale, startPoint.y * canvas.height * startDepthScale);
+        ctx.lineTo(endPoint.x * canvas.height * aspectRatio * endDepthScale, endPoint.y * canvas.height * endDepthScale);
         ctx.stroke();
       });
 
@@ -148,9 +151,10 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
         const tip = hand[tipIndex];
         const tipZ = tip.z || 0;
         const depthScale = 1 + tipZ * handParams.skeletonZDepth;
+        const aspectRatio = videoWidth / videoHeight;
         ctx.beginPath();
         ctx.arc(
-          tip.x * canvas.width * depthScale,
+          tip.x * canvas.height * aspectRatio * depthScale,
           tip.y * canvas.height * depthScale,
           3,
           0,
