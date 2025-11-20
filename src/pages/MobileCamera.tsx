@@ -42,13 +42,19 @@ const MobileCamera = () => {
   const handleStream = async (stream: MediaStream) => {
     console.log('Mobile camera stream received, setting up WebRTC');
     
+    if (webrtcRef.current) {
+      console.log('WebRTC already initialized, skipping');
+      return;
+    }
+    
     try {
       webrtcRef.current = new WebRTCConnection(
         sessionId!,
         undefined,
         (state) => {
+          console.log('WebRTC state changed:', state);
           setConnectionState(state);
-          if (state === 'connected') {
+          if (state === 'connected' && !toast) {
             toast({
               title: "Connected",
               description: "Your camera is now streaming to the desktop",
@@ -58,6 +64,7 @@ const MobileCamera = () => {
       );
       
       await webrtcRef.current.initializeAsOfferer(stream);
+      console.log('WebRTC initialized successfully');
     } catch (error) {
       console.error('Error setting up WebRTC:', error);
       toast({
