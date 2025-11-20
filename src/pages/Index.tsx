@@ -735,8 +735,8 @@ const Index = () => {
                
                const adjustedX = obj.position.x + canvasOffset.x;
                const adjustedY = obj.position.y + canvasOffset.y;
-               // Tighter grab zone so you must be close to the card center
-               return Math.abs(handX - adjustedX) < 8 && Math.abs(handY - adjustedY) < 6;
+               // Larger grab zone to allow grabbing near edges
+               return Math.abs(handX - adjustedX) < 18 && Math.abs(handY - adjustedY) < 14;
              });
             
             const targetObject = target3DObject || target2DObject;
