@@ -245,61 +245,74 @@ const Index = () => {
   useEffect(() => {
     if (!sessionId) return;
 
+    let mounted = true;
+
     const setupChannel = async () => {
-      // Check if already signed in to avoid rate limit
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        const { error } = await supabase.auth.signInAnonymously();
-        if (error) {
-          console.error('Anonymous sign in error:', error);
-          addDebugLog(`Auth error: ${error.message}`);
-          toast({
-            title: "Connection Error",
-            description: "Could not connect. Please refresh and try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-        addDebugLog('Anonymous auth successful');
-      } else {
-        addDebugLog('Already authenticated');
-      }
-
-      addDebugLog(`Setting up landmark channel for session ${sessionId}`);
-      
-      const channel = supabase.channel(`hand-tracking-${sessionId}`, {
-        config: {
-          broadcast: { self: false },
-        },
-      });
-      channelRef.current = channel;
-
-      channel
-        .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
-          setRemoteLandmarks(payload.landmarks);
-          setRemoteHandedness(payload.handedness);
-          if (!isRemoteConnected) {
-            setIsRemoteConnected(true);
-            addDebugLog('Receiving landmarks from mobile');
-            toast({
-              title: "Phone Connected",
-              description: "Receiving hand tracking data from your phone",
-            });
-            // Auto-start tracking when first landmark arrives
-            if (!isTracking) {
-              handleStartTracking();
+      try {
+        // Check if already signed in to avoid rate limit
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session && mounted) {
+          const { error } = await supabase.auth.signInAnonymously();
+          if (error) {
+            // If rate limited, wait and the channel will work anyway with existing connection
+            if (error.status === 429) {
+              addDebugLog('Rate limited, using existing connection');
+            } else {
+              console.error('Auth error:', error);
+              addDebugLog(`Auth error: ${error.message}`);
+              return;
             }
+          } else {
+            addDebugLog('Anonymous auth successful');
           }
-        })
-        .subscribe((status) => {
-          addDebugLog(`Landmark channel status: ${status}`);
+        } else {
+          addDebugLog('Using existing auth session');
+        }
+
+        if (!mounted) return;
+
+        addDebugLog(`Setting up landmark channel for session ${sessionId}`);
+        
+        const channel = supabase.channel(`hand-tracking-${sessionId}`, {
+          config: {
+            broadcast: { self: false },
+          },
         });
+        channelRef.current = channel;
+
+        channel
+          .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
+            if (!mounted) return;
+            setRemoteLandmarks(payload.landmarks);
+            setRemoteHandedness(payload.handedness);
+            if (!isRemoteConnected) {
+              setIsRemoteConnected(true);
+              addDebugLog('Receiving landmarks from mobile');
+              toast({
+                title: "Phone Connected",
+                description: "Receiving hand tracking data from your phone",
+              });
+              // Auto-start tracking when first landmark arrives
+              if (!isTracking) {
+                handleStartTracking();
+              }
+            }
+          })
+          .subscribe((status) => {
+            if (!mounted) return;
+            addDebugLog(`Landmark channel status: ${status}`);
+          });
+      } catch (error) {
+        console.error('Setup error:', error);
+        addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
+      }
     };
 
     setupChannel();
 
     return () => {
+      mounted = false;
       channelRef.current?.unsubscribe();
     };
   }, [sessionId, addDebugLog, isRemoteConnected, toast, isTracking]);
