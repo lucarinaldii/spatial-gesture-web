@@ -14,6 +14,7 @@ import { ObjectManipulationIndicator } from '@/components/ObjectManipulationIndi
 import { DeleteZone } from '@/components/DeleteZone';
 import { CardHoldDeleteButton } from '@/components/CardHoldDeleteButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { GesturesInfo } from '@/components/GesturesInfo';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Plus } from 'lucide-react';
 
@@ -140,7 +141,7 @@ const Index = () => {
   const [mergingCards, setMergingCards] = useState<Set<string>>(new Set());
   const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
-  const [show3DHand, setShow3DHand] = useState(true);
+  const [show3DHand, setShow3DHand] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [showPlane, setShowPlane] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -1310,6 +1311,7 @@ const Index = () => {
       } : undefined}
     >
       <ThemeToggle />
+      <GesturesInfo />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {!isTracking ? (
