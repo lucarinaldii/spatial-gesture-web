@@ -240,11 +240,24 @@ const Index = () => {
     if (!sessionId) return;
 
     const setupChannel = async () => {
-      // Sign in anonymously
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        console.error('Anonymous sign in error:', error);
-        return;
+      // Check if already signed in to avoid rate limit
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) {
+          console.error('Anonymous sign in error:', error);
+          addDebugLog(`Auth error: ${error.message}`);
+          toast({
+            title: "Connection Error",
+            description: "Could not connect. Please refresh and try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        addDebugLog('Anonymous auth successful');
+      } else {
+        addDebugLog('Already authenticated');
       }
 
       addDebugLog(`Setting up landmark channel for session ${sessionId}`);
@@ -267,6 +280,10 @@ const Index = () => {
               title: "Phone Connected",
               description: "Receiving hand tracking data from your phone",
             });
+            // Auto-start tracking when first landmark arrives
+            if (!isTracking) {
+              handleStartTracking();
+            }
           }
         })
         .subscribe((status) => {
@@ -279,7 +296,7 @@ const Index = () => {
     return () => {
       channelRef.current?.unsubscribe();
     };
-  }, [sessionId, addDebugLog, isRemoteConnected, toast]);
+  }, [sessionId, addDebugLog, isRemoteConnected, toast, isTracking]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');

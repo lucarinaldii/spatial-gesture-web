@@ -135,38 +135,11 @@ const MobileCamera = () => {
                 autoPlay
                 playsInline
                 muted
-                className="w-full rounded-lg border-2 border-primary"
+                className="hidden"
               />
-              {landmarks && landmarks.length > 0 && (
-                <HandSkeleton
-                  landmarks={landmarks}
-                  videoWidth={videoRef.current?.videoWidth || 640}
-                  videoHeight={videoRef.current?.videoHeight || 480}
-                  handedness={handedness}
-                  alignmentParams={{
-                    leftHand: {
-                      skeletonScale: 1,
-                      skeletonXOffset: 0,
-                      skeletonYOffset: 0,
-                      skeletonZDepth: 0,
-                      hand3DScale: 1,
-                      hand3DXOffset: 0,
-                      hand3DYOffset: 0,
-                      hand3DZDepth: 0,
-                    },
-                    rightHand: {
-                      skeletonScale: 1,
-                      skeletonXOffset: 0,
-                      skeletonYOffset: 0,
-                      skeletonZDepth: 0,
-                      hand3DScale: 1,
-                      hand3DXOffset: 0,
-                      hand3DYOffset: 0,
-                      hand3DZDepth: 0,
-                    },
-                  }}
-                />
-              )}
+              <div className="text-sm text-muted-foreground">
+                Landmarks detected: {landmarks?.length || 0}
+              </div>
             </div>
           </div>
         )}
