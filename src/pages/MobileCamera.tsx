@@ -135,7 +135,7 @@ const MobileCamera = () => {
                 autoPlay
                 playsInline
                 muted
-                className="absolute inset-0 w-full h-full object-cover rounded-lg opacity-10"
+                className="hidden"
               />
               {landmarks && landmarks.length > 0 && (
                 <HandSkeleton
@@ -174,7 +174,7 @@ const MobileCamera = () => {
           </div>
         )}
       </div>
-      <DebugPanel title="Mobile Tracking Logs" logs={debugLogs} position="bottom-right" />
+      {/* Debug panel removed */}
     </div>
   );
 };

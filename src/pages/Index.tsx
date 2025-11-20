@@ -1425,8 +1425,7 @@ const Index = () => {
           <div className="relative min-h-screen">
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
-            {/* Debug panel */}
-            <DebugPanel title="Desktop Connection Logs" logs={debugLogs} position="bottom-left" />
+            {/* Debug panel - removed */}
             
             {/* Full-screen 3D Scene for OBJ models */}
             <Scene3D
@@ -1442,7 +1441,7 @@ const Index = () => {
               gestureStates={gestureStates}
               landmarks={landmarks}
               onUpdateObject={handleUpdate3DObject}
-              showPlane={showPlane}
+              showPlane={false}
             />
             
             {/* Hidden file inputs */}
