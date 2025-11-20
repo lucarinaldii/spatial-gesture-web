@@ -17,6 +17,8 @@ export interface SettingsPanelProps {
   setShowSkeleton: (show: boolean) => void;
   showPlane: boolean;
   setShowPlane: (show: boolean) => void;
+  showCameraPreview: boolean;
+  setShowCameraPreview: (show: boolean) => void;
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;
@@ -40,6 +42,8 @@ export const SettingsPanel = ({
   setShowSkeleton,
   showPlane,
   setShowPlane,
+  showCameraPreview,
+  setShowCameraPreview,
   isListening,
   startListening,
   stopListening,
@@ -225,6 +229,18 @@ export const SettingsPanel = ({
               id="plane"
               checked={showPlane}
               onCheckedChange={setShowPlane}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="camera-preview" className="flex items-center gap-2 cursor-pointer">
+              {showCameraPreview ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              Phone Camera Preview
+            </Label>
+            <Switch
+              id="camera-preview"
+              checked={showCameraPreview}
+              onCheckedChange={setShowCameraPreview}
             />
           </div>
         </div>
