@@ -335,12 +335,6 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
         <directionalLight position={[-5, -5, -8]} intensity={0.3} color="#ffeedd" />
         <pointLight position={[0, 5, 15]} intensity={0.4} color="#ffe4d1" />
         
-        {/* Subtle ground plane without shadows */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]}>
-          <planeGeometry args={[30, 30]} />
-          <meshBasicMaterial color="#000000" transparent opacity={0.1} />
-        </mesh>
-        
         {/* Render each detected hand */}
         {landmarks.map((handLandmarks, index) => {
           // Calculate hand center from wrist (0) and middle finger base (9)
