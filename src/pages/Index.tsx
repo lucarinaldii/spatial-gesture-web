@@ -405,7 +405,7 @@ const Index = () => {
       id: Date.now().toString(),
       type: 'card',
       title: 'New Card',
-      description: 'Created by voice command',
+      description: 'Click to edit',
       position: { x: 50, y: 50 },
       zIndex: maxZIndexRef.current,
       rotation: { x: 0, y: 0, z: 0 },
@@ -414,7 +414,7 @@ const Index = () => {
     };
     
     setObjects(prev => [...prev, newCard]);
-    toast({ title: "Card added!", description: "New card created by voice command" });
+    toast({ title: "Card added!", description: "New card created" });
   }, [toast]);
 
   const handleDeleteCard = useCallback(() => {
@@ -432,7 +432,7 @@ const Index = () => {
     
     toast({ 
       title: "Card deleted!", 
-      description: `${currentGrabbedCardIds.length} card${currentGrabbedCardIds.length > 1 ? 's' : ''} deleted by voice command` 
+      description: `${currentGrabbedCardIds.length} card${currentGrabbedCardIds.length > 1 ? 's' : ''} deleted` 
     });
   }, [grabbedObjects, toast]);
 
@@ -442,7 +442,7 @@ const Index = () => {
     setGrabbedObjects(new Map());
     toast({ 
       title: "Canvas cleared!", 
-      description: "All cards removed by voice command" 
+      description: "All cards removed" 
     });
   }, [toast]);
 
