@@ -92,7 +92,7 @@ const Index = () => {
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'mobile-remote' | 'local'>('initial');
   const channelRef = useRef<any>(null);
-  const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking(trackingMode === 'local');
+  const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking(trackingMode !== 'mobile-remote');
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
   
   // Use remote gestures if available, otherwise use local
