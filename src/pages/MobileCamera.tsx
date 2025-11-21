@@ -33,34 +33,9 @@ const MobileCamera = () => {
 
     const setupConnection = async () => {
       try {
-        // Check for existing session first
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session && mounted) {
-          const { error } = await supabase.auth.signInAnonymously();
-          if (error) {
-            // If rate limited, continue anyway - realtime might still work
-            if (error.status === 429) {
-              addDebugLog('Rate limited, continuing with existing connection');
-            } else {
-              console.error('Anonymous sign in error:', error);
-              addDebugLog(`Auth error: ${error.message}`);
-              toast({
-                title: "Connection Warning",
-                description: "Using fallback connection mode",
-                variant: "default",
-              });
-            }
-          } else {
-            addDebugLog('Anonymous auth successful');
-          }
-        } else {
-          addDebugLog('Using existing auth session');
-        }
+        addDebugLog('Setting up realtime channel...');
 
-        if (!mounted) return;
-
-        // Set up realtime channel for sending landmarks
+        // Set up realtime channel for sending landmarks (no auth required for broadcast)
         const channel = supabase.channel(`hand-tracking-${sessionId}`, {
           config: {
             broadcast: { self: false },
@@ -73,6 +48,17 @@ const MobileCamera = () => {
           addDebugLog(`Channel status: ${status}`);
           if (status === 'SUBSCRIBED') {
             addDebugLog('Channel ready to send landmarks');
+            toast({
+              title: "Connected",
+              description: "Hand tracking ready",
+            });
+          } else if (status === 'CHANNEL_ERROR') {
+            addDebugLog('Channel error');
+            toast({
+              title: "Connection Error",
+              description: "Unable to connect. Please refresh and try again.",
+              variant: "destructive",
+            });
           }
         });
       } catch (error) {
