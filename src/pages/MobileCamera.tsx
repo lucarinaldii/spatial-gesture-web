@@ -13,8 +13,10 @@ const MobileCamera = () => {
   const channelRef = useRef<any>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const { toast } = useToast();
-  const { isReady, landmarks, handedness, videoRef, startCamera } = useHandTracking();
+  const { isReady, landmarks, handedness, videoRef, startCamera } = useHandTracking(true);
   const [isTracking, setIsTracking] = useState(false);
+  const [isChannelReady, setIsChannelReady] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '';
@@ -33,6 +35,8 @@ const MobileCamera = () => {
 
     const setupConnection = async () => {
       try {
+        setLoadingStatus('loading');
+        
         // Check for existing session first
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -73,11 +77,13 @@ const MobileCamera = () => {
           addDebugLog(`Channel status: ${status}`);
           if (status === 'SUBSCRIBED') {
             addDebugLog('Channel ready to send landmarks');
+            setIsChannelReady(true);
           }
         });
       } catch (error) {
         console.error('Setup error:', error);
         addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
+        setLoadingStatus('error');
       }
     };
 
@@ -88,6 +94,14 @@ const MobileCamera = () => {
       channelRef.current?.unsubscribe();
     };
   }, [sessionId, navigate, toast]);
+
+  // Update loading status when everything is ready
+  useEffect(() => {
+    if (isReady && isChannelReady) {
+      setLoadingStatus('ready');
+      addDebugLog('All systems ready - MediaPipe and channel initialized');
+    }
+  }, [isReady, isChannelReady]);
 
   // Send landmarks to desktop when they update - throttled for performance
   useEffect(() => {
@@ -112,39 +126,73 @@ const MobileCamera = () => {
   }, [landmarks, handedness]);
 
   const handleStartTracking = async () => {
-    addDebugLog('Starting hand tracking on mobile');
-    setIsTracking(true);
-    
-    setTimeout(async () => {
-      if (videoRef.current) {
-        await startCamera();
-        addDebugLog('Camera started, tracking active');
-      }
-    }, 100);
+    try {
+      addDebugLog('Starting hand tracking on mobile');
+      setIsTracking(true);
+      
+      // Start camera immediately - no delay
+      await startCamera();
+      addDebugLog('Camera started, tracking active');
+      
+      toast({
+        title: "Tracking Started",
+        description: "Move your hands to control the desktop",
+      });
+    } catch (error) {
+      console.error('Failed to start tracking:', error);
+      addDebugLog(`Failed to start camera: ${error instanceof Error ? error.message : 'Unknown'}`);
+      setIsTracking(false);
+      toast({
+        title: "Camera Error",
+        description: "Failed to access camera. Please check permissions.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="text-center space-y-6 max-w-2xl">
+      <div className="text-center space-y-6 max-w-2xl w-full">
         <h1 className="text-4xl font-bold text-foreground">Hand Tracking</h1>
         <p className="text-muted-foreground">
           Session: {sessionId}
         </p>
 
-        {!isTracking ? (
+        {loadingStatus === 'loading' && (
+          <div className="space-y-4">
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <p className="text-lg text-muted-foreground">
+                Initializing hand tracking system...
+              </p>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>✓ Loading AI models</p>
+                <p className={isChannelReady ? "text-green-600 dark:text-green-400" : ""}>
+                  {isChannelReady ? "✓" : "⏳"} Connecting to desktop
+                </p>
+                <p className={isReady ? "text-green-600 dark:text-green-400" : ""}>
+                  {isReady ? "✓" : "⏳"} Preparing camera system
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {loadingStatus === 'ready' && !isTracking && (
           <div className="space-y-4">
             <p className="text-lg text-muted-foreground">
               Your hand movements will control the desktop interface
             </p>
             <button
               onClick={handleStartTracking}
-              disabled={!isReady}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold disabled:opacity-50"
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
             >
-              {isReady ? 'Start Hand Tracking' : 'Loading...'}
+              Start Hand Tracking
             </button>
           </div>
-        ) : (
+        )}
+        
+        {isTracking && (
           <div className="space-y-4">
             <p className="text-sm text-green-600 dark:text-green-400 font-medium">
               ✓ Tracking Active - Move your hands
@@ -189,12 +237,19 @@ const MobileCamera = () => {
               )}
             </div>
             <div className="text-xs text-primary font-mono text-center">
-              {landmarks?.length || 0} landmarks
+              {landmarks?.length || 0} hands detected
             </div>
           </div>
         )}
+
+        {loadingStatus === 'error' && (
+          <div className="space-y-4">
+            <p className="text-lg text-destructive">
+              Failed to initialize. Please refresh and try again.
+            </p>
+          </div>
+        )}
       </div>
-      {/* Debug panel removed */}
     </div>
   );
 };
