@@ -122,6 +122,9 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
       ctx.shadowBlur = 0;
       ctx.shadowColor = 'transparent';
 
+      const baseWidth = canvas.width;
+      const baseHeight = canvas.height;
+
       HAND_CONNECTIONS.forEach(([start, end]) => {
         const startPoint = hand[start];
         const endPoint = hand[end];
@@ -133,11 +136,9 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
         const endDepthScale = 1 + endZ * handParams.skeletonZDepth;
 
         ctx.beginPath();
-        // Preserve aspect ratio - use height as base to prevent horizontal stretch
-        const aspectRatio = videoWidth / videoHeight;
-        const baseScale = canvas.height / videoHeight;
-        ctx.moveTo(startPoint.x * canvas.height * aspectRatio * startDepthScale, startPoint.y * canvas.height * startDepthScale);
-        ctx.lineTo(endPoint.x * canvas.height * aspectRatio * endDepthScale, endPoint.y * canvas.height * endDepthScale);
+        // Use canvas width/height directly to avoid horizontal stretching
+        ctx.moveTo(startPoint.x * baseWidth * startDepthScale, startPoint.y * baseHeight * startDepthScale);
+        ctx.lineTo(endPoint.x * baseWidth * endDepthScale, endPoint.y * baseHeight * endDepthScale);
         ctx.stroke();
       });
 
@@ -151,11 +152,10 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
         const tip = hand[tipIndex];
         const tipZ = tip.z || 0;
         const depthScale = 1 + tipZ * handParams.skeletonZDepth;
-        const aspectRatio = videoWidth / videoHeight;
         ctx.beginPath();
         ctx.arc(
-          tip.x * canvas.height * aspectRatio * depthScale,
-          tip.y * canvas.height * depthScale,
+          tip.x * baseWidth * depthScale,
+          tip.y * baseHeight * depthScale,
           3,
           0,
           2 * Math.PI
@@ -170,8 +170,8 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
       const wristDepthScale = 1 + wristZ * handParams.skeletonZDepth;
       ctx.beginPath();
       ctx.arc(
-        wrist.x * canvas.width * wristDepthScale,
-        wrist.y * canvas.height * wristDepthScale,
+        wrist.x * baseWidth * wristDepthScale,
+        wrist.y * baseHeight * wristDepthScale,
         3,
         0,
         2 * Math.PI
