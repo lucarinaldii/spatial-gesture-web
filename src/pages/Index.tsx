@@ -291,11 +291,23 @@ const Index = () => {
           }
         }
       })
-      .subscribe((status) => {
+      .subscribe((status, error) => {
         if (!mounted) return;
         addDebugLog(`Landmark channel status: ${status}`);
+        
+        if (error) {
+          addDebugLog(`Desktop channel error: ${error.message || JSON.stringify(error)}`);
+        }
+        
         if (status === 'SUBSCRIBED') {
           addDebugLog('Desktop subscribed to landmark channel, waiting for phone to scan QR...');
+        } else if (status === 'CHANNEL_ERROR') {
+          addDebugLog('Desktop channel connection failed');
+          toast({
+            title: "Connection Issue",
+            description: "Unable to connect to realtime service. Please refresh.",
+            variant: "destructive",
+          });
         }
       });
 
