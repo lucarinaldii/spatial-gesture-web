@@ -15,8 +15,6 @@ const MobileCamera = () => {
   const { toast } = useToast();
   const { isReady, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const [isTracking, setIsTracking] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [loadingStep, setLoadingStep] = useState<string>('Initializing...');
 
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '';
@@ -122,95 +120,43 @@ const MobileCamera = () => {
 
   const handleStartTracking = async () => {
     addDebugLog('Starting hand tracking on mobile');
-    setCameraError(null);
-    setLoadingStep('Requesting camera access...');
+    setIsTracking(true);
     
-    try {
-      setIsTracking(true);
-      setLoadingStep('Starting camera...');
-      
+    setTimeout(async () => {
       if (videoRef.current) {
         await startCamera();
         addDebugLog('Camera started, tracking active');
-        setLoadingStep('');
       }
-    } catch (error) {
-      console.error('Camera error:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Failed to access camera';
-      setCameraError(errorMsg);
-      addDebugLog(`Camera error: ${errorMsg}`);
-      setIsTracking(false);
-      
-      toast({
-        title: "Camera Error",
-        description: "Please allow camera access and try again",
-        variant: "destructive",
-      });
-    }
+    }, 100);
   };
-
-  // Auto-start tracking when MediaPipe is ready
-  useEffect(() => {
-    if (isReady && !isTracking && !cameraError) {
-      addDebugLog('MediaPipe ready, auto-starting camera');
-      handleStartTracking();
-    }
-  }, [isReady]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="text-center space-y-6 max-w-2xl w-full">
+      <div className="text-center space-y-6 max-w-2xl">
         <h1 className="text-4xl font-bold text-foreground">Hand Tracking</h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground">
           Session: {sessionId}
         </p>
 
-        {cameraError ? (
+        {!isTracking ? (
           <div className="space-y-4">
-            <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-4">
-              <p className="text-destructive font-semibold mb-2">Camera Error</p>
-              <p className="text-sm text-muted-foreground">{cameraError}</p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Please check your camera permissions in browser settings
+            <p className="text-lg text-muted-foreground">
+              Your hand movements will control the desktop interface
             </p>
             <button
               onClick={handleStartTracking}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold"
+              disabled={!isReady}
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold disabled:opacity-50"
             >
-              Try Again
+              {isReady ? 'Start Hand Tracking' : 'Loading...'}
             </button>
-          </div>
-        ) : !isReady ? (
-          <div className="space-y-4">
-            <div className="animate-pulse">
-              <div className="h-12 w-12 mx-auto mb-4 rounded-full bg-primary/20"></div>
-              <p className="text-lg text-primary font-medium">{loadingStep}</p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Setting up hand tracking...
-            </p>
-          </div>
-        ) : !isTracking ? (
-          <div className="space-y-4">
-            <div className="animate-pulse">
-              <p className="text-lg text-primary font-medium">{loadingStep}</p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Preparing camera...
-            </p>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-3">
-              <p className="text-green-600 dark:text-green-400 font-medium">
-                ✓ Tracking Active
-              </p>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Move your hands to control the desktop interface
+            <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+              ✓ Tracking Active - Move your hands
             </p>
-            <div className="relative w-full mx-auto aspect-video bg-black/5 rounded-lg overflow-hidden border border-border">
+            <div className="relative w-full max-w-md mx-auto aspect-video">
               <video
                 ref={videoRef}
                 autoPlay
@@ -218,7 +164,7 @@ const MobileCamera = () => {
                 muted
                 className="hidden"
               />
-              {landmarks && landmarks.length > 0 ? (
+              {landmarks && landmarks.length > 0 && (
                 <HandSkeleton
                   landmarks={landmarks}
                   videoWidth={videoRef.current?.videoWidth || 640}
@@ -247,21 +193,15 @@ const MobileCamera = () => {
                     },
                   }}
                 />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground text-sm">Show your hand to the camera</p>
-                </div>
               )}
             </div>
-            <div className="flex items-center justify-center gap-2 text-xs font-mono">
-              <div className={`h-2 w-2 rounded-full ${landmarks?.length > 0 ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-              <span className="text-muted-foreground">
-                {landmarks?.length > 0 ? `${landmarks.length} hand(s) detected` : 'No hands detected'}
-              </span>
+            <div className="text-xs text-primary font-mono text-center">
+              {landmarks?.length || 0} landmarks
             </div>
           </div>
         )}
       </div>
+      {/* Debug panel removed */}
     </div>
   );
 };
