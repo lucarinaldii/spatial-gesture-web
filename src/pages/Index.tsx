@@ -242,10 +242,9 @@ const Index = () => {
 
   // Set up realtime channel to receive landmarks from mobile
   useEffect(() => {
-    if (!sessionId || trackingMode !== 'mobile-qr') return;
+    if (!sessionId) return;
 
     let mounted = true;
-    let hasAutoStarted = false;
 
     const setupChannel = async () => {
       try {
@@ -296,9 +295,15 @@ const Index = () => {
 
     return () => {
       mounted = false;
-      channelRef.current?.unsubscribe();
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
+      }
+      setIsRemoteConnected(false);
+      setRemoteLandmarks(null);
+      setRemoteHandedness(null);
     };
-  }, [sessionId, trackingMode, addDebugLog, isRemoteConnected, toast]);
+  }, [sessionId, addDebugLog, isRemoteConnected, toast]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
