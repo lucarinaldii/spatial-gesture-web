@@ -249,30 +249,7 @@ const Index = () => {
 
     const setupChannel = async () => {
       try {
-        // Check if already signed in to avoid rate limit
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session && mounted) {
-          const { error } = await supabase.auth.signInAnonymously();
-          if (error) {
-            // If rate limited, wait and the channel will work anyway with existing connection
-            if (error.status === 429) {
-              addDebugLog('Rate limited, using existing connection');
-            } else {
-              console.error('Auth error:', error);
-              addDebugLog(`Auth error: ${error.message}`);
-              return;
-            }
-          } else {
-            addDebugLog('Anonymous auth successful');
-          }
-        } else {
-          addDebugLog('Using existing auth session');
-        }
-
-        if (!mounted) return;
-
-        addDebugLog(`Setting up landmark channel for session ${sessionId}`);
+        addDebugLog(`Setting up realtime channel for session ${sessionId}`);
         
         const channel = supabase.channel(`hand-tracking-${sessionId}`, {
           config: {
