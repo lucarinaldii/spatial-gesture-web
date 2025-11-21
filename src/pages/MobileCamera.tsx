@@ -117,6 +117,20 @@ const MobileCamera = () => {
         throw new Error('MediaPipe not ready - please wait a moment and try again');
       }
       
+      // Send "started" event to desktop immediately
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'tracking-started',
+          payload: {
+            timestamp: Date.now(),
+          }
+        }).catch((error: Error) => {
+          console.error('Error sending start event:', error);
+        });
+        addDebugLog('Sent tracking-started event to desktop');
+      }
+      
       addDebugLog('Requesting camera access...');
       await startCamera();
       setIsTracking(true);
@@ -225,8 +239,8 @@ const MobileCamera = () => {
                         x2={hand[end].x * 640}
                         y2={hand[end].y * 480}
                         stroke="hsl(var(--primary))"
-                        strokeWidth="3"
-                        opacity="0.8"
+                        strokeWidth="1.5"
+                        opacity="0.7"
                       />
                     ))}
                     {/* Draw landmark points */}
@@ -235,9 +249,9 @@ const MobileCamera = () => {
                         key={idx}
                         cx={landmark.x * 640}
                         cy={landmark.y * 480}
-                        r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 8 : 5}
+                        r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 4 : 2.5}
                         fill="hsl(var(--primary))"
-                        opacity="0.9"
+                        opacity="0.8"
                       />
                     ))}
                   </g>

@@ -259,6 +259,17 @@ const Index = () => {
         channelRef.current = channel;
 
         channel
+          .on('broadcast', { event: 'tracking-started' }, ({ payload }: any) => {
+            if (!mounted) return;
+            addDebugLog('Mobile user clicked Start - switching to canvas');
+            setIsTracking(true);
+            setHasStartedTracking(true);
+            setTrackingMode('local');
+            toast({
+              title: "Mobile Connected",
+              description: "Hand tracking starting...",
+            });
+          })
           .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
             if (!mounted) return;
             setRemoteLandmarks(payload.landmarks);
@@ -266,19 +277,6 @@ const Index = () => {
             if (!isRemoteConnected) {
               setIsRemoteConnected(true);
               addDebugLog('Receiving landmarks from mobile');
-              toast({
-                title: "Phone Connected",
-                description: "Starting hand tracking...",
-              });
-              // Auto-start tracking when first landmark arrives
-              if (!hasAutoStarted) {
-                hasAutoStarted = true;
-                setIsTracking(true);
-                setHasStartedTracking(true);
-                // Switch to canvas view immediately when mobile connects
-                setTrackingMode('local');
-                addDebugLog('Auto-started tracking and switched to canvas view');
-              }
             }
           })
           .subscribe((status) => {
