@@ -260,76 +260,48 @@ const Index = () => {
 
     let mounted = true;
 
-    const setupChannel = async () => {
-      try {
-        // Check if already signed in to avoid rate limit
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session && mounted) {
-          const { error } = await supabase.auth.signInAnonymously();
-          if (error) {
-            // If rate limited, wait and the channel will work anyway with existing connection
-            if (error.status === 429) {
-              addDebugLog('Rate limited, using existing connection');
-            } else {
-              console.error('Auth error:', error);
-              addDebugLog(`Auth error: ${error.message}`);
-              return;
-            }
-          } else {
-            addDebugLog('Anonymous auth successful');
-          }
-        } else {
-          addDebugLog('Using existing auth session');
-        }
+    addDebugLog(`Preparing realtime channel for session ${sessionId}`);
 
+    const channel = supabase.channel(`hand-tracking-${sessionId}`, {
+      config: {
+        broadcast: { self: false },
+      },
+    });
+    channelRef.current = channel;
+
+    channel
+      .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
         if (!mounted) return;
-
-        addDebugLog(`Setting up landmark channel for session ${sessionId}`);
-        
-        const channel = supabase.channel(`hand-tracking-${sessionId}`, {
-          config: {
-            broadcast: { self: false },
-          },
-        });
-        channelRef.current = channel;
-
-        channel
-          .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
-            if (!mounted) return;
-            setRemoteLandmarks(payload.landmarks);
-            setRemoteHandedness(payload.handedness);
-            if (!isRemoteConnected) {
-              setIsRemoteConnected(true);
-              setTrackingMode('local'); // Switch away from QR code screen
-              addDebugLog('Receiving landmarks from mobile');
-              toast({
-                title: "Phone Connected",
-                description: "Receiving hand tracking data from your phone",
-              });
-              // Auto-start tracking when first landmark arrives
-              if (!isTracking) {
-                handleStartTracking();
-              }
-            }
-          })
-          .subscribe((status) => {
-            if (!mounted) return;
-            addDebugLog(`Landmark channel status: ${status}`);
+        addDebugLog(`Received landmarks payload at ${new Date(payload.timestamp).toISOString()}`);
+        setRemoteLandmarks(payload.landmarks);
+        setRemoteHandedness(payload.handedness);
+        if (!isRemoteConnected) {
+          setIsRemoteConnected(true);
+          setTrackingMode('local'); // Switch away from QR code screen
+          addDebugLog('Receiving landmarks from mobile - switching to canvas');
+          toast({
+            title: "Phone Connected",
+            description: "Receiving hand tracking data from your phone",
           });
-      } catch (error) {
-        console.error('Setup error:', error);
-        addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
-      }
-    };
-
-    setupChannel();
+          // Auto-start tracking when first landmark arrives
+          if (!isTracking) {
+            handleStartTracking();
+          }
+        }
+      })
+      .subscribe((status) => {
+        if (!mounted) return;
+        addDebugLog(`Landmark channel status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          addDebugLog('Desktop subscribed to landmark channel, waiting for mobile data...');
+        }
+      });
 
     return () => {
       mounted = false;
       channelRef.current?.unsubscribe();
     };
-  }, [sessionId, addDebugLog, isRemoteConnected, toast, isTracking]);
+  }, [sessionId, addDebugLog, toast, isRemoteConnected, isTracking]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
