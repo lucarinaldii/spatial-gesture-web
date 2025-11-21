@@ -81,13 +81,9 @@ const MobileCamera = () => {
     };
   }, [sessionId, navigate, toast]);
 
-  // Send landmarks to desktop with throttling for smoother performance
+  // Send landmarks to desktop continuously
   useEffect(() => {
     if (!landmarks || !channelRef.current || landmarks.length === 0) return;
-
-    // Throttle to ~30fps for optimal balance between smoothness and bandwidth
-    const throttleDelay = 33; // ~30fps
-    let timeoutId: NodeJS.Timeout;
 
     const sendLandmarks = async () => {
       try {
@@ -107,9 +103,13 @@ const MobileCamera = () => {
       }
     };
 
-    timeoutId = setTimeout(sendLandmarks, throttleDelay);
+    // Send immediately
+    sendLandmarks();
 
-    return () => clearTimeout(timeoutId);
+    // Then send at ~30fps for smooth updates
+    const intervalId = setInterval(sendLandmarks, 33);
+
+    return () => clearInterval(intervalId);
   }, [landmarks, handedness]);
 
   const handleStartTracking = async () => {
