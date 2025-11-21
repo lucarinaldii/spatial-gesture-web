@@ -17,6 +17,7 @@ import { DeleteZone } from '@/components/DeleteZone';
 import { CardHoldDeleteButton } from '@/components/CardHoldDeleteButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
+import { CursorToggle } from '@/components/CursorToggle';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
 import PointerCursor from '@/components/PointerCursor';
@@ -100,6 +101,7 @@ const Index = () => {
   const [lastPinchState, setLastPinchState] = useState(false);
   const [cursorOffset, setCursorOffset] = useState({ x: 0, y: 0 });
   const [showCalibration, setShowCalibration] = useState(false);
+  const [showCursor, setShowCursor] = useState(false);
   const channelRef = useRef<any>(null);
   const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
@@ -1515,6 +1517,11 @@ const Index = () => {
     >
       <ThemeToggle />
       <GesturesInfo />
+      <CursorToggle 
+        showCursor={showCursor}
+        onToggleCursor={setShowCursor}
+        onCalibrate={() => setShowCalibration(true)}
+      />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {!isTracking ? (
@@ -1835,8 +1842,8 @@ const Index = () => {
               />
             )}
             
-            {/* Pointer Cursor following index finger - only show when pinching */}
-            {smoothedPointerPosition && gestureStates[0] && gestureStates[0].isPinching && (
+            {/* Pointer Cursor following index finger - only show when pinching and cursor is enabled */}
+            {showCursor && smoothedPointerPosition && gestureStates[0] && gestureStates[0].isPinching && (
               <PointerCursor 
                 x={smoothedPointerPosition.x}
                 y={smoothedPointerPosition.y}
