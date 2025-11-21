@@ -334,22 +334,24 @@ const Index = () => {
     setIsTracking(true);
     setHasStartedTracking(true);
     
-    // Always start local camera for desktop interaction
-    // It will be used when no mobile session is active
+    // Only start local camera if NOT using mobile hand tracking
     setTimeout(async () => { 
       if (videoRef.current) {
-        if (!sessionId || !isRemoteConnected) {
-          // Use local camera when no phone session or not connected
+        // Check if we're actively receiving remote landmarks
+        const usingRemoteTracking = remoteLandmarks && remoteLandmarks.length > 0;
+        
+        if (!usingRemoteTracking) {
+          // Use local camera only when no remote tracking is active
           addDebugLog('Starting local camera for desktop interaction');
           await startCamera();
         } else {
-          addDebugLog('Phone session active, using remote landmarks');
+          addDebugLog('Mobile hand tracking active, skipping desktop camera');
         }
-      } else {
+      } else if (!remoteLandmarks || remoteLandmarks.length === 0) {
         console.error('Video element not ready, retrying...');
-        // Retry after another delay
+        // Retry after another delay only if not using remote tracking
         setTimeout(async () => {
-          if (videoRef.current) {
+          if (videoRef.current && (!remoteLandmarks || remoteLandmarks.length === 0)) {
             await startCamera();
           } else {
             console.error('Failed to initialize video element');
