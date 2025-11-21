@@ -1835,8 +1835,8 @@ const Index = () => {
               />
             )}
             
-            {/* Pointer Cursor following index finger */}
-            {smoothedPointerPosition && gestureStates[0] && (
+            {/* Pointer Cursor following index finger - only show when pinching */}
+            {smoothedPointerPosition && gestureStates[0] && gestureStates[0].isPinching && (
               <PointerCursor 
                 x={smoothedPointerPosition.x}
                 y={smoothedPointerPosition.y}
