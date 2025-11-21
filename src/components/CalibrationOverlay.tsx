@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
+import { X } from 'lucide-react';
 
 interface CalibrationOverlayProps {
   onClose: () => void;
@@ -11,41 +12,31 @@ interface CalibrationOverlayProps {
 
 export const CalibrationOverlay = ({ onClose, cursorOffset, onOffsetChange }: CalibrationOverlayProps) => {
   return (
-    <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center">
-      <Card className="p-6 max-w-md w-full mx-4 space-y-6">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-foreground">Cursor Calibration</h2>
-          <p className="text-sm text-muted-foreground">
-            Touch the target with your index finger tip, then adjust the offsets until the cursor aligns perfectly.
-          </p>
-        </div>
-
-        {/* Calibration target */}
-        <div className="relative w-full h-48 bg-muted/20 rounded-lg border-2 border-dashed border-primary/30 flex items-center justify-center">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative">
-              {/* Outer rings */}
-              <div className="absolute inset-0 w-24 h-24 rounded-full border-2 border-primary/40 animate-pulse" />
-              <div className="absolute inset-0 w-24 h-24 rounded-full border-2 border-primary/30" style={{ transform: 'scale(1.3)' }} />
-              
-              {/* Center target */}
-              <div className="relative w-24 h-24 rounded-full bg-primary/20 border-4 border-primary flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full bg-primary" />
-              </div>
-            </div>
+    <div className="fixed top-8 left-8 z-[100] pointer-events-auto">
+      <Card className="p-4 w-80 space-y-4 bg-background/95 backdrop-blur-sm shadow-xl border-2 border-primary/20">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-foreground">Cursor Calibration</h3>
+            <p className="text-xs text-muted-foreground">
+              Pinch and adjust until cursor matches your finger
+            </p>
           </div>
-          
-          <p className="absolute bottom-4 text-xs text-muted-foreground">
-            Touch this target with your index finger tip
-          </p>
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Offset controls */}
-        <div className="space-y-4">
-          <div className="space-y-2">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-foreground">X Offset</label>
-              <span className="text-sm text-muted-foreground">{cursorOffset.x}px</span>
+              <label className="text-xs font-medium text-foreground">X Offset</label>
+              <span className="text-xs text-muted-foreground tabular-nums">{cursorOffset.x}px</span>
             </div>
             <Slider
               value={[cursorOffset.x]}
@@ -57,10 +48,10 @@ export const CalibrationOverlay = ({ onClose, cursorOffset, onOffsetChange }: Ca
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-foreground">Y Offset</label>
-              <span className="text-sm text-muted-foreground">{cursorOffset.y}px</span>
+              <label className="text-xs font-medium text-foreground">Y Offset</label>
+              <span className="text-xs text-muted-foreground tabular-nums">{cursorOffset.y}px</span>
             </div>
             <Slider
               value={[cursorOffset.y]}
@@ -74,16 +65,18 @@ export const CalibrationOverlay = ({ onClose, cursorOffset, onOffsetChange }: Ca
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-2">
           <Button
             onClick={() => onOffsetChange({ x: 0, y: 0 })}
             variant="outline"
+            size="sm"
             className="flex-1"
           >
             Reset
           </Button>
           <Button
             onClick={onClose}
+            size="sm"
             className="flex-1"
           >
             Done
