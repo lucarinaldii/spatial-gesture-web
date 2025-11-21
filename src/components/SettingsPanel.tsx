@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Plus, RotateCcw, Image, Link, Mic, MicOff, Eye, EyeOff, Settings as SettingsIcon, Save, X, CheckCircle2 } from 'lucide-react';
+import { Plus, RotateCcw, Image, Link, Mic, MicOff, Eye, EyeOff, Settings as SettingsIcon, Save, X, CheckCircle2, Target } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlignmentParams } from '@/components/AlignmentSettings';
 
@@ -29,6 +29,7 @@ export interface SettingsPanelProps {
   onShowAdvancedSettings: () => void;
   alignmentParams: AlignmentParams;
   onImportOBJ: () => void;
+  onCalibrateCursor: () => void;
 }
 
 export const SettingsPanel = ({
@@ -52,6 +53,7 @@ export const SettingsPanel = ({
   onShowAdvancedSettings,
   alignmentParams,
   onImportOBJ,
+  onCalibrateCursor,
 }: SettingsPanelProps) => {
   const { toast } = useToast();
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
@@ -284,6 +286,12 @@ export const SettingsPanel = ({
         <Button onClick={onShowAdvancedSettings} variant="outline" className="w-full" size="lg">
           <SettingsIcon className="w-4 h-4 mr-2" />
           Advanced Alignment
+        </Button>
+
+        {/* Cursor Calibration */}
+        <Button onClick={onCalibrateCursor} variant="outline" className="w-full" size="lg">
+          <Target className="w-4 h-4 mr-2" />
+          Calibrate Cursor
         </Button>
       </CardContent>
     </Card>
