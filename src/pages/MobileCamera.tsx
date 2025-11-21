@@ -254,7 +254,7 @@ const MobileCamera = () => {
                         key={idx}
                         cx={landmark.x * 640}
                         cy={landmark.y * 480}
-                        r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 4 : 2.5}
+                        r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 2.5 : 1.5}
                         fill="hsl(var(--primary))"
                         opacity="0.8"
                       />
