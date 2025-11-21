@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useHandTracking } from '@/hooks/useHandTracking';
-import { DebugPanel } from '@/components/DebugPanel';
-import HandSkeleton from '@/components/HandSkeleton';
 
 const MobileCamera = () => {
   const [searchParams] = useSearchParams();
@@ -38,35 +36,11 @@ const MobileCamera = () => {
     const setupConnection = async () => {
       try {
         setLoadingStatus('loading');
-        
-        // Check for existing session first
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session && mounted) {
-          const { error } = await supabase.auth.signInAnonymously();
-          if (error) {
-            // If rate limited, continue anyway - realtime might still work
-            if (error.status === 429) {
-              addDebugLog('Rate limited, continuing with existing connection');
-            } else {
-              console.error('Anonymous sign in error:', error);
-              addDebugLog(`Auth error: ${error.message}`);
-              toast({
-                title: "Connection Warning",
-                description: "Using fallback connection mode",
-                variant: "default",
-              });
-            }
-          } else {
-            addDebugLog('Anonymous auth successful');
-          }
-        } else {
-          addDebugLog('Using existing auth session');
-        }
+        addDebugLog('Setting up realtime channel');
 
         if (!mounted) return;
 
-        // Set up realtime channel for sending landmarks
+        // Set up realtime channel for sending landmarks (no auth required)
         const channel = supabase.channel(`hand-tracking-${sessionId}`, {
           config: {
             broadcast: { self: false },
@@ -184,132 +158,66 @@ const MobileCamera = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="text-center space-y-6 max-w-2xl w-full">
-        <h1 className="text-4xl font-bold text-foreground">Hand Tracking</h1>
-        <p className="text-muted-foreground">
-          Session: {sessionId}
-        </p>
-
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="text-center space-y-6 w-full">
         {loadingStatus === 'loading' && (
-          <div className="space-y-4">
-            <div className="flex flex-col items-center gap-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              <p className="text-lg text-muted-foreground">
-                Initializing hand tracking system...
-              </p>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <p>✓ Loading AI models</p>
-                <p className={isChannelReady ? "text-green-600 dark:text-green-400" : ""}>
-                  {isChannelReady ? "✓" : "⏳"} Connecting to desktop
-                </p>
-                <p className={isReady ? "text-green-600 dark:text-green-400" : ""}>
-                  {isReady ? "✓" : "⏳"} Preparing camera system
-                </p>
-              </div>
-            </div>
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <p className="text-lg font-medium text-foreground">
+              Loading...
+            </p>
           </div>
         )}
 
         {loadingStatus === 'camera-loading' && (
-          <div className="space-y-4">
-            <div className="flex flex-col items-center gap-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              <p className="text-lg text-muted-foreground">
-                Starting camera...
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Please allow camera access if prompted
-              </p>
-            </div>
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            <p className="text-lg font-medium text-foreground">
+              Starting camera...
+            </p>
           </div>
         )}
         
         {isTracking && (
-          <div className="space-y-4">
+          <div className="flex flex-col items-center gap-2">
             <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-              ✓ Tracking Active - Move your hands
+              ✓ Tracking Active
             </p>
-            <div className="relative w-full max-w-md mx-auto aspect-video">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="hidden"
-              />
-              {landmarks && landmarks.length > 0 && (
-                <HandSkeleton
-                  landmarks={landmarks}
-                  videoWidth={videoRef.current?.videoWidth || 640}
-                  videoHeight={videoRef.current?.videoHeight || 480}
-                  handedness={handedness}
-                  alignmentParams={{
-                    leftHand: {
-                      skeletonScale: 1,
-                      skeletonXOffset: 0,
-                      skeletonYOffset: 0,
-                      skeletonZDepth: 0,
-                      hand3DScale: 1,
-                      hand3DXOffset: 0,
-                      hand3DYOffset: 0,
-                      hand3DZDepth: 0,
-                    },
-                    rightHand: {
-                      skeletonScale: 1,
-                      skeletonXOffset: 0,
-                      skeletonYOffset: 0,
-                      skeletonZDepth: 0,
-                      hand3DScale: 1,
-                      hand3DXOffset: 0,
-                      hand3DYOffset: 0,
-                      hand3DZDepth: 0,
-                    },
-                  }}
-                />
-              )}
-            </div>
-            <div className="text-xs text-primary font-mono text-center">
-              {landmarks?.length || 0} hands detected
-            </div>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="hidden"
+            />
           </div>
         )}
 
         {loadingStatus === 'error' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
-              <p className="text-lg font-semibold text-destructive mb-2">
-                Camera Access Failed
+          <div className="px-4">
+            <div className="p-6 bg-destructive/10 border border-destructive rounded-lg max-w-md mx-auto">
+              <p className="text-lg font-semibold text-destructive mb-3 text-center">
+                Camera Error
               </p>
               {cameraError && (
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-6 text-center">
                   {cameraError.includes('Permission') || cameraError.includes('NotAllowedError')
-                    ? "Camera permission was denied. Please enable camera access in your browser settings and try again."
+                    ? "Please enable camera access in your browser settings"
                     : cameraError.includes('NotFoundError')
-                    ? "No camera was found on your device."
-                    : `Error: ${cameraError}`}
+                    ? "No camera found on your device"
+                    : "Failed to start camera"}
                 </p>
               )}
-              <div className="flex gap-2">
-                <button
-                  onClick={handleRetryCamera}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-                >
-                  Retry Camera Access
-                </button>
-                <button
-                  onClick={() => navigate('/')}
-                  className="px-4 py-2 bg-muted text-foreground rounded-lg font-semibold hover:bg-muted/80 transition-colors"
-                >
-                  Back to Desktop
-                </button>
-              </div>
+              <button
+                onClick={handleRetryCamera}
+                className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+              >
+                Retry
+              </button>
             </div>
           </div>
         )}
       </div>
-      
-      <DebugPanel title="Mobile Tracking" logs={debugLogs} />
     </div>
   );
 };
