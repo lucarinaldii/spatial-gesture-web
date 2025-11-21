@@ -300,6 +300,14 @@ const Index = () => {
     };
   }, [sessionId, trackingMode, addDebugLog, isRemoteConnected, toast]);
 
+  // Automatically leave QR screen once phone is connected and tracking has started
+  useEffect(() => {
+    if (trackingMode === 'mobile-qr' && isRemoteConnected && isTracking) {
+      addDebugLog('Mobile connected and tracking active - switching to canvas view');
+      setTrackingMode('local');
+    }
+  }, [trackingMode, isRemoteConnected, isTracking, addDebugLog]);
+
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
     setIsTracking(true);
