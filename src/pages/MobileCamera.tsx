@@ -42,10 +42,19 @@ const MobileCamera = () => {
         });
         channelRef.current = channel;
 
-        channel.subscribe((status) => {
+        channel.subscribe((status, error) => {
           if (!mounted) return;
           addDebugLog(`Channel status: ${status}`);
-
+          
+          if (error) {
+            addDebugLog(`Channel error: ${error.message || JSON.stringify(error)}`);
+            toast({
+              title: "Connection Issue",
+              description: error.message || "Please refresh and try again",
+              variant: "destructive",
+            });
+          }
+          
           if (status === 'SUBSCRIBED') {
             addDebugLog('Channel ready to send landmarks');
             toast({
@@ -53,15 +62,18 @@ const MobileCamera = () => {
               description: "Hand tracking ready",
             });
           } else if (status === 'CHANNEL_ERROR') {
-            addDebugLog('Channel error');
+            addDebugLog('Channel error occurred');
             if (attempt < 3) {
-              addDebugLog('Retrying channel connection...');
-              channel.unsubscribe();
-              setupConnection(attempt + 1);
+              addDebugLog(`Retrying connection... (${attempt}/3)`);
+              setTimeout(() => {
+                channel.unsubscribe();
+                setupConnection(attempt + 1);
+              }, 1000);
             } else {
+              const errorMsg = error?.message || "Unable to establish connection after 3 attempts";
               toast({
-                title: "Connection Error",
-                description: "Unable to connect. Please refresh and try again.",
+                title: "Connection Failed",
+                description: errorMsg,
                 variant: "destructive",
               });
             }
@@ -69,7 +81,13 @@ const MobileCamera = () => {
         });
       } catch (error) {
         console.error('Setup error:', error);
-        addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        addDebugLog(`Setup error: ${errorMsg}`);
+        toast({
+          title: "Setup Failed",
+          description: errorMsg,
+          variant: "destructive",
+        });
       }
     };
 
