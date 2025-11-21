@@ -301,6 +301,7 @@ const Index = () => {
             setRemoteHandedness(payload.handedness);
             if (!isRemoteConnected) {
               setIsRemoteConnected(true);
+              setTrackingMode('local'); // Switch away from QR code screen
               addDebugLog('Receiving landmarks from mobile');
               toast({
                 title: "Phone Connected",
