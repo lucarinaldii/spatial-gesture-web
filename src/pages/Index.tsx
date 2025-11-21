@@ -702,43 +702,52 @@ const Index = () => {
     setLastPinchState(isPinching);
   }, [handPositions, gestureStates, isTracking, lastPinchState, cursorOffset]);
 
-  // Smooth pointer movement
+  // Smooth pointer movement with proper cleanup
   useEffect(() => {
     if (!pointerPosition) {
       setSmoothedPointerPosition(null);
       return;
     }
 
-    // Use requestAnimationFrame to prevent infinite loops
-    let rafId: number;
+    let rafId: number | null = null;
+    let isAnimating = true;
+    
     const updateSmoothedPosition = () => {
+      if (!isAnimating) return;
+      
       setSmoothedPointerPosition(prev => {
-        if (!prev || !pointerPosition) return pointerPosition;
+        if (!prev || !pointerPosition || !isAnimating) return pointerPosition;
         
-        // Smooth interpolation (lower = smoother but more lag, slower movement)
-        const smoothing = 0.15;
+        const smoothing = 0.3; // Increased for better performance
         const newX = prev.x + (pointerPosition.x - prev.x) * smoothing;
         const newY = prev.y + (pointerPosition.y - prev.y) * smoothing;
         
-        // Check if we're close enough to stop smoothing
         const distance = Math.sqrt(
           Math.pow(pointerPosition.x - newX, 2) + 
           Math.pow(pointerPosition.y - newY, 2)
         );
         
+        // Stop animating when close enough
         if (distance < 0.5) {
+          isAnimating = false;
           return pointerPosition;
+        }
+        
+        // Continue animation only if still moving
+        if (isAnimating) {
+          rafId = requestAnimationFrame(updateSmoothedPosition);
         }
         
         return { x: newX, y: newY };
       });
-      
-      rafId = requestAnimationFrame(updateSmoothedPosition);
     };
     
     rafId = requestAnimationFrame(updateSmoothedPosition);
     
-    return () => cancelAnimationFrame(rafId);
+    return () => {
+      isAnimating = false;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, [pointerPosition]);
 
   useEffect(() => {
