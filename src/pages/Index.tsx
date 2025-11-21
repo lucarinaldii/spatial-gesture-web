@@ -106,7 +106,7 @@ const Index = () => {
   const [showCursor, setShowCursor] = useState(false);
   const lastClickTimeRef = useRef<number>(0);
   const channelRef = useRef<any>(null);
-  const { isReady, isInitializing, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera, initHandTracking } = useHandTracking();
+  const { isReady, isInitializing, loadingProgress, loadingStage, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera, initHandTracking } = useHandTracking();
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
   
   // Use remote gestures if available, otherwise use local
@@ -1547,14 +1547,32 @@ const Index = () => {
                 <div className="space-y-4 pt-8">
                   <p className="text-lg text-muted-foreground mb-6">Choose your tracking method:</p>
                   <div className="flex flex-col gap-4">
-                    <Button 
-                      onClick={handleStartTracking} 
-                      disabled={isInitializing} 
-                      size="lg" 
-                      className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground"
-                    >
-                      {isInitializing ? '⏳ Loading AI Model...' : '🖥️ Start Local Camera Tracking'}
-                    </Button>
+                    <div className="space-y-3">
+                      <Button 
+                        onClick={handleStartTracking} 
+                        disabled={isInitializing} 
+                        size="lg" 
+                        className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+                      >
+                        {isInitializing ? '⏳ Loading AI Model...' : '🖥️ Start Local Camera Tracking'}
+                      </Button>
+                      {isInitializing && (
+                        <div className="space-y-2">
+                          <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                            <div 
+                              className="h-full bg-primary transition-all duration-300 ease-out"
+                              style={{ width: `${loadingProgress}%` }}
+                            />
+                          </div>
+                          <p className="text-sm text-muted-foreground text-center">
+                            {loadingStage === 'wasm' && 'Loading WebAssembly...'}
+                            {loadingStage === 'model' && 'Loading AI Model...'}
+                            {loadingStage === 'ready' && 'Ready!'}
+                            {' '}({loadingProgress}%)
+                          </p>
+                        </div>
+                      )}
+                    </div>
                     <Button 
                       onClick={() => setTrackingMode('mobile-qr')} 
                       size="lg" 
