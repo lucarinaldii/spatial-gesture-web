@@ -1560,7 +1560,8 @@ const Index = () => {
             
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
-            {/* Debug panel - removed */}
+            {/* Desktop Debug Panel for handshake & tracking */}
+            <DebugPanel title="Desktop Realtime" logs={debugLogs} />
             
             {/* Full-screen 3D Scene for OBJ models */}
             <Scene3D
