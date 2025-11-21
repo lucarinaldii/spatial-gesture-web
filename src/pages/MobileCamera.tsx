@@ -213,7 +213,8 @@ const MobileCamera = () => {
           </div>
         )}
       </div>
-      {/* Debug panel removed */}
+      {/* Mobile Debug Panel for handshake & tracking */}
+      <DebugPanel title="Mobile Realtime" logs={debugLogs} />
     </div>
   );
 };
