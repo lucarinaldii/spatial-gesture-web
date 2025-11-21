@@ -19,6 +19,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
 import { CursorToggle } from '@/components/CursorToggle';
 import { SettingsToggle } from '@/components/SettingsToggle';
+import { InstallButton } from '@/components/InstallButton';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
 import PointerCursor from '@/components/PointerCursor';
@@ -1530,6 +1531,7 @@ const Index = () => {
       } : undefined}
     >
       <ThemeToggle />
+      <InstallButton />
       <GesturesInfo />
       <CursorToggle 
         showCursor={showCursor}
