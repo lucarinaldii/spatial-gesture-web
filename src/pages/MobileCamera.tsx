@@ -105,7 +105,19 @@ const MobileCamera = () => {
     setLoadingStatus('camera-loading');
     
     try {
-      addDebugLog('User tapped start - requesting camera access');
+      addDebugLog('User tapped start - checking system readiness');
+      
+      // Ensure video element exists
+      if (!videoRef.current) {
+        throw new Error('Video element not initialized');
+      }
+      
+      // Ensure MediaPipe is ready
+      if (!isReady) {
+        throw new Error('MediaPipe not ready - please wait a moment and try again');
+      }
+      
+      addDebugLog('Requesting camera access...');
       await startCamera();
       setIsTracking(true);
       addDebugLog('Camera started successfully');
@@ -127,6 +139,8 @@ const MobileCamera = () => {
           ? "Please allow camera access in your browser"
           : errorMsg.includes('NotFoundError')
           ? "No camera found on your device"
+          : errorMsg.includes('not ready')
+          ? "System still loading - please try again"
           : "Failed to access camera",
         variant: "destructive",
       });
@@ -136,6 +150,15 @@ const MobileCamera = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="text-center space-y-6 w-full">
+        {/* Always render video element so ref is available */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{ display: 'none' }}
+        />
+        
         {loadingStatus === 'loading' && (
           <div className="flex flex-col items-center gap-4">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
@@ -146,12 +169,20 @@ const MobileCamera = () => {
         )}
 
         {loadingStatus === 'ready' && !isTracking && (
-          <button
-            onClick={handleStartTracking}
-            className="px-8 py-4 bg-primary text-primary-foreground rounded-xl text-xl font-bold hover:bg-primary/90 active:scale-95 transition-all shadow-lg"
-          >
-            Start
-          </button>
+          <div className="flex flex-col items-center gap-6">
+            <button
+              onClick={handleStartTracking}
+              disabled={!isReady}
+              className="px-8 py-4 bg-primary text-primary-foreground rounded-xl text-xl font-bold hover:bg-primary/90 active:scale-95 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Start
+            </button>
+            {!isReady && (
+              <p className="text-sm text-muted-foreground">
+                Initializing system...
+              </p>
+            )}
+          </div>
         )}
 
         {loadingStatus === 'camera-loading' && (
@@ -171,13 +202,6 @@ const MobileCamera = () => {
             <p className="text-sm text-green-600 dark:text-green-400 font-medium">
               ✓ Tracking Active
             </p>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="hidden"
-            />
           </div>
         )}
 
