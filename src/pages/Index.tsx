@@ -907,35 +907,9 @@ const Index = () => {
                 Math.pow(handScreenY - plusButtonY, 2)
               );
               
-              // Check cooldown to prevent rapid-fire (very short cooldown)
-              const now = Date.now();
-              if (distanceToPlusButton < buttonRadius && now - plusButtonCooldownRef.current > 100) {
-                plusButtonCooldownRef.current = now;
-                maxZIndexRef.current += 1;
-                const randomPos = getRandomPosition();
-                const newCard: ObjectData = {
-                  id: Date.now().toString() + handIndex,
-                  type: 'card',
-                  title: getRandomWord(),
-                  description: 'Created with hand pinch',
-                  position: randomPos,
-                  zIndex: maxZIndexRef.current,
-                  rotation: { x: 0, y: 0, z: 0 },
-                  velocity: { x: 0, y: 0 },
-                  isPhysicsEnabled: false,
-                  scale: 0.5, // Start small for animation
-                };
-                setObjects(prev => [...prev, newCard]);
-                // Animate scale up
-                setTimeout(() => {
-                  setObjects(prev => prev.map(obj => 
-                    obj.id === newCard.id ? { ...obj, scale: 1 } : obj
-                  ));
-                }, 10);
-                setIsPlusButtonClicked(true);
-                setTimeout(() => setIsPlusButtonClicked(false), 200);
-                toast({ title: "Card created!", description: "New card created with pinch gesture" });
-              } else if (distanceToPlusButton >= buttonRadius) {
+              // Don't create card here - let the pointer interaction dispatch click event to button
+              // which will trigger the button's onClick handler
+              if (distanceToPlusButton >= buttonRadius) {
                 // Pinch on canvas (not on button, not on object) - cancel shake mode if active
                 if (showHoldDeleteButton) {
                   setShowHoldDeleteButton(null);
