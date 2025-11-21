@@ -20,10 +20,11 @@ const MobileCamera = () => {
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '';
     const entry = `[${timestamp}] ${message}`;
-    console.log(entry);
+    console.log(entry); // Always log to console
     setDebugLogs((prev) => [...prev.slice(-49), entry]);
   };
 
+  // Setup channel connection
   useEffect(() => {
     if (!sessionId) {
       navigate('/');
@@ -35,11 +36,11 @@ const MobileCamera = () => {
     const setupConnection = async () => {
       try {
         setLoadingStatus('loading');
-        addDebugLog('Setting up realtime channel');
+        addDebugLog('[MOBILE] Setting up connection');
 
         if (!mounted) return;
 
-        // Set up realtime channel for sending landmarks (no auth required)
+        // Set up realtime channel
         const channel = supabase.channel(`hand-tracking-${sessionId}`, {
           config: {
             broadcast: { self: false },
@@ -49,15 +50,15 @@ const MobileCamera = () => {
 
         channel.subscribe((status) => {
           if (!mounted) return;
-          addDebugLog(`Channel status: ${status}`);
+          addDebugLog(`[MOBILE] Channel status: ${status}`);
           if (status === 'SUBSCRIBED') {
-            addDebugLog('Channel ready to send landmarks');
+            addDebugLog('[MOBILE] Connected to desktop');
             setIsChannelReady(true);
           }
         });
       } catch (error) {
         console.error('Setup error:', error);
-        addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
+        addDebugLog(`[MOBILE] Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
         setLoadingStatus('error');
       }
     };
@@ -66,6 +67,7 @@ const MobileCamera = () => {
 
     return () => {
       mounted = false;
+      addDebugLog('[MOBILE] Disconnecting channel');
       channelRef.current?.unsubscribe();
     };
   }, [sessionId, navigate, toast]);
@@ -78,24 +80,26 @@ const MobileCamera = () => {
     }
   }, [isReady, isChannelReady]);
 
-  // Send landmarks to desktop when they update - optimized for reduced lag
+  // Send landmarks to desktop - optimized streaming
   useEffect(() => {
     if (!landmarks || !channelRef.current || landmarks.length === 0 || !isTracking) return;
 
-    // Throttle to ~20fps to reduce network load and lag
+    // Send at 20fps to reduce network load
     const timeoutId = setTimeout(() => {
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'landmarks',
-        payload: {
-          landmarks, // Send full landmarks but less frequently
-          handedness,
-          timestamp: Date.now(),
-        }
-      }).catch((error: Error) => {
-        console.error('Error sending landmarks:', error);
-      });
-    }, 50); // ~20fps instead of 30fps for lighter streaming
+      if (channelRef.current && landmarks) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'hand-data',
+          payload: {
+            landmarks,
+            handedness,
+            timestamp: Date.now(),
+          }
+        }).catch((error: Error) => {
+          console.error('Error sending hand data:', error);
+        });
+      }
+    }, 50); // 20fps
 
     return () => clearTimeout(timeoutId);
   }, [landmarks, handedness, isTracking]);
@@ -105,58 +109,45 @@ const MobileCamera = () => {
     setLoadingStatus('camera-loading');
     
     try {
-      addDebugLog('User tapped start - checking system readiness');
+      addDebugLog('Starting camera and tracking');
       
-      // Ensure video element exists
       if (!videoRef.current) {
         throw new Error('Video element not initialized');
       }
       
-      // Ensure MediaPipe is ready
       if (!isReady) {
-        throw new Error('MediaPipe not ready - please wait a moment and try again');
+        throw new Error('MediaPipe not ready');
       }
       
-      // Send "started" event to desktop immediately
-      if (channelRef.current) {
+      // Signal desktop that mobile is starting
+      if (channelRef.current && isChannelReady) {
         channelRef.current.send({
           type: 'broadcast',
-          event: 'tracking-started',
-          payload: {
-            timestamp: Date.now(),
-          }
-        }).catch((error: Error) => {
-          console.error('Error sending start event:', error);
+          event: 'mobile-ready',
+          payload: { timestamp: Date.now() }
         });
-        addDebugLog('Sent tracking-started event to desktop');
+        addDebugLog('Sent mobile-ready signal to desktop');
       }
       
-      addDebugLog('Requesting camera access...');
       await startCamera();
       setIsTracking(true);
-      setLoadingStatus('ready'); // Remove loader after camera starts
-      addDebugLog('Camera started successfully');
+      setLoadingStatus('ready');
+      addDebugLog('Camera started - now tracking');
       
       toast({
-        title: "Tracking Started",
-        description: "Hand tracking is active",
+        title: "Tracking Active",
+        description: "Controlling desktop",
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Failed to start camera:', error);
-      addDebugLog(`Camera error: ${errorMsg}`);
+      console.error('Camera start failed:', error);
+      addDebugLog(`Error: ${errorMsg}`);
       setCameraError(errorMsg);
       setLoadingStatus('error');
       
       toast({
         title: "Camera Error",
-        description: errorMsg.includes('Permission') || errorMsg.includes('NotAllowedError')
-          ? "Please allow camera access in your browser"
-          : errorMsg.includes('NotFoundError')
-          ? "No camera found on your device"
-          : errorMsg.includes('not ready')
-          ? "System still loading - please try again"
-          : "Failed to access camera",
+        description: "Failed to start camera",
         variant: "destructive",
       });
     }
