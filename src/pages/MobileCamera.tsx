@@ -89,22 +89,26 @@ const MobileCamera = () => {
     };
   }, [sessionId, navigate, toast]);
 
-  // Send landmarks to desktop when they update - fire and forget for max speed
+  // Send landmarks to desktop when they update - throttled for performance
   useEffect(() => {
     if (!landmarks || !channelRef.current || landmarks.length === 0) return;
 
-    // Don't await - send immediately without blocking
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'landmarks',
-      payload: {
-        landmarks,
-        handedness,
-        timestamp: Date.now(),
-      }
-    }).catch((error: Error) => {
-      console.error('Error sending landmarks:', error);
-    });
+    // Throttle to ~30fps for smooth performance
+    const timeoutId = setTimeout(() => {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'landmarks',
+        payload: {
+          landmarks,
+          handedness,
+          timestamp: Date.now(),
+        }
+      }).catch((error: Error) => {
+        console.error('Error sending landmarks:', error);
+      });
+    }, 33); // ~30fps
+
+    return () => clearTimeout(timeoutId);
   }, [landmarks, handedness]);
 
   const handleStartTracking = async () => {
