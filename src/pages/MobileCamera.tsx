@@ -31,11 +31,10 @@ const MobileCamera = () => {
 
     let mounted = true;
 
-    const setupConnection = async () => {
+    const setupConnection = async (attempt = 1) => {
       try {
-        addDebugLog('Setting up realtime channel...');
+        addDebugLog(`Setting up realtime channel... (attempt ${attempt})`);
 
-        // Set up realtime channel for sending landmarks (no auth required for broadcast)
         const channel = supabase.channel(`hand-tracking-${sessionId}`, {
           config: {
             broadcast: { self: false },
@@ -46,6 +45,7 @@ const MobileCamera = () => {
         channel.subscribe((status) => {
           if (!mounted) return;
           addDebugLog(`Channel status: ${status}`);
+
           if (status === 'SUBSCRIBED') {
             addDebugLog('Channel ready to send landmarks');
             toast({
@@ -54,11 +54,17 @@ const MobileCamera = () => {
             });
           } else if (status === 'CHANNEL_ERROR') {
             addDebugLog('Channel error');
-            toast({
-              title: "Connection Error",
-              description: "Unable to connect. Please refresh and try again.",
-              variant: "destructive",
-            });
+            if (attempt < 3) {
+              addDebugLog('Retrying channel connection...');
+              channel.unsubscribe();
+              setupConnection(attempt + 1);
+            } else {
+              toast({
+                title: "Connection Error",
+                description: "Unable to connect. Please refresh and try again.",
+                variant: "destructive",
+              });
+            }
           }
         });
       } catch (error) {
