@@ -241,60 +241,54 @@ const Index = () => {
   }, []);
 
   // Set up realtime channel to receive landmarks from mobile
+  // Setup channel to receive hand tracking from mobile
   useEffect(() => {
     if (!sessionId) return;
 
     let mounted = true;
+    addDebugLog(`[DESKTOP] Setting up channel for session: ${sessionId}`);
 
-    const setupChannel = async () => {
-      try {
-        addDebugLog(`Setting up realtime channel for session ${sessionId}`);
-        
-        const channel = supabase.channel(`hand-tracking-${sessionId}`, {
-          config: {
-            broadcast: { self: false },
-          },
+    const channel = supabase.channel(`hand-tracking-${sessionId}`, {
+      config: {
+        broadcast: { self: false },
+      },
+    });
+    
+    channelRef.current = channel;
+
+    channel
+      .on('broadcast', { event: 'mobile-ready' }, () => {
+        if (!mounted) return;
+        addDebugLog('[DESKTOP] Mobile is ready - switching to canvas');
+        setIsTracking(true);
+        setHasStartedTracking(true);
+        setTrackingMode('local'); // Switch to canvas view
+        toast({
+          title: "Mobile Connected",
+          description: "Hand tracking active",
         });
-        channelRef.current = channel;
-
-        channel
-          .on('broadcast', { event: 'tracking-started' }, ({ payload }: any) => {
-            if (!mounted) return;
-            addDebugLog('Mobile user clicked Start - switching to canvas');
-            setIsTracking(true);
-            setHasStartedTracking(true);
-            setTrackingMode('local');
-            toast({
-              title: "Mobile Connected",
-              description: "Hand tracking starting...",
-            });
-          })
-          .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
-            if (!mounted) return;
-            setRemoteLandmarks(payload.landmarks);
-            setRemoteHandedness(payload.handedness);
-            if (!isRemoteConnected) {
-              setIsRemoteConnected(true);
-              addDebugLog('Receiving landmarks from mobile');
-            }
-          })
-          .subscribe((status) => {
-            if (!mounted) return;
-            addDebugLog(`Landmark channel status: ${status}`);
-            if (status === 'SUBSCRIBED') {
-              addDebugLog('Desktop ready to receive landmarks');
-            }
-          });
-      } catch (error) {
-        console.error('Setup error:', error);
-        addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
-      }
-    };
-
-    setupChannel();
+      })
+      .on('broadcast', { event: 'hand-data' }, ({ payload }: any) => {
+        if (!mounted) return;
+        
+        // Update remote hand data
+        setRemoteLandmarks(payload.landmarks);
+        setRemoteHandedness(payload.handedness);
+        
+        // Mark as connected on first data
+        if (!isRemoteConnected) {
+          setIsRemoteConnected(true);
+          addDebugLog('[DESKTOP] Receiving hand data from mobile');
+        }
+      })
+      .subscribe((status) => {
+        if (!mounted) return;
+        addDebugLog(`[DESKTOP] Channel status: ${status}`);
+      });
 
     return () => {
       mounted = false;
+      addDebugLog('[DESKTOP] Cleaning up channel');
       if (channelRef.current) {
         channelRef.current.unsubscribe();
         channelRef.current = null;
@@ -303,7 +297,7 @@ const Index = () => {
       setRemoteLandmarks(null);
       setRemoteHandedness(null);
     };
-  }, [sessionId, addDebugLog, isRemoteConnected, toast]);
+  }, [sessionId, isRemoteConnected, toast, addDebugLog]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
@@ -1696,13 +1690,22 @@ const Index = () => {
               </>
             )}
             {showSkeleton && ((remoteLandmarks && remoteLandmarks.length > 0) || (landmarks && landmarks.length > 0)) && (
-              <HandSkeleton 
-                landmarks={remoteLandmarks && remoteLandmarks.length > 0 ? remoteLandmarks : landmarks} 
-                videoWidth={window.innerWidth} 
-                videoHeight={window.innerHeight} 
-                alignmentParams={alignmentParams} 
-                handedness={remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandedness : handedness} 
-              />
+              <>
+                <HandSkeleton 
+                  landmarks={remoteLandmarks && remoteLandmarks.length > 0 ? remoteLandmarks : landmarks} 
+                  videoWidth={window.innerWidth} 
+                  videoHeight={window.innerHeight} 
+                  alignmentParams={alignmentParams} 
+                  handedness={remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandedness : handedness} 
+                />
+                {/* Show indicator when using remote tracking */}
+                {remoteLandmarks && remoteLandmarks.length > 0 && (
+                  <div className="fixed top-4 right-4 z-50 px-3 py-2 bg-green-600/90 backdrop-blur-sm rounded-lg text-white text-sm font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                    Mobile Tracking Active
+                  </div>
+                )}
+              </>
             )}
             
             {/* Delete Zone - disabled
