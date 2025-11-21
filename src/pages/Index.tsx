@@ -268,14 +268,16 @@ const Index = () => {
               addDebugLog('Receiving landmarks from mobile');
               toast({
                 title: "Phone Connected",
-                description: "Receiving hand tracking data from your phone",
+                description: "Starting hand tracking...",
               });
               // Auto-start tracking when first landmark arrives
               if (!hasAutoStarted) {
                 hasAutoStarted = true;
                 setIsTracking(true);
                 setHasStartedTracking(true);
-                addDebugLog('Auto-started tracking from mobile connection');
+                // Switch to canvas view immediately when mobile connects
+                setTrackingMode('local');
+                addDebugLog('Auto-started tracking and switched to canvas view');
               }
             }
           })
@@ -299,14 +301,6 @@ const Index = () => {
       channelRef.current?.unsubscribe();
     };
   }, [sessionId, trackingMode, addDebugLog, isRemoteConnected, toast]);
-
-  // Automatically leave QR screen once phone is connected and tracking has started
-  useEffect(() => {
-    if (trackingMode === 'mobile-qr' && isRemoteConnected && isTracking) {
-      addDebugLog('Mobile connected and tracking active - switching to canvas view');
-      setTrackingMode('local');
-    }
-  }, [trackingMode, isRemoteConnected, isTracking, addDebugLog]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
