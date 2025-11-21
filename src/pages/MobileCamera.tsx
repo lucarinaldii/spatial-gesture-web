@@ -80,28 +80,29 @@ const MobileCamera = () => {
     }
   }, [isReady, isChannelReady]);
 
-  // Send landmarks to desktop - optimized streaming
+  // Send landmarks to desktop - throttled to ~20fps using timestamp
+  const lastSendTimeRef = useRef<number>(0);
   useEffect(() => {
     if (!landmarks || !channelRef.current || landmarks.length === 0 || !isTracking) return;
 
-    // Send at 20fps to reduce network load
-    const timeoutId = setTimeout(() => {
-      if (channelRef.current && landmarks) {
-        channelRef.current.send({
-          type: 'broadcast',
-          event: 'hand-data',
-          payload: {
-            landmarks,
-            handedness,
-            timestamp: Date.now(),
-          }
-        }).catch((error: Error) => {
-          console.error('Error sending hand data:', error);
-        });
-      }
-    }, 50); // 20fps
+    const now = performance.now();
+    // Only send if at least 50ms passed since last send
+    if (now - lastSendTimeRef.current < 50) return;
+    lastSendTimeRef.current = now;
 
-    return () => clearTimeout(timeoutId);
+    channelRef.current
+      .send({
+        type: 'broadcast',
+        event: 'hand-data',
+        payload: {
+          landmarks,
+          handedness,
+          timestamp: Date.now(),
+        },
+      })
+      .catch((error: Error) => {
+        console.error('Error sending hand data:', error);
+      });
   }, [landmarks, handedness, isTracking]);
 
   const handleStartTracking = async () => {
