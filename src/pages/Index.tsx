@@ -20,6 +20,7 @@ import { GesturesInfo } from '@/components/GesturesInfo';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
 import PointerCursor from '@/components/PointerCursor';
+import { CalibrationOverlay } from '@/components/CalibrationOverlay';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Plus } from 'lucide-react';
 
@@ -95,7 +96,10 @@ const Index = () => {
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'local'>('initial');
   const [pointerPosition, setPointerPosition] = useState<{ x: number; y: number } | null>(null);
+  const [smoothedPointerPosition, setSmoothedPointerPosition] = useState<{ x: number; y: number } | null>(null);
   const [lastPinchState, setLastPinchState] = useState(false);
+  const [cursorOffset, setCursorOffset] = useState({ x: 0, y: 0 });
+  const [showCalibration, setShowCalibration] = useState(false);
   const channelRef = useRef<any>(null);
   const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
@@ -627,8 +631,8 @@ const Index = () => {
 
     // Use the same coordinate space as interactions (handPositions[0])
     const interactionHand = handPositions[0];
-    const pointerX = interactionHand.x * window.innerWidth;
-    const pointerY = interactionHand.y * window.innerHeight;
+    const pointerX = interactionHand.x * window.innerWidth + cursorOffset.x;
+    const pointerY = interactionHand.y * window.innerHeight + cursorOffset.y;
     setPointerPosition({ x: pointerX, y: pointerY });
 
     // Check pinch state for click behaviour
@@ -685,7 +689,26 @@ const Index = () => {
     }
 
     setLastPinchState(isPinching);
-  }, [handPositions, gestureStates, isTracking, lastPinchState]);
+  }, [handPositions, gestureStates, isTracking, lastPinchState, cursorOffset]);
+
+  // Smooth pointer movement
+  useEffect(() => {
+    if (!pointerPosition) {
+      setSmoothedPointerPosition(null);
+      return;
+    }
+
+    setSmoothedPointerPosition(prev => {
+      if (!prev) return pointerPosition;
+      
+      // Smooth interpolation (lower = smoother but more lag)
+      const smoothing = 0.3;
+      return {
+        x: prev.x + (pointerPosition.x - prev.x) * smoothing,
+        y: prev.y + (pointerPosition.y - prev.y) * smoothing,
+      };
+    });
+  }, [pointerPosition]);
 
   useEffect(() => {
     if (handPositions.length === 0) {
@@ -1646,6 +1669,7 @@ const Index = () => {
                   commandRecognized={commandRecognized}
                   onShowAdvancedSettings={() => setShowSettings(!showSettings)}
                   alignmentParams={alignmentParams}
+                  onCalibrateCursor={() => setShowCalibration(true)}
                 />
               </div>
             )}
@@ -1812,11 +1836,20 @@ const Index = () => {
             )}
             
             {/* Pointer Cursor following index finger */}
-            {pointerPosition && gestureStates[0] && (
+            {smoothedPointerPosition && gestureStates[0] && (
               <PointerCursor 
-                x={pointerPosition.x}
-                y={pointerPosition.y}
+                x={smoothedPointerPosition.x}
+                y={smoothedPointerPosition.y}
                 isPinching={gestureStates[0].isPinching}
+              />
+            )}
+
+            {/* Calibration Overlay */}
+            {showCalibration && (
+              <CalibrationOverlay
+                onClose={() => setShowCalibration(false)}
+                cursorOffset={cursorOffset}
+                onOffsetChange={setCursorOffset}
               />
             )}
             
