@@ -635,8 +635,8 @@ const Index = () => {
     const hand = currentLandmarks[0];
     const indexTip = hand[8]; // Index finger tip
     
-    // Update pointer position
-    const pointerX = indexTip.x * window.innerWidth;
+    // Update pointer position - mirror x-axis to match hand movement
+    const pointerX = (1 - indexTip.x) * window.innerWidth;
     const pointerY = indexTip.y * window.innerHeight;
     setPointerPosition({ x: pointerX, y: pointerY });
 
