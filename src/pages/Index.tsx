@@ -620,7 +620,7 @@ const Index = () => {
 
   // Pointer-based interaction with index finger
   useEffect(() => {
-    if (!isTracking || handPositions.length === 0) {
+    if (!isTracking) {
       setPointerPosition(null);
       return;
     }
@@ -635,9 +635,59 @@ const Index = () => {
     const hand = currentLandmarks[0];
     const indexTip = hand[8]; // Index finger tip
     
-    // Update pointer position - mirror x-axis to match hand movement
-    const pointerX = (1 - indexTip.x) * window.innerWidth;
-    const pointerY = indexTip.y * window.innerHeight;
+    // Calculate hand center to determine which alignment params to use
+    const handWrist = hand[0];
+    const handMiddleMCP = hand[9];
+    const handCenterX = (handWrist.x + handMiddleMCP.x) / 2;
+    
+    // Interpolate alignment params (same as HandSkeleton)
+    const blendZoneStart = 0.3;
+    const blendZoneEnd = 0.7;
+    let blend: number;
+    if (handCenterX < blendZoneStart) {
+      blend = 0;
+    } else if (handCenterX > blendZoneEnd) {
+      blend = 1;
+    } else {
+      blend = (handCenterX - blendZoneStart) / (blendZoneEnd - blendZoneStart);
+    }
+    
+    const leftParams = alignmentParams.leftHand;
+    const rightParams = alignmentParams.rightHand;
+    const handParams = {
+      skeletonScale: leftParams.skeletonScale * (1 - blend) + rightParams.skeletonScale * blend,
+      skeletonXOffset: leftParams.skeletonXOffset * (1 - blend) + rightParams.skeletonXOffset * blend,
+      skeletonYOffset: leftParams.skeletonYOffset * (1 - blend) + rightParams.skeletonYOffset * blend,
+      skeletonZDepth: leftParams.skeletonZDepth * (1 - blend) + rightParams.skeletonZDepth * blend,
+    };
+    
+    // Apply same transformations as HandSkeleton
+    const baseWidth = window.innerWidth;
+    const baseHeight = window.innerHeight;
+    const centerX = baseWidth / 2;
+    const centerY = baseHeight / 2;
+    
+    // Apply z-depth scaling
+    const tipZ = indexTip.z || 0;
+    const depthScale = 1 + tipZ * handParams.skeletonZDepth;
+    
+    // Calculate position with same transform as skeleton (mirrored)
+    const xOffset = (handParams.skeletonXOffset / 100) * baseWidth;
+    const yOffset = (handParams.skeletonYOffset / 100) * baseHeight;
+    const scaleFactor = handParams.skeletonScale;
+    
+    // Apply transformations: mirror, scale, and offset
+    let pointerX = (1 - indexTip.x) * baseWidth * depthScale; // Mirror x-axis
+    let pointerY = indexTip.y * baseHeight * depthScale;
+    
+    // Apply scale transformation from center
+    pointerX = centerX + (pointerX - centerX) * scaleFactor;
+    pointerY = centerY + (pointerY - centerY) * scaleFactor;
+    
+    // Apply offset
+    pointerX += xOffset;
+    pointerY += yOffset;
+    
     setPointerPosition({ x: pointerX, y: pointerY });
 
     // Check pinch state
@@ -702,7 +752,7 @@ const Index = () => {
     }
 
     setLastPinchState(isPinching);
-  }, [handPositions, gestureStates, remoteLandmarks, landmarks, isTracking, lastPinchState]);
+  }, [handPositions, gestureStates, remoteLandmarks, landmarks, isTracking, lastPinchState, alignmentParams]);
 
   useEffect(() => {
     if (handPositions.length === 0) {
