@@ -1,7 +1,0 @@
-project_id = "aggpdvxlotbduoophjay"
-
-[functions.interpret-voice-command]
-verify_jwt = false
-
-[functions.transcribe-audio]
-verify_jwt = false
