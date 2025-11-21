@@ -103,6 +103,7 @@ const Index = () => {
   const [cursorOffset, setCursorOffset] = useState({ x: 0, y: 0 });
   const [showCalibration, setShowCalibration] = useState(false);
   const [showCursor, setShowCursor] = useState(false);
+  const lastClickTimeRef = useRef<number>(0);
   const channelRef = useRef<any>(null);
   const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
@@ -646,6 +647,13 @@ const Index = () => {
 
     // Detect pinch start (click action)
     if (isPinching && !lastPinchState) {
+      const now = Date.now();
+      // Prevent multiple clicks within 300ms
+      if (now - lastClickTimeRef.current < 300) {
+        return;
+      }
+      lastClickTimeRef.current = now;
+      
       const elementAtPoint = document.elementFromPoint(pointerX, pointerY);
       if (elementAtPoint) {
         const clickEvent = new MouseEvent('click', {
@@ -701,16 +709,36 @@ const Index = () => {
       return;
     }
 
-    setSmoothedPointerPosition(prev => {
-      if (!prev) return pointerPosition;
+    // Use requestAnimationFrame to prevent infinite loops
+    let rafId: number;
+    const updateSmoothedPosition = () => {
+      setSmoothedPointerPosition(prev => {
+        if (!prev || !pointerPosition) return pointerPosition;
+        
+        // Smooth interpolation (lower = smoother but more lag, slower movement)
+        const smoothing = 0.15;
+        const newX = prev.x + (pointerPosition.x - prev.x) * smoothing;
+        const newY = prev.y + (pointerPosition.y - prev.y) * smoothing;
+        
+        // Check if we're close enough to stop smoothing
+        const distance = Math.sqrt(
+          Math.pow(pointerPosition.x - newX, 2) + 
+          Math.pow(pointerPosition.y - newY, 2)
+        );
+        
+        if (distance < 0.5) {
+          return pointerPosition;
+        }
+        
+        return { x: newX, y: newY };
+      });
       
-      // Smooth interpolation (lower = smoother but more lag, slower movement)
-      const smoothing = 0.15;
-      return {
-        x: prev.x + (pointerPosition.x - prev.x) * smoothing,
-        y: prev.y + (pointerPosition.y - prev.y) * smoothing,
-      };
-    });
+      rafId = requestAnimationFrame(updateSmoothedPosition);
+    };
+    
+    rafId = requestAnimationFrame(updateSmoothedPosition);
+    
+    return () => cancelAnimationFrame(rafId);
   }, [pointerPosition]);
 
   useEffect(() => {
