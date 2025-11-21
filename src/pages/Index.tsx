@@ -319,8 +319,6 @@ const Index = () => {
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
-    setIsTracking(true);
-    setHasStartedTracking(true);
     
     try {
       // Check if we're using remote tracking
@@ -333,19 +331,30 @@ const Index = () => {
           title: "Loading Hand Tracking",
           description: "Initializing camera and AI model...",
         });
+        
+        // Set tracking state AFTER successful camera start to avoid premature state changes
         await startCamera();
+        setIsTracking(true);
+        setHasStartedTracking(true);
         addDebugLog('Local camera started successfully');
       } else {
+        // For remote tracking, set state immediately
+        setIsTracking(true);
+        setHasStartedTracking(true);
         addDebugLog('Mobile hand tracking active, skipping desktop camera');
       }
     } catch (error) {
       console.error('Error starting tracking:', error);
+      addDebugLog(`Failed to start camera: ${error instanceof Error ? error.message : 'Unknown error'}`);
       toast({
         title: "Camera Error",
-        description: "Failed to start hand tracking. Please check camera permissions.",
+        description: "Failed to start hand tracking. Please check camera permissions and refresh.",
         variant: "destructive"
       });
-      setIsTracking(false);
+      // Don't change isTracking if it was already true (for remote tracking)
+      if (!remoteLandmarks || remoteLandmarks.length === 0) {
+        setIsTracking(false);
+      }
     }
   };
 
