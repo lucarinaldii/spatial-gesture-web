@@ -102,6 +102,7 @@ const Index = () => {
   const [cursorOffset, setCursorOffset] = useState({ x: 0, y: 0 });
   const [showCalibration, setShowCalibration] = useState(false);
   const [showCursor, setShowCursor] = useState(false);
+  const [waitingForPhone, setWaitingForPhone] = useState(false);
   const lastClickTimeRef = useRef<number>(0);
   const channelRef = useRef<any>(null);
   const { isReady, isInitializing, loadingProgress, loadingStage, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera, initHandTracking } = useHandTracking();
@@ -273,10 +274,16 @@ const Index = () => {
         addDebugLog(`Received landmarks payload at ${new Date(payload.timestamp).toISOString()}`);
         setRemoteLandmarks(payload.landmarks);
         setRemoteHandedness(payload.handedness);
+        
+        // First landmark received - hide loader and show canvas
+        if (waitingForPhone) {
+          setWaitingForPhone(false);
+          addDebugLog('First landmarks received - showing canvas');
+        }
+        
         if (!isRemoteConnected) {
           setIsRemoteConnected(true);
-          setTrackingMode('local'); // Switch away from QR code screen
-          addDebugLog('Receiving landmarks from mobile - switching to canvas');
+          addDebugLog('Phone now connected and sending data');
           toast({
             title: "Phone Connected",
             description: "Receiving hand tracking data from your phone",
@@ -291,7 +298,17 @@ const Index = () => {
         if (!mounted) return;
         addDebugLog(`Landmark channel status: ${status}`);
         if (status === 'SUBSCRIBED') {
-          addDebugLog('Desktop subscribed to landmark channel, waiting for mobile data...');
+          // Immediately switch to canvas and show loader
+          setTrackingMode('local');
+          setWaitingForPhone(true);
+          if (!isTracking) {
+            handleStartTracking();
+          }
+          addDebugLog('Channel subscribed - switching to canvas, waiting for phone data...');
+          toast({
+            title: "Waiting for phone",
+            description: "Scan the QR code and tap 'Start Hand Tracking'",
+          });
         }
       });
 
@@ -299,7 +316,7 @@ const Index = () => {
       mounted = false;
       channelRef.current?.unsubscribe();
     };
-  }, [sessionId, addDebugLog, toast, isRemoteConnected, isTracking]);
+  }, [sessionId, addDebugLog, toast, isRemoteConnected, isTracking, waitingForPhone]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
@@ -1543,6 +1560,17 @@ const Index = () => {
           </div>
         ) : (
           <div className="relative min-h-screen">
+            {/* Waiting for phone loader overlay */}
+            {waitingForPhone && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                <div className="text-center space-y-4">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto"></div>
+                  <h2 className="text-2xl font-bold text-foreground">Waiting for phone...</h2>
+                  <p className="text-muted-foreground">Scan the QR code and tap "Start Hand Tracking"</p>
+                </div>
+              </div>
+            )}
+            
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
             {/* Debug panel - removed */}
