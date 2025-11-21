@@ -134,12 +134,25 @@ const MobileCamera = () => {
     addDebugLog('Starting hand tracking on mobile');
     setIsTracking(true);
     
-    setTimeout(async () => {
+    try {
       if (videoRef.current) {
         await startCamera();
         addDebugLog('Camera started, tracking active');
+        toast({
+          title: "Tracking Started",
+          description: "Hand tracking is now active",
+        });
       }
-    }, 100);
+    } catch (error) {
+      console.error('Failed to start camera:', error);
+      addDebugLog(`Camera error: ${error instanceof Error ? error.message : 'Unknown'}`);
+      toast({
+        title: "Camera Error",
+        description: error instanceof Error ? error.message : "Failed to access camera. Please check permissions.",
+        variant: "destructive",
+      });
+      setIsTracking(false);
+    }
   };
 
   return (

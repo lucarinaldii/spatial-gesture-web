@@ -285,9 +285,11 @@ const Index = () => {
             title: "Phone Connected",
             description: "Receiving hand tracking data from your phone",
           });
-          // Auto-start tracking when first landmark arrives
+          // Auto-start tracking when first landmark arrives - but skip camera init
           if (!isTracking) {
-            handleStartTracking();
+            setIsTracking(true);
+            setHasStartedTracking(true);
+            addDebugLog('Using mobile hand tracking, desktop camera not needed');
           }
         }
       })
