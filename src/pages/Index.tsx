@@ -240,7 +240,6 @@ const Index = () => {
     setDebugLogs((prev) => [...prev.slice(-49), entry]);
   }, []);
 
-  // Set up realtime channel to receive landmarks from mobile
   // Setup channel to receive hand tracking from mobile
   useEffect(() => {
     if (!sessionId) return;
@@ -276,10 +275,8 @@ const Index = () => {
         setRemoteHandedness(payload.handedness);
         
         // Mark as connected on first data
-        if (!isRemoteConnected) {
-          setIsRemoteConnected(true);
-          addDebugLog('[DESKTOP] Receiving hand data from mobile');
-        }
+        setIsRemoteConnected(true);
+        addDebugLog(`[DESKTOP] Receiving hand data from mobile - hands: ${payload.landmarks?.length ?? 0}`);
       })
       .subscribe((status) => {
         if (!mounted) return;
@@ -297,7 +294,7 @@ const Index = () => {
       setRemoteLandmarks(null);
       setRemoteHandedness(null);
     };
-  }, [sessionId, isRemoteConnected, toast, addDebugLog]);
+  }, [sessionId, toast, addDebugLog]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
