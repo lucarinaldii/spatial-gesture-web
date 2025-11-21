@@ -244,9 +244,10 @@ const Index = () => {
 
   // Set up realtime channel to receive landmarks from mobile
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || trackingMode !== 'mobile-qr') return;
 
     let mounted = true;
+    let hasAutoStarted = false;
 
     const setupChannel = async () => {
       try {
@@ -295,14 +296,20 @@ const Index = () => {
                 description: "Receiving hand tracking data from your phone",
               });
               // Auto-start tracking when first landmark arrives
-              if (!isTracking) {
-                handleStartTracking();
+              if (!hasAutoStarted) {
+                hasAutoStarted = true;
+                setIsTracking(true);
+                setHasStartedTracking(true);
+                addDebugLog('Auto-started tracking from mobile connection');
               }
             }
           })
           .subscribe((status) => {
             if (!mounted) return;
             addDebugLog(`Landmark channel status: ${status}`);
+            if (status === 'SUBSCRIBED') {
+              addDebugLog('Desktop ready to receive landmarks');
+            }
           });
       } catch (error) {
         console.error('Setup error:', error);
@@ -316,7 +323,7 @@ const Index = () => {
       mounted = false;
       channelRef.current?.unsubscribe();
     };
-  }, [sessionId, addDebugLog, isRemoteConnected, toast, isTracking]);
+  }, [sessionId, trackingMode, addDebugLog, isRemoteConnected, toast]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
@@ -1458,6 +1465,23 @@ const Index = () => {
                   <QRCodeConnection 
                     onSessionId={setSessionId}
                   />
+                  
+                  {/* Connection Status Indicator */}
+                  <div className="flex flex-col items-center gap-3">
+                    {!isRemoteConnected && sessionId && (
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-sm">Waiting for mobile device...</span>
+                      </div>
+                    )}
+                    {isRemoteConnected && (
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium">
+                        <span className="text-lg">✓</span>
+                        <span className="text-sm">Mobile connected - hand tracking active</span>
+                      </div>
+                    )}
+                  </div>
+                  
                   <div className="flex gap-4 justify-center">
                     <Button 
                       onClick={() => setTrackingMode('initial')} 
