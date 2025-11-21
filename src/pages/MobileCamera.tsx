@@ -13,7 +13,7 @@ const MobileCamera = () => {
   const channelRef = useRef<any>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const { toast } = useToast();
-  const { isReady, landmarks, handedness, videoRef, startCamera } = useHandTracking();
+  const { isReady, isInitializing, loadingProgress, loadingStage, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const [isTracking, setIsTracking] = useState(false);
 
   const addDebugLog = (message: string) => {
@@ -129,13 +129,31 @@ const MobileCamera = () => {
             <p className="text-lg text-muted-foreground">
               Your hand movements will control the desktop interface
             </p>
-            <button
-              onClick={handleStartTracking}
-              disabled={!isReady}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold disabled:opacity-50"
-            >
-              {isReady ? 'Start Hand Tracking' : 'Loading...'}
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={handleStartTracking}
+                disabled={isInitializing}
+                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold disabled:opacity-50 w-full"
+              >
+                {isInitializing ? 'Loading AI Model...' : 'Start Hand Tracking'}
+              </button>
+              {isInitializing && (
+                <div className="space-y-2">
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-300 ease-out"
+                      style={{ width: `${loadingProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {loadingStage === 'wasm' && 'Loading WebAssembly...'}
+                    {loadingStage === 'model' && 'Loading AI Model...'}
+                    {loadingStage === 'ready' && 'Ready!'}
+                    {' '}({loadingProgress}%)
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

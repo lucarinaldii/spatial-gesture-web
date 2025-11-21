@@ -30,6 +30,8 @@ export interface GestureState {
 export const useHandTracking = () => {
   const [isReady, setIsReady] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState<'idle' | 'wasm' | 'model' | 'ready'>('idle');
   const [handPositions, setHandPositions] = useState<HandPosition[]>([]);
   const [gestureStates, setGestureStates] = useState<GestureState[]>([]);
   const [landmarks, setLandmarks] = useState<any>(null);
@@ -240,15 +242,22 @@ export const useHandTracking = () => {
     }
 
     setIsInitializing(true);
+    setLoadingProgress(0);
+    setLoadingStage('wasm');
     
     const promise = (async () => {
       try {
         console.log('🔧 Initializing MediaPipe...');
+        setLoadingProgress(10);
+        
         const vision = await FilesetResolver.forVisionTasks(
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
         );
-
+        
+        setLoadingProgress(40);
+        setLoadingStage('model');
         console.log('📦 Loading hand tracking model...');
+        
         const handLandmarker = await HandLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task',
@@ -261,13 +270,18 @@ export const useHandTracking = () => {
           minTrackingConfidence: 0.3,
         });
 
+        setLoadingProgress(90);
         handLandmarkerRef.current = handLandmarker;
+        setLoadingProgress(100);
+        setLoadingStage('ready');
         setIsReady(true);
         setIsInitializing(false);
         console.log('✓ MediaPipe ready!');
       } catch (error) {
         console.error('Error initializing hand tracking:', error);
         setIsInitializing(false);
+        setLoadingProgress(0);
+        setLoadingStage('idle');
         throw error;
       } finally {
         initPromiseRef.current = null;
@@ -350,6 +364,8 @@ export const useHandTracking = () => {
   return {
     isReady,
     isInitializing,
+    loadingProgress,
+    loadingStage,
     handPositions,
     gestureStates,
     landmarks,
