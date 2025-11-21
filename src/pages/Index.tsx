@@ -92,6 +92,7 @@ const Index = () => {
   const [remoteHandedness, setRemoteHandedness] = useState<any>(null);
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'local'>('initial');
   const channelRef = useRef<any>(null);
   const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
@@ -1426,14 +1427,49 @@ const Index = () => {
             <div className="text-center space-y-6 max-w-2xl">
               <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Spatial UI Controller</h1>
               <p className="text-xl text-muted-foreground">Control your interface with natural hand gestures</p>
-              <div className="space-y-4 pt-8">
-                <QRCodeConnection 
-                  onSessionId={setSessionId}
-                />
-                <Button onClick={handleStartTracking} disabled={!isReady} size="lg" className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground">
-                  {isReady ? 'Start Hand Tracking' : 'Loading Model...'}
-                </Button>
-              </div>
+              
+              {trackingMode === 'initial' && (
+                <div className="space-y-4 pt-8">
+                  <p className="text-lg text-muted-foreground mb-6">Choose your tracking method:</p>
+                  <div className="flex flex-col gap-4">
+                    <Button 
+                      onClick={handleStartTracking} 
+                      disabled={!isReady} 
+                      size="lg" 
+                      className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      {isReady ? '🖥️ Start Local Camera Tracking' : 'Loading Model...'}
+                    </Button>
+                    <Button 
+                      onClick={() => setTrackingMode('mobile-qr')} 
+                      disabled={!isReady} 
+                      size="lg" 
+                      variant="secondary"
+                      className="text-lg px-8 py-6"
+                    >
+                      📱 Start Mobile Camera Tracking
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {trackingMode === 'mobile-qr' && (
+                <div className="space-y-6 pt-8">
+                  <QRCodeConnection 
+                    onSessionId={setSessionId}
+                  />
+                  <div className="flex gap-4 justify-center">
+                    <Button 
+                      onClick={() => setTrackingMode('initial')} 
+                      variant="outline"
+                      size="lg"
+                      className="text-lg px-6 py-4"
+                    >
+                      ← Back
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
