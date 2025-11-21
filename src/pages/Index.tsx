@@ -1360,7 +1360,7 @@ const Index = () => {
     >
       <ThemeToggle />
       <GesturesInfo />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {!isTracking ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-8">
