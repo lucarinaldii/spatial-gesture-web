@@ -1754,6 +1754,15 @@ const Index = () => {
           </div>
         )}
       </div>
+      
+      {/* Hidden video element for local camera tracking */}
+      <video 
+        ref={videoRef} 
+        className="hidden" 
+        playsInline 
+        muted
+        style={{ display: 'none' }}
+      />
     </div>
   );
 };
