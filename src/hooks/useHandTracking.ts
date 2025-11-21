@@ -27,7 +27,7 @@ export interface GestureState {
   };
 }
 
-export const useHandTracking = () => {
+export const useHandTracking = (enabled: boolean = true) => {
   const [isReady, setIsReady] = useState(false);
   const [handPositions, setHandPositions] = useState<HandPosition[]>([]);
   const [gestureStates, setGestureStates] = useState<GestureState[]>([]);
@@ -280,6 +280,8 @@ export const useHandTracking = () => {
   }, [processFrame]);
 
   useEffect(() => {
+    if (!enabled) return; // Skip initialization if disabled
+    
     let mounted = true;
 
     const initHandTracking = async () => {
@@ -323,7 +325,7 @@ export const useHandTracking = () => {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [enabled]);
 
   return {
     isReady,

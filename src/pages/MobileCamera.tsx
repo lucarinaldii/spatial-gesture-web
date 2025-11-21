@@ -89,27 +89,22 @@ const MobileCamera = () => {
     };
   }, [sessionId, navigate, toast]);
 
-  // Send landmarks to desktop when they update
+  // Send landmarks to desktop when they update - fire and forget for max speed
   useEffect(() => {
     if (!landmarks || !channelRef.current || landmarks.length === 0) return;
 
-    const sendLandmarks = async () => {
-      try {
-        await channelRef.current.send({
-          type: 'broadcast',
-          event: 'landmarks',
-          payload: {
-            landmarks,
-            handedness,
-            timestamp: Date.now(),
-          }
-        });
-      } catch (error) {
-        console.error('Error sending landmarks:', error);
+    // Don't await - send immediately without blocking
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'landmarks',
+      payload: {
+        landmarks,
+        handedness,
+        timestamp: Date.now(),
       }
-    };
-
-    sendLandmarks();
+    }).catch((error: Error) => {
+      console.error('Error sending landmarks:', error);
+    });
   }, [landmarks, handedness]);
 
   const handleStartTracking = async () => {
