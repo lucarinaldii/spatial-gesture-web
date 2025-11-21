@@ -210,6 +210,7 @@ export const useHandTracking = () => {
 
   const processFrame = useCallback(() => {
     if (!videoRef.current || !handLandmarkerRef.current) {
+      animationFrameRef.current = requestAnimationFrame(processFrame);
       return;
     }
 
@@ -224,9 +225,11 @@ export const useHandTracking = () => {
         detectGestures(results);
       } catch (error) {
         console.error('Error processing frame:', error);
+        // Continue processing even if one frame fails
       }
     }
     
+    // Always continue the animation loop
     animationFrameRef.current = requestAnimationFrame(processFrame);
   }, [detectGestures]);
 
@@ -341,9 +344,20 @@ export const useHandTracking = () => {
       
       // Start processing frames
       console.log('✓ Starting frame processing...');
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
       processFrame();
+      
+      return stream; // Return stream for cleanup if needed
     } catch (error) {
       console.error('❌ Error accessing camera:', error);
+      // Clean up any partial state
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
       throw error;
     }
   }, [processFrame, initHandTracking]);
