@@ -85,6 +85,7 @@ const MobileCamera = () => {
 
     const sendLandmarks = async () => {
       try {
+        addDebugLog('Sending landmarks frame to desktop');
         await channelRef.current.send({
           type: 'broadcast',
           event: 'landmarks',
@@ -96,6 +97,7 @@ const MobileCamera = () => {
         });
       } catch (error) {
         console.error('Error sending landmarks:', error);
+        addDebugLog(`Error sending landmarks: ${error instanceof Error ? error.message : 'Unknown'}`);
       }
     };
 
