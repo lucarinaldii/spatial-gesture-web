@@ -106,7 +106,7 @@ const Index = () => {
   const [showCursor, setShowCursor] = useState(false);
   const lastClickTimeRef = useRef<number>(0);
   const channelRef = useRef<any>(null);
-  const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
+  const { isReady, isInitializing, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera, initHandTracking } = useHandTracking();
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
   
   // Use remote gestures if available, otherwise use local
@@ -336,36 +336,31 @@ const Index = () => {
     setIsTracking(true);
     setHasStartedTracking(true);
     
-    // Only start local camera if NOT using mobile hand tracking
-    setTimeout(async () => { 
-      if (videoRef.current) {
-        // Check if we're actively receiving remote landmarks
-        const usingRemoteTracking = remoteLandmarks && remoteLandmarks.length > 0;
-        
-        if (!usingRemoteTracking) {
-          // Use local camera only when no remote tracking is active
-          addDebugLog('Starting local camera for desktop interaction');
-          await startCamera();
-        } else {
-          addDebugLog('Mobile hand tracking active, skipping desktop camera');
-        }
-      } else if (!remoteLandmarks || remoteLandmarks.length === 0) {
-        console.error('Video element not ready, retrying...');
-        // Retry after another delay only if not using remote tracking
-        setTimeout(async () => {
-          if (videoRef.current && (!remoteLandmarks || remoteLandmarks.length === 0)) {
-            await startCamera();
-          } else {
-            console.error('Failed to initialize video element');
-            toast({
-              title: "Camera Error",
-              description: "Failed to access video element. Please refresh and try again.",
-              variant: "destructive"
-            });
-          }
-        }, 500);
+    try {
+      // Check if we're using remote tracking
+      const usingRemoteTracking = remoteLandmarks && remoteLandmarks.length > 0;
+      
+      if (!usingRemoteTracking) {
+        // Initialize and start local camera
+        addDebugLog('Starting local camera for desktop interaction');
+        toast({
+          title: "Loading Hand Tracking",
+          description: "Initializing camera and AI model...",
+        });
+        await startCamera();
+        addDebugLog('Local camera started successfully');
+      } else {
+        addDebugLog('Mobile hand tracking active, skipping desktop camera');
       }
-    }, 300);
+    } catch (error) {
+      console.error('Error starting tracking:', error);
+      toast({
+        title: "Camera Error",
+        description: "Failed to start hand tracking. Please check camera permissions.",
+        variant: "destructive"
+      });
+      setIsTracking(false);
+    }
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1554,15 +1549,14 @@ const Index = () => {
                   <div className="flex flex-col gap-4">
                     <Button 
                       onClick={handleStartTracking} 
-                      disabled={!isReady} 
+                      disabled={isInitializing} 
                       size="lg" 
                       className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
-                      {isReady ? '🖥️ Start Local Camera Tracking' : 'Loading Model...'}
+                      {isInitializing ? '⏳ Loading AI Model...' : '🖥️ Start Local Camera Tracking'}
                     </Button>
                     <Button 
                       onClick={() => setTrackingMode('mobile-qr')} 
-                      disabled={!isReady} 
                       size="lg" 
                       variant="secondary"
                       className="text-lg px-8 py-6"
