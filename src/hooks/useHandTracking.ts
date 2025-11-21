@@ -29,9 +29,6 @@ export interface GestureState {
 
 export const useHandTracking = () => {
   const [isReady, setIsReady] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStage, setLoadingStage] = useState<'idle' | 'wasm' | 'model' | 'ready'>('idle');
   const [handPositions, setHandPositions] = useState<HandPosition[]>([]);
   const [gestureStates, setGestureStates] = useState<GestureState[]>([]);
   const [landmarks, setLandmarks] = useState<any>(null);
@@ -43,7 +40,6 @@ export const useHandTracking = () => {
   const lastPositionsRef = useRef<HandPosition[]>([]);
   const lastPinchStatesRef = useRef<boolean[]>([false, false]); // Track previous pinch states
   const lastLandmarksRef = useRef<any>(null); // Store previous landmarks for smoothing
-  const initPromiseRef = useRef<Promise<void> | null>(null);
   
   // Smoothing parameters - adjusted for natural movements
   const SMOOTHING_FACTOR = 0.5; // Higher = more responsive, lower = smoother
@@ -210,7 +206,6 @@ export const useHandTracking = () => {
 
   const processFrame = useCallback(() => {
     if (!videoRef.current || !handLandmarkerRef.current) {
-      animationFrameRef.current = requestAnimationFrame(processFrame);
       return;
     }
 
@@ -225,82 +220,15 @@ export const useHandTracking = () => {
         detectGestures(results);
       } catch (error) {
         console.error('Error processing frame:', error);
-        // Continue processing even if one frame fails
       }
     }
     
-    // Always continue the animation loop
     animationFrameRef.current = requestAnimationFrame(processFrame);
   }, [detectGestures]);
-
-  const initHandTracking = useCallback(async () => {
-    // Return existing promise if already initializing
-    if (initPromiseRef.current) {
-      return initPromiseRef.current;
-    }
-
-    // Already initialized
-    if (handLandmarkerRef.current) {
-      return Promise.resolve();
-    }
-
-    setIsInitializing(true);
-    setLoadingProgress(0);
-    setLoadingStage('wasm');
-    
-    const promise = (async () => {
-      try {
-        console.log('🔧 Initializing MediaPipe...');
-        setLoadingProgress(10);
-        
-        const vision = await FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-        );
-        
-        setLoadingProgress(40);
-        setLoadingStage('model');
-        console.log('📦 Loading hand tracking model...');
-        
-        const handLandmarker = await HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task',
-            delegate: 'GPU',
-          },
-          runningMode: 'VIDEO',
-          numHands: 2,
-          minHandDetectionConfidence: 0.3,
-          minHandPresenceConfidence: 0.3,
-          minTrackingConfidence: 0.3,
-        });
-
-        setLoadingProgress(90);
-        handLandmarkerRef.current = handLandmarker;
-        setLoadingProgress(100);
-        setLoadingStage('ready');
-        setIsReady(true);
-        setIsInitializing(false);
-        console.log('✓ MediaPipe ready!');
-      } catch (error) {
-        console.error('Error initializing hand tracking:', error);
-        setIsInitializing(false);
-        setLoadingProgress(0);
-        setLoadingStage('idle');
-        throw error;
-      } finally {
-        initPromiseRef.current = null;
-      }
-    })();
-
-    initPromiseRef.current = promise;
-    return promise;
-  }, []);
 
   const startCamera = useCallback(async () => {
     try {
       console.log('🎥 Starting camera...');
-      
-      // Initialize hand tracking if not already done
-      await initHandTracking();
       
       if (!videoRef.current) {
         console.error('❌ Video element not found!');
@@ -344,27 +272,49 @@ export const useHandTracking = () => {
       
       // Start processing frames
       console.log('✓ Starting frame processing...');
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
       processFrame();
-      
-      return stream; // Return stream for cleanup if needed
     } catch (error) {
       console.error('❌ Error accessing camera:', error);
-      // Clean up any partial state
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      }
-      throw error;
+      throw error; // Re-throw to be caught by handleStartTracking
     }
-  }, [processFrame, initHandTracking]);
+  }, [processFrame]);
 
   useEffect(() => {
-    // Cleanup on unmount
+    let mounted = true;
+
+    const initHandTracking = async () => {
+      try {
+        console.log('🔧 Initializing MediaPipe...');
+        const vision = await FilesetResolver.forVisionTasks(
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+        );
+
+        const handLandmarker = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numHands: 2, // Track up to 2 hands
+          minHandDetectionConfidence: 0.3,
+          minHandPresenceConfidence: 0.3,
+          minTrackingConfidence: 0.3,
+        });
+
+        if (mounted) {
+          handLandmarkerRef.current = handLandmarker;
+          setIsReady(true);
+          console.log('✓ MediaPipe ready!');
+        }
+      } catch (error) {
+        console.error('Error initializing hand tracking:', error);
+      }
+    };
+
+    initHandTracking();
+
     return () => {
+      mounted = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -377,15 +327,11 @@ export const useHandTracking = () => {
 
   return {
     isReady,
-    isInitializing,
-    loadingProgress,
-    loadingStage,
     handPositions,
     gestureStates,
     landmarks,
     handedness,
     videoRef,
     startCamera,
-    initHandTracking,
   };
 };

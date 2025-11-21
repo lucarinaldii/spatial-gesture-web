@@ -79,11 +79,10 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13,
         <meshStandardMaterial 
           color={color}
           emissive={emissive}
-          emissiveIntensity={0.2}
-          roughness={0.15}
-          metalness={0.4}
+          emissiveIntensity={0.15}
+          roughness={0.3}
+          metalness={0.05}
           side={THREE.DoubleSide}
-          envMapIntensity={1.5}
         />
       </mesh>
       
@@ -93,10 +92,9 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13,
         <meshStandardMaterial 
           color={color}
           emissive={emissive}
-          emissiveIntensity={0.2}
-          roughness={0.15}
-          metalness={0.4}
-          envMapIntensity={1.5}
+          emissiveIntensity={0.15}
+          roughness={0.3}
+          metalness={0.05}
         />
       </mesh>
       <mesh position={end}>
@@ -104,10 +102,9 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13,
         <meshStandardMaterial 
           color={color}
           emissive={emissive}
-          emissiveIntensity={0.2}
-          roughness={0.15}
-          metalness={0.4}
-          envMapIntensity={1.5}
+          emissiveIntensity={0.15}
+          roughness={0.3}
+          metalness={0.05}
         />
       </mesh>
     </group>
@@ -147,11 +144,10 @@ function PalmMesh({ vectors, color, emissive }: { vectors: THREE.Vector3[]; colo
       <meshStandardMaterial 
         color={color}
         emissive={emissive}
-        emissiveIntensity={0.2}
-        roughness={0.15}
-        metalness={0.4}
+        emissiveIntensity={0.15}
+        roughness={0.3}
+        metalness={0.05}
         side={THREE.DoubleSide}
-        envMapIntensity={1.5}
       />
     </mesh>
   );
@@ -259,10 +255,9 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, th
             <meshStandardMaterial 
               color={themeColor}
               emissive={themeEmissive}
-              emissiveIntensity={0.2}
-              roughness={0.15}
-              metalness={0.4}
-              envMapIntensity={1.5}
+              emissiveIntensity={0.15}
+              roughness={0.3}
+              metalness={0.05}
             />
           </mesh>
         </group>
@@ -274,10 +269,9 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, th
         <meshStandardMaterial 
           color={themeColor}
           emissive={themeEmissive}
-          emissiveIntensity={0.2}
-          roughness={0.15}
-          metalness={0.4}
-          envMapIntensity={1.5}
+          emissiveIntensity={0.15}
+          roughness={0.3}
+          metalness={0.05}
         />
       </mesh>
     </group>
@@ -331,16 +325,21 @@ const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeig
       >
         <PerspectiveCamera makeDefault position={[0, 0, 12]} fov={75} />
         
-        {/* Enhanced lighting for better reflections */}
-        <ambientLight intensity={0.85} />
+        {/* Simplified lighting without shadows for performance */}
+        <ambientLight intensity={0.9} />
         <directionalLight 
           position={[5, 10, 8]} 
-          intensity={1.0} 
-          color="#ffffff" 
+          intensity={0.8} 
+          color="#fff5e6" 
         />
-        <directionalLight position={[-5, -5, -8]} intensity={0.4} color="#ffffff" />
-        <pointLight position={[0, 5, 15]} intensity={0.5} color="#ffffff" />
-        <hemisphereLight intensity={0.3} color="#ffffff" groundColor="#888888" />
+        <directionalLight position={[-5, -5, -8]} intensity={0.3} color="#ffeedd" />
+        <pointLight position={[0, 5, 15]} intensity={0.4} color="#ffe4d1" />
+        
+        {/* Subtle ground plane without shadows */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]}>
+          <planeGeometry args={[30, 30]} />
+          <meshBasicMaterial color="#000000" transparent opacity={0.1} />
+        </mesh>
         
         {/* Render each detected hand */}
         {landmarks.map((handLandmarks, index) => {

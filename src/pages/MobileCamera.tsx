@@ -13,7 +13,7 @@ const MobileCamera = () => {
   const channelRef = useRef<any>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const { toast } = useToast();
-  const { isReady, isInitializing, loadingProgress, loadingStage, landmarks, handedness, videoRef, startCamera } = useHandTracking();
+  const { isReady, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const [isTracking, setIsTracking] = useState(false);
 
   const addDebugLog = (message: string) => {
@@ -31,10 +31,36 @@ const MobileCamera = () => {
 
     let mounted = true;
 
-    const setupConnection = async (attempt = 1) => {
+    const setupConnection = async () => {
       try {
-        addDebugLog(`Setting up realtime channel... (attempt ${attempt})`);
+        // Check for existing session first
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session && mounted) {
+          const { error } = await supabase.auth.signInAnonymously();
+          if (error) {
+            // If rate limited, continue anyway - realtime might still work
+            if (error.status === 429) {
+              addDebugLog('Rate limited, continuing with existing connection');
+            } else {
+              console.error('Anonymous sign in error:', error);
+              addDebugLog(`Auth error: ${error.message}`);
+              toast({
+                title: "Connection Warning",
+                description: "Using fallback connection mode",
+                variant: "default",
+              });
+            }
+          } else {
+            addDebugLog('Anonymous auth successful');
+          }
+        } else {
+          addDebugLog('Using existing auth session');
+        }
 
+        if (!mounted) return;
+
+        // Set up realtime channel for sending landmarks
         const channel = supabase.channel(`hand-tracking-${sessionId}`, {
           config: {
             broadcast: { self: false },
@@ -42,52 +68,16 @@ const MobileCamera = () => {
         });
         channelRef.current = channel;
 
-        channel.subscribe((status, error) => {
+        channel.subscribe((status) => {
           if (!mounted) return;
           addDebugLog(`Channel status: ${status}`);
-          
-          if (error) {
-            addDebugLog(`Channel error: ${error.message || JSON.stringify(error)}`);
-            toast({
-              title: "Connection Issue",
-              description: error.message || "Please refresh and try again",
-              variant: "destructive",
-            });
-          }
-          
           if (status === 'SUBSCRIBED') {
             addDebugLog('Channel ready to send landmarks');
-            toast({
-              title: "Connected",
-              description: "Hand tracking ready",
-            });
-          } else if (status === 'CHANNEL_ERROR') {
-            addDebugLog('Channel error occurred');
-            if (attempt < 3) {
-              addDebugLog(`Retrying connection... (${attempt}/3)`);
-              setTimeout(() => {
-                channel.unsubscribe();
-                setupConnection(attempt + 1);
-              }, 1000);
-            } else {
-              const errorMsg = error?.message || "Unable to establish connection after 3 attempts";
-              toast({
-                title: "Connection Failed",
-                description: errorMsg,
-                variant: "destructive",
-              });
-            }
           }
         });
       } catch (error) {
         console.error('Setup error:', error);
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        addDebugLog(`Setup error: ${errorMsg}`);
-        toast({
-          title: "Setup Failed",
-          description: errorMsg,
-          variant: "destructive",
-        });
+        addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
       }
     };
 
@@ -99,13 +89,12 @@ const MobileCamera = () => {
     };
   }, [sessionId, navigate, toast]);
 
-  // Send landmarks to desktop continuously
+  // Send landmarks to desktop when they update
   useEffect(() => {
     if (!landmarks || !channelRef.current || landmarks.length === 0) return;
 
     const sendLandmarks = async () => {
       try {
-        addDebugLog('Sending landmarks frame to desktop');
         await channelRef.current.send({
           type: 'broadcast',
           event: 'landmarks',
@@ -117,42 +106,22 @@ const MobileCamera = () => {
         });
       } catch (error) {
         console.error('Error sending landmarks:', error);
-        addDebugLog(`Error sending landmarks: ${error instanceof Error ? error.message : 'Unknown'}`);
       }
     };
 
-    // Send immediately
     sendLandmarks();
-
-    // Then send at ~30fps for smooth updates
-    const intervalId = setInterval(sendLandmarks, 33);
-
-    return () => clearInterval(intervalId);
   }, [landmarks, handedness]);
 
   const handleStartTracking = async () => {
     addDebugLog('Starting hand tracking on mobile');
     setIsTracking(true);
     
-    try {
+    setTimeout(async () => {
       if (videoRef.current) {
         await startCamera();
         addDebugLog('Camera started, tracking active');
-        toast({
-          title: "Tracking Started",
-          description: "Hand tracking is now active",
-        });
       }
-    } catch (error) {
-      console.error('Failed to start camera:', error);
-      addDebugLog(`Camera error: ${error instanceof Error ? error.message : 'Unknown'}`);
-      toast({
-        title: "Camera Error",
-        description: error instanceof Error ? error.message : "Failed to access camera. Please check permissions.",
-        variant: "destructive",
-      });
-      setIsTracking(false);
-    }
+    }, 100);
   };
 
   return (
@@ -168,31 +137,13 @@ const MobileCamera = () => {
             <p className="text-lg text-muted-foreground">
               Your hand movements will control the desktop interface
             </p>
-            <div className="space-y-3">
-              <button
-                onClick={handleStartTracking}
-                disabled={isInitializing}
-                className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold disabled:opacity-50 w-full"
-              >
-                {isInitializing ? 'Loading AI Model...' : 'Start Hand Tracking'}
-              </button>
-              {isInitializing && (
-                <div className="space-y-2">
-                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="h-full bg-primary transition-all duration-300 ease-out"
-                      style={{ width: `${loadingProgress}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {loadingStage === 'wasm' && 'Loading WebAssembly...'}
-                    {loadingStage === 'model' && 'Loading AI Model...'}
-                    {loadingStage === 'ready' && 'Ready!'}
-                    {' '}({loadingProgress}%)
-                  </p>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={handleStartTracking}
+              disabled={!isReady}
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold disabled:opacity-50"
+            >
+              {isReady ? 'Start Hand Tracking' : 'Loading...'}
+            </button>
           </div>
         ) : (
           <div className="space-y-4">
@@ -244,8 +195,7 @@ const MobileCamera = () => {
           </div>
         )}
       </div>
-      {/* Mobile Debug Panel for handshake & tracking */}
-      <DebugPanel title="Mobile Realtime" logs={debugLogs} />
+      {/* Debug panel removed */}
     </div>
   );
 };

@@ -15,7 +15,7 @@ export const QRCodeConnection = ({ onSessionId }: QRCodeConnectionProps) => {
     // Pass session ID to parent
     onSessionId(sessionId);
 
-    // Use current environment URL (works in preview and production)
+    // Get current URL and create mobile camera URL
     const baseUrl = window.location.origin;
     const mobileUrl = `${baseUrl}/mobile-camera?session=${sessionId}`;
     setConnectionUrl(mobileUrl);

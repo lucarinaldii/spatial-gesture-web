@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
 import { useRemoteGestures } from '@/hooks/useRemoteGestures';
+import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { supabase } from '@/integrations/supabase/client';
 import HandSkeleton from '@/components/HandSkeleton';
 import Hand3DModel from '@/components/Hand3DModel';
@@ -9,19 +10,15 @@ import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
 import { SettingsPanel } from '@/components/SettingsPanel';
+import { VoiceVisualizer } from '@/components/VoiceVisualizer';
 import { Scene3D } from '@/components/Scene3D';
 import { ObjectManipulationIndicator } from '@/components/ObjectManipulationIndicator';
 import { DeleteZone } from '@/components/DeleteZone';
 import { CardHoldDeleteButton } from '@/components/CardHoldDeleteButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
-import { CursorToggle } from '@/components/CursorToggle';
-import { SettingsToggle } from '@/components/SettingsToggle';
-import { InstallButton } from '@/components/InstallButton';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
-import PointerCursor from '@/components/PointerCursor';
-import { CalibrationOverlay } from '@/components/CalibrationOverlay';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Plus } from 'lucide-react';
 
@@ -96,16 +93,8 @@ const Index = () => {
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'local'>('initial');
-  const [pointerPosition, setPointerPosition] = useState<{ x: number; y: number } | null>(null);
-  const [smoothedPointerPosition, setSmoothedPointerPosition] = useState<{ x: number; y: number } | null>(null);
-  const [lastPinchState, setLastPinchState] = useState(false);
-  const [cursorOffset, setCursorOffset] = useState({ x: 0, y: 0 });
-  const [showCalibration, setShowCalibration] = useState(false);
-  const [showCursor, setShowCursor] = useState(false);
-  const [waitingForPhone, setWaitingForPhone] = useState(false);
-  const lastClickTimeRef = useRef<number>(0);
   const channelRef = useRef<any>(null);
-  const { isReady, isInitializing, loadingProgress, loadingStage, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera, initHandTracking } = useHandTracking();
+  const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
   
   // Use remote gestures if available, otherwise use local
@@ -259,105 +248,109 @@ const Index = () => {
 
     let mounted = true;
 
-    addDebugLog(`Preparing realtime channel for session ${sessionId}`);
-
-    const channel = supabase.channel(`hand-tracking-${sessionId}`, {
-      config: {
-        broadcast: { self: false },
-      },
-    });
-    channelRef.current = channel;
-
-    channel
-      .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
-        if (!mounted) return;
-        addDebugLog(`Received landmarks payload at ${new Date(payload.timestamp).toISOString()}`);
-        setRemoteLandmarks(payload.landmarks);
-        setRemoteHandedness(payload.handedness);
+    const setupChannel = async () => {
+      try {
+        // Check if already signed in to avoid rate limit
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!isRemoteConnected) {
-          // First landmark received - switch to canvas immediately
-          setIsRemoteConnected(true);
-          setTrackingMode('local');
-          setWaitingForPhone(false);
-          addDebugLog('First landmarks from phone - switching to canvas');
-          toast({
-            title: "Phone Connected",
-            description: "Receiving hand tracking data from your phone",
-          });
-          // Auto-start tracking when first landmark arrives - but skip camera init
-          if (!isTracking) {
-            setIsTracking(true);
-            setHasStartedTracking(true);
-            addDebugLog('Using mobile hand tracking, desktop camera not needed');
+        if (!session && mounted) {
+          const { error } = await supabase.auth.signInAnonymously();
+          if (error) {
+            // If rate limited, wait and the channel will work anyway with existing connection
+            if (error.status === 429) {
+              addDebugLog('Rate limited, using existing connection');
+            } else {
+              console.error('Auth error:', error);
+              addDebugLog(`Auth error: ${error.message}`);
+              return;
+            }
+          } else {
+            addDebugLog('Anonymous auth successful');
           }
+        } else {
+          addDebugLog('Using existing auth session');
         }
-      })
-      .subscribe((status, error) => {
+
         if (!mounted) return;
-        addDebugLog(`Landmark channel status: ${status}`);
+
+        addDebugLog(`Setting up landmark channel for session ${sessionId}`);
         
-        if (error) {
-          addDebugLog(`Desktop channel error: ${error.message || JSON.stringify(error)}`);
-        }
-        
-        if (status === 'SUBSCRIBED') {
-          addDebugLog('Desktop subscribed to landmark channel, waiting for phone to scan QR...');
-        } else if (status === 'CHANNEL_ERROR') {
-          addDebugLog('Desktop channel connection failed');
-          toast({
-            title: "Connection Issue",
-            description: "Unable to connect to realtime service. Please refresh.",
-            variant: "destructive",
+        const channel = supabase.channel(`hand-tracking-${sessionId}`, {
+          config: {
+            broadcast: { self: false },
+          },
+        });
+        channelRef.current = channel;
+
+        channel
+          .on('broadcast', { event: 'landmarks' }, ({ payload }: any) => {
+            if (!mounted) return;
+            setRemoteLandmarks(payload.landmarks);
+            setRemoteHandedness(payload.handedness);
+            if (!isRemoteConnected) {
+              setIsRemoteConnected(true);
+              addDebugLog('Receiving landmarks from mobile');
+              toast({
+                title: "Phone Connected",
+                description: "Receiving hand tracking data from your phone",
+              });
+              // Auto-start tracking when first landmark arrives
+              if (!isTracking) {
+                handleStartTracking();
+              }
+            }
+          })
+          .subscribe((status) => {
+            if (!mounted) return;
+            addDebugLog(`Landmark channel status: ${status}`);
           });
-        }
-      });
+      } catch (error) {
+        console.error('Setup error:', error);
+        addDebugLog(`Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
+      }
+    };
+
+    setupChannel();
 
     return () => {
       mounted = false;
       channelRef.current?.unsubscribe();
     };
-  }, [sessionId, addDebugLog, toast, isRemoteConnected, isTracking, waitingForPhone]);
+  }, [sessionId, addDebugLog, isRemoteConnected, toast, isTracking]);
 
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
+    setIsTracking(true);
+    setHasStartedTracking(true);
     
-    try {
-      // Check if we're using remote tracking
-      const usingRemoteTracking = remoteLandmarks && remoteLandmarks.length > 0;
-      
-      if (!usingRemoteTracking) {
-        // Initialize and start local camera
-        addDebugLog('Starting local camera for desktop interaction');
-        toast({
-          title: "Loading Hand Tracking",
-          description: "Initializing camera and AI model...",
-        });
-        
-        // Set tracking state AFTER successful camera start to avoid premature state changes
-        await startCamera();
-        setIsTracking(true);
-        setHasStartedTracking(true);
-        addDebugLog('Local camera started successfully');
+    // Always start local camera for desktop interaction
+    // It will be used when no mobile session is active
+    setTimeout(async () => { 
+      if (videoRef.current) {
+        if (!sessionId || !isRemoteConnected) {
+          // Use local camera when no phone session or not connected
+          addDebugLog('Starting local camera for desktop interaction');
+          await startCamera();
+        } else {
+          addDebugLog('Phone session active, using remote landmarks');
+        }
       } else {
-        // For remote tracking, set state immediately
-        setIsTracking(true);
-        setHasStartedTracking(true);
-        addDebugLog('Mobile hand tracking active, skipping desktop camera');
+        console.error('Video element not ready, retrying...');
+        // Retry after another delay
+        setTimeout(async () => {
+          if (videoRef.current) {
+            await startCamera();
+          } else {
+            console.error('Failed to initialize video element');
+            toast({
+              title: "Camera Error",
+              description: "Failed to access video element. Please refresh and try again.",
+              variant: "destructive"
+            });
+          }
+        }, 500);
       }
-    } catch (error) {
-      console.error('Error starting tracking:', error);
-      addDebugLog(`Failed to start camera: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      toast({
-        title: "Camera Error",
-        description: "Failed to start hand tracking. Please check camera permissions and refresh.",
-        variant: "destructive"
-      });
-      // Don't change isTracking if it was already true (for remote tracking)
-      if (!remoteLandmarks || remoteLandmarks.length === 0) {
-        setIsTracking(false);
-      }
-    }
+    }, 300);
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -407,7 +400,7 @@ const Index = () => {
       id: Date.now().toString(),
       type: 'card',
       title: 'New Card',
-      description: 'Created manually',
+      description: 'Created by voice command',
       position: { x: 50, y: 50 },
       zIndex: maxZIndexRef.current,
       rotation: { x: 0, y: 0, z: 0 },
@@ -416,7 +409,7 @@ const Index = () => {
     };
     
     setObjects(prev => [...prev, newCard]);
-    toast({ title: "Card added!", description: "New card created" });
+    toast({ title: "Card added!", description: "New card created by voice command" });
   }, [toast]);
 
   const handleDeleteCard = useCallback(() => {
@@ -434,7 +427,7 @@ const Index = () => {
     
     toast({ 
       title: "Card deleted!", 
-      description: `${currentGrabbedCardIds.length} card${currentGrabbedCardIds.length > 1 ? 's' : ''} deleted` 
+      description: `${currentGrabbedCardIds.length} card${currentGrabbedCardIds.length > 1 ? 's' : ''} deleted by voice command` 
     });
   }, [grabbedObjects, toast]);
 
@@ -444,7 +437,7 @@ const Index = () => {
     setGrabbedObjects(new Map());
     toast({ 
       title: "Canvas cleared!", 
-      description: "All cards removed" 
+      description: "All cards removed by voice command" 
     });
   }, [toast]);
 
@@ -508,6 +501,32 @@ const Index = () => {
     ));
   }, []);
 
+  // Voice commands hook
+  const grabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
+  const { isListening, startListening, stopListening, isSupported, commandRecognized, commandSuccess, commandError, transcriptText } = useVoiceCommands({
+    onAddCard: handleAddCard,
+    onDeleteCard: handleDeleteCard,
+    onClearAll: handleClearAll,
+    grabbedCardIds,
+  });
+
+  // Show toast for voice command errors (only once per error)
+  const errorShownRef = useRef(false);
+  useEffect(() => {
+    if (commandError && !errorShownRef.current) {
+      errorShownRef.current = true;
+      toast({
+        title: "Voice command unavailable",
+        description: "Please allow speech recognition in your browser settings and refresh the page.",
+        variant: "destructive",
+      });
+      // Reset after showing toast
+      setTimeout(() => {
+        errorShownRef.current = false;
+      }, 5000);
+    }
+  }, [commandError, toast]);
+
   // Load saved settings on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem('spatialUISettings');
@@ -518,11 +537,18 @@ const Index = () => {
         if (typeof settings.show3DHand === 'boolean') setShow3DHand(settings.show3DHand);
         if (typeof settings.showSkeleton === 'boolean') setShowSkeleton(settings.showSkeleton);
         if (typeof settings.showPlane === 'boolean') setShowPlane(settings.showPlane);
+        // Auto-start voice if it was enabled in saved settings
+        if (settings.isListening && isSupported) {
+          setTimeout(() => startListening(), 500);
+        }
       } catch (e) {
         console.error('Failed to load saved settings:', e);
       }
+    } else if (isSupported) {
+      // Default: auto-start voice if no saved settings
+      setTimeout(() => startListening(), 500);
     }
-  }, []);
+  }, [isSupported]);
 
   const handleRestart = useCallback(() => {
     // Clear all refs and state
@@ -588,130 +614,6 @@ const Index = () => {
     // Reset alignment parameters
     setAlignmentParams(defaultAlignmentParams);
   }, []);
-
-  // Pointer-based interaction with index finger (aligned with interaction point)
-  useEffect(() => {
-    if (!isTracking || handPositions.length === 0 || !handPositions[0]) {
-      setPointerPosition(null);
-      return;
-    }
-
-    // Use the same coordinate space as interactions (handPositions[0])
-    const interactionHand = handPositions[0];
-    const pointerX = interactionHand.x * window.innerWidth + cursorOffset.x;
-    const pointerY = interactionHand.y * window.innerHeight + cursorOffset.y;
-    setPointerPosition({ x: pointerX, y: pointerY });
-
-    // Check pinch state for click behaviour
-    const gesture = gestureStates[0];
-    if (!gesture) return;
-
-    const isPinching = gesture.isPinching;
-
-    // Detect pinch start (click action)
-    if (isPinching && !lastPinchState) {
-      const now = Date.now();
-      // Prevent multiple clicks within 300ms
-      if (now - lastClickTimeRef.current < 300) {
-        return;
-      }
-      lastClickTimeRef.current = now;
-      
-      const elementAtPoint = document.elementFromPoint(pointerX, pointerY);
-      if (elementAtPoint) {
-        const clickEvent = new MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          clientX: pointerX,
-          clientY: pointerY,
-        });
-        elementAtPoint.dispatchEvent(clickEvent);
-
-        const mouseDownEvent = new MouseEvent('mousedown', {
-          bubbles: true,
-          cancelable: true,
-          clientX: pointerX,
-          clientY: pointerY,
-        });
-        elementAtPoint.dispatchEvent(mouseDownEvent);
-      }
-    }
-
-    // Detect pinch end (release)
-    if (!isPinching && lastPinchState) {
-      const elementAtPoint = document.elementFromPoint(pointerX, pointerY);
-      if (elementAtPoint) {
-        const mouseUpEvent = new MouseEvent('mouseup', {
-          bubbles: true,
-          cancelable: true,
-          clientX: pointerX,
-          clientY: pointerY,
-        });
-        elementAtPoint.dispatchEvent(mouseUpEvent);
-      }
-    }
-
-    // While pinching, dispatch mousemove for drag operations
-    if (isPinching) {
-      const mouseMoveEvent = new MouseEvent('mousemove', {
-        bubbles: true,
-        cancelable: true,
-        clientX: pointerX,
-        clientY: pointerY,
-      });
-      document.dispatchEvent(mouseMoveEvent);
-    }
-
-    setLastPinchState(isPinching);
-  }, [handPositions, gestureStates, isTracking, lastPinchState, cursorOffset]);
-
-  // Smooth pointer movement with proper cleanup
-  useEffect(() => {
-    if (!pointerPosition) {
-      setSmoothedPointerPosition(null);
-      return;
-    }
-
-    let rafId: number | null = null;
-    let isAnimating = true;
-    
-    const updateSmoothedPosition = () => {
-      if (!isAnimating) return;
-      
-      setSmoothedPointerPosition(prev => {
-        if (!prev || !pointerPosition || !isAnimating) return pointerPosition;
-        
-        const smoothing = 0.3; // Increased for better performance
-        const newX = prev.x + (pointerPosition.x - prev.x) * smoothing;
-        const newY = prev.y + (pointerPosition.y - prev.y) * smoothing;
-        
-        const distance = Math.sqrt(
-          Math.pow(pointerPosition.x - newX, 2) + 
-          Math.pow(pointerPosition.y - newY, 2)
-        );
-        
-        // Stop animating when close enough
-        if (distance < 0.5) {
-          isAnimating = false;
-          return pointerPosition;
-        }
-        
-        // Continue animation only if still moving
-        if (isAnimating) {
-          rafId = requestAnimationFrame(updateSmoothedPosition);
-        }
-        
-        return { x: newX, y: newY };
-      });
-    };
-    
-    rafId = requestAnimationFrame(updateSmoothedPosition);
-    
-    return () => {
-      isAnimating = false;
-      if (rafId !== null) cancelAnimationFrame(rafId);
-    };
-  }, [pointerPosition]);
 
   useEffect(() => {
     if (handPositions.length === 0) {
@@ -868,9 +770,35 @@ const Index = () => {
                 Math.pow(handScreenY - plusButtonY, 2)
               );
               
-              // Don't create card here - let the pointer interaction dispatch click event to button
-              // which will trigger the button's onClick handler
-              if (distanceToPlusButton >= buttonRadius) {
+              // Check cooldown to prevent rapid-fire (very short cooldown)
+              const now = Date.now();
+              if (distanceToPlusButton < buttonRadius && now - plusButtonCooldownRef.current > 100) {
+                plusButtonCooldownRef.current = now;
+                maxZIndexRef.current += 1;
+                const randomPos = getRandomPosition();
+                const newCard: ObjectData = {
+                  id: Date.now().toString() + handIndex,
+                  type: 'card',
+                  title: getRandomWord(),
+                  description: 'Created with hand pinch',
+                  position: randomPos,
+                  zIndex: maxZIndexRef.current,
+                  rotation: { x: 0, y: 0, z: 0 },
+                  velocity: { x: 0, y: 0 },
+                  isPhysicsEnabled: false,
+                  scale: 0.5, // Start small for animation
+                };
+                setObjects(prev => [...prev, newCard]);
+                // Animate scale up
+                setTimeout(() => {
+                  setObjects(prev => prev.map(obj => 
+                    obj.id === newCard.id ? { ...obj, scale: 1 } : obj
+                  ));
+                }, 10);
+                setIsPlusButtonClicked(true);
+                setTimeout(() => setIsPlusButtonClicked(false), 200);
+                toast({ title: "Card created!", description: "New card created with pinch gesture" });
+              } else if (distanceToPlusButton >= buttonRadius) {
                 // Pinch on canvas (not on button, not on object) - cancel shake mode if active
                 if (showHoldDeleteButton) {
                   setShowHoldDeleteButton(null);
@@ -1491,14 +1419,7 @@ const Index = () => {
       } : undefined}
     >
       <ThemeToggle />
-      <InstallButton />
       <GesturesInfo />
-      <CursorToggle 
-        showCursor={showCursor}
-        onToggleCursor={setShowCursor}
-        onCalibrate={() => setShowCalibration(true)}
-      />
-      <SettingsToggle onClick={() => setShowSettingsPanel(!showSettingsPanel)} />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {!isTracking ? (
@@ -1511,34 +1432,17 @@ const Index = () => {
                 <div className="space-y-4 pt-8">
                   <p className="text-lg text-muted-foreground mb-6">Choose your tracking method:</p>
                   <div className="flex flex-col gap-4">
-                    <div className="space-y-3">
-                      <Button 
-                        onClick={handleStartTracking} 
-                        disabled={isInitializing} 
-                        size="lg" 
-                        className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground w-full"
-                      >
-                        {isInitializing ? '⏳ Loading AI Model...' : '🖥️ Start Local Camera Tracking'}
-                      </Button>
-                      {isInitializing && (
-                        <div className="space-y-2">
-                          <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-                            <div 
-                              className="h-full bg-primary transition-all duration-300 ease-out"
-                              style={{ width: `${loadingProgress}%` }}
-                            />
-                          </div>
-                          <p className="text-sm text-muted-foreground text-center">
-                            {loadingStage === 'wasm' && 'Loading WebAssembly...'}
-                            {loadingStage === 'model' && 'Loading AI Model...'}
-                            {loadingStage === 'ready' && 'Ready!'}
-                            {' '}({loadingProgress}%)
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    <Button 
+                      onClick={handleStartTracking} 
+                      disabled={!isReady} 
+                      size="lg" 
+                      className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      {isReady ? '🖥️ Start Local Camera Tracking' : 'Loading Model...'}
+                    </Button>
                     <Button 
                       onClick={() => setTrackingMode('mobile-qr')} 
+                      disabled={!isReady} 
                       size="lg" 
                       variant="secondary"
                       className="text-lg px-8 py-6"
@@ -1570,21 +1474,9 @@ const Index = () => {
           </div>
         ) : (
           <div className="relative min-h-screen">
-            {/* Waiting for phone loader overlay */}
-            {waitingForPhone && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-                <div className="text-center space-y-4">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto"></div>
-                  <h2 className="text-2xl font-bold text-foreground">Waiting for phone...</h2>
-                  <p className="text-muted-foreground">Scan the QR code and tap "Start Hand Tracking"</p>
-                </div>
-              </div>
-            )}
-            
             <video ref={videoRef} autoPlay playsInline muted className="fixed -left-[9999px] opacity-0 pointer-events-none" />
             
-            {/* Desktop Debug Panel for handshake & tracking */}
-            <DebugPanel title="Desktop Realtime" logs={debugLogs} />
+            {/* Debug panel - removed */}
             
             {/* Full-screen 3D Scene for OBJ models */}
             <Scene3D
@@ -1607,6 +1499,17 @@ const Index = () => {
             <input ref={fileInputRef} type="file" accept="image/*,.pdf,.gltf,.glb,.obj,.fbx" onChange={handleFileImport} className="hidden" />
             <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
             <input ref={objInputRef} type="file" accept=".obj" onChange={handleOBJFileSelect} className="hidden" />
+            
+            {/* Settings button - bottom right */}
+            <div className="fixed bottom-8 right-8 z-50 pointer-events-auto">
+              <Button 
+                onClick={() => setShowSettingsPanel(!showSettingsPanel)} 
+                size="lg" 
+                className="rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0"
+              >
+                <Settings className="w-6 h-6" />
+              </Button>
+            </div>
             
             {/* Add card button - top center */}
             <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
@@ -1659,14 +1562,18 @@ const Index = () => {
                   setShowSkeleton={setShowSkeleton}
                   showPlane={showPlane}
                   setShowPlane={setShowPlane}
+                  isListening={isListening}
+                  startListening={startListening}
+                  stopListening={stopListening}
+                  isVoiceSupported={isSupported}
                   onRestart={handleRestart}
                   onImportFile={() => fileInputRef.current?.click()}
                   onBackgroundUpload={() => backgroundInputRef.current?.click()}
                   onImportOBJ={() => objInputRef.current?.click()}
                   onClose={() => setShowSettingsPanel(false)}
+                  commandRecognized={commandRecognized}
                   onShowAdvancedSettings={() => setShowSettings(!showSettings)}
                   alignmentParams={alignmentParams}
-                  onCalibrateCursor={() => setShowCalibration(true)}
                 />
               </div>
             )}
@@ -1832,24 +1739,6 @@ const Index = () => {
               />
             )}
             
-            {/* Pointer Cursor following index finger - only show when pinching and cursor is enabled */}
-            {showCursor && smoothedPointerPosition && gestureStates[0] && gestureStates[0].isPinching && (
-              <PointerCursor 
-                x={smoothedPointerPosition.x}
-                y={smoothedPointerPosition.y}
-                isPinching={gestureStates[0].isPinching}
-              />
-            )}
-
-            {/* Calibration Overlay */}
-            {showCalibration && (
-              <CalibrationOverlay
-                onClose={() => setShowCalibration(false)}
-                cursorOffset={cursorOffset}
-                onOffsetChange={setCursorOffset}
-              />
-            )}
-            
             {/* Delete Zone - disabled
             {showDeleteZone && (
               <div 
@@ -1884,6 +1773,15 @@ const Index = () => {
                 <AlignmentSettings params={alignmentParams} onParamsChange={setAlignmentParams} />
               </div>
             )}
+
+            {/* Voice Visualizer */}
+            <VoiceVisualizer 
+              isListening={isListening}
+              commandRecognized={commandRecognized}
+              commandSuccess={commandSuccess}
+              commandError={commandError}
+              transcriptText={transcriptText}
+            />
 
             {/* Object Manipulation Indicators for 3D objects */}
             {objects.filter(obj => obj.type === 'obj').map((obj) => {

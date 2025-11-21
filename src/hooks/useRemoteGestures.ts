@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { GestureState, HandPosition } from './useHandTracking';
 
 const PINCH_THRESHOLD = 0.05;
 const POINTING_THRESHOLD = 0.15;
-const SMOOTHING_FACTOR = 0.4; // Higher = more responsive, lower = smoother
 
 interface Landmark {
   x: number;
@@ -79,32 +78,14 @@ const detectGesture = (handLandmarks: Landmark[], handIndex: number): GestureSta
   };
 };
 
-const smoothLandmark = (current: Landmark, previous: Landmark | null, factor: number): Landmark => {
-  if (!previous) return current;
-  
-  return {
-    x: previous.x + (current.x - previous.x) * factor,
-    y: previous.y + (current.y - previous.y) * factor,
-    z: previous.z + (current.z - previous.z) * factor,
-  };
-};
-
-const calculateHandPosition = (
-  handLandmarks: Landmark[], 
-  handIndex: number,
-  previousLandmarks: Landmark[] | null
-): HandPosition => {
+const calculateHandPosition = (handLandmarks: Landmark[], handIndex: number): HandPosition => {
   // Use index fingertip as interaction point, mirrored horizontally like desktop
   const indexTip = handLandmarks[8];
-  const previousIndexTip = previousLandmarks ? previousLandmarks[8] : null;
-  
-  // Apply exponential smoothing to reduce jitter
-  const smoothedTip = smoothLandmark(indexTip, previousIndexTip, SMOOTHING_FACTOR);
   
   return {
-    x: 1 - smoothedTip.x,
-    y: smoothedTip.y,
-    z: smoothedTip.z,
+    x: 1 - indexTip.x,
+    y: indexTip.y,
+    z: indexTip.z,
     handIndex
   };
 };
@@ -112,14 +93,11 @@ const calculateHandPosition = (
 export const useRemoteGestures = (remoteLandmarks: any, remoteHandedness: any) => {
   const [handPositions, setHandPositions] = useState<HandPosition[]>([]);
   const [gestureStates, setGestureStates] = useState<GestureState[]>([]);
-  const previousLandmarksRef = useRef<Landmark[][] | null>(null);
-  const previousGesturesRef = useRef<GestureState[]>([]);
 
   useEffect(() => {
     if (!remoteLandmarks || remoteLandmarks.length === 0) {
       setHandPositions([]);
       setGestureStates([]);
-      previousLandmarksRef.current = null;
       return;
     }
 
@@ -127,28 +105,13 @@ export const useRemoteGestures = (remoteLandmarks: any, remoteHandedness: any) =
     const gestures: GestureState[] = [];
 
     remoteLandmarks.forEach((handLandmarks: Landmark[], index: number) => {
-      // Apply smoothing to all landmarks
-      const previousHandLandmarks = previousLandmarksRef.current?.[index] || null;
-      const smoothedLandmarks = handLandmarks.map((landmark, i) => 
-        smoothLandmark(landmark, previousHandLandmarks?.[i] || null, SMOOTHING_FACTOR)
-      );
-
-      positions.push(calculateHandPosition(smoothedLandmarks, index, previousHandLandmarks));
-      
-      const gesture = detectGesture(smoothedLandmarks, index);
-      
-      // Smooth pinch strength to prevent flickering
-      const previousGesture = previousGesturesRef.current[index];
-      if (previousGesture) {
-        gesture.pinchStrength = previousGesture.pinchStrength + 
-          (gesture.pinchStrength - previousGesture.pinchStrength) * SMOOTHING_FACTOR;
-      }
-      
-      gestures.push(gesture);
+      console.log(`Remote hand ${index}: detecting gestures`);
+      positions.push(calculateHandPosition(handLandmarks, index));
+      gestures.push(detectGesture(handLandmarks, index));
     });
 
-    previousLandmarksRef.current = remoteLandmarks;
-    previousGesturesRef.current = gestures;
+    console.log('Remote hand positions:', positions);
+    console.log('Remote gesture states:', gestures);
 
     setHandPositions(positions);
     setGestureStates(gestures);
