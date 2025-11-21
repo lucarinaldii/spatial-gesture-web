@@ -16,7 +16,9 @@ const MobileCamera = () => {
   const { isReady, landmarks, handedness, videoRef, startCamera } = useHandTracking(true);
   const [isTracking, setIsTracking] = useState(false);
   const [isChannelReady, setIsChannelReady] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [loadingStatus, setLoadingStatus] = useState<'loading' | 'ready' | 'camera-loading' | 'error'>('loading');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const hasAttemptedCameraStart = useRef(false);
 
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '';
@@ -95,13 +97,36 @@ const MobileCamera = () => {
     };
   }, [sessionId, navigate, toast]);
 
-  // Update loading status when everything is ready
+  // Automatically start camera when MediaPipe and channel are ready
   useEffect(() => {
-    if (isReady && isChannelReady) {
-      setLoadingStatus('ready');
-      addDebugLog('All systems ready - MediaPipe and channel initialized');
+    if (isReady && isChannelReady && !hasAttemptedCameraStart.current) {
+      hasAttemptedCameraStart.current = true;
+      addDebugLog('All systems ready - Starting camera automatically');
+      setLoadingStatus('camera-loading');
+      
+      const initCamera = async () => {
+        try {
+          await startCamera();
+          setIsTracking(true);
+          setLoadingStatus('ready');
+          addDebugLog('Camera started successfully');
+          
+          toast({
+            title: "Ready to Track",
+            description: "Move your hands to control the desktop",
+          });
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          console.error('Failed to start camera:', error);
+          addDebugLog(`Camera error: ${errorMsg}`);
+          setCameraError(errorMsg);
+          setLoadingStatus('error');
+        }
+      };
+      
+      initCamera();
     }
-  }, [isReady, isChannelReady]);
+  }, [isReady, isChannelReady, startCamera, toast]);
 
   // Send landmarks to desktop when they update - throttled for performance
   useEffect(() => {
@@ -125,26 +150,34 @@ const MobileCamera = () => {
     return () => clearTimeout(timeoutId);
   }, [landmarks, handedness]);
 
-  const handleStartTracking = async () => {
+  const handleRetryCamera = async () => {
+    setCameraError(null);
+    setLoadingStatus('camera-loading');
+    hasAttemptedCameraStart.current = false;
+    
     try {
-      addDebugLog('Starting hand tracking on mobile');
-      setIsTracking(true);
-      
-      // Start camera immediately - no delay
+      addDebugLog('Retrying camera access...');
       await startCamera();
-      addDebugLog('Camera started, tracking active');
+      setIsTracking(true);
+      setLoadingStatus('ready');
+      addDebugLog('Camera started successfully on retry');
       
       toast({
-        title: "Tracking Started",
-        description: "Move your hands to control the desktop",
+        title: "Camera Started",
+        description: "Tracking is now active",
       });
     } catch (error) {
-      console.error('Failed to start tracking:', error);
-      addDebugLog(`Failed to start camera: ${error instanceof Error ? error.message : 'Unknown'}`);
-      setIsTracking(false);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to start camera on retry:', error);
+      addDebugLog(`Retry failed: ${errorMsg}`);
+      setCameraError(errorMsg);
+      setLoadingStatus('error');
+      
       toast({
         title: "Camera Error",
-        description: "Failed to access camera. Please check permissions.",
+        description: errorMsg.includes('Permission') 
+          ? "Please allow camera access in your browser settings"
+          : "Failed to access camera. Try again or refresh the page.",
         variant: "destructive",
       });
     }
@@ -178,17 +211,17 @@ const MobileCamera = () => {
           </div>
         )}
 
-        {loadingStatus === 'ready' && !isTracking && (
+        {loadingStatus === 'camera-loading' && (
           <div className="space-y-4">
-            <p className="text-lg text-muted-foreground">
-              Your hand movements will control the desktop interface
-            </p>
-            <button
-              onClick={handleStartTracking}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Start Hand Tracking
-            </button>
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <p className="text-lg text-muted-foreground">
+                Starting camera...
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Please allow camera access if prompted
+              </p>
+            </div>
           </div>
         )}
         
@@ -244,12 +277,39 @@ const MobileCamera = () => {
 
         {loadingStatus === 'error' && (
           <div className="space-y-4">
-            <p className="text-lg text-destructive">
-              Failed to initialize. Please refresh and try again.
-            </p>
+            <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+              <p className="text-lg font-semibold text-destructive mb-2">
+                Camera Access Failed
+              </p>
+              {cameraError && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  {cameraError.includes('Permission') || cameraError.includes('NotAllowedError')
+                    ? "Camera permission was denied. Please enable camera access in your browser settings and try again."
+                    : cameraError.includes('NotFoundError')
+                    ? "No camera was found on your device."
+                    : `Error: ${cameraError}`}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRetryCamera}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  Retry Camera Access
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="px-4 py-2 bg-muted text-foreground rounded-lg font-semibold hover:bg-muted/80 transition-colors"
+                >
+                  Back to Desktop
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
+      
+      <DebugPanel title="Mobile Tracking" logs={debugLogs} />
     </div>
   );
 };
