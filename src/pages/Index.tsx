@@ -90,9 +90,9 @@ const Index = () => {
   const [remoteHandedness, setRemoteHandedness] = useState<any>(null);
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'local'>('initial');
+  const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'mobile-remote' | 'local'>('initial');
   const channelRef = useRef<any>(null);
-  const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking(trackingMode !== 'mobile-qr');
+  const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking(trackingMode === 'local');
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
   
   // Use remote gestures if available, otherwise use local
@@ -261,7 +261,7 @@ const Index = () => {
         addDebugLog('[DESKTOP] Mobile is ready - switching to canvas');
         setIsTracking(true);
         setHasStartedTracking(true);
-        setTrackingMode('local'); // Switch to canvas view
+        setTrackingMode('mobile-remote'); // Switch to canvas view with remote tracking
         toast({
           title: "Mobile Connected",
           description: "Hand tracking active",
@@ -300,18 +300,13 @@ const Index = () => {
     addDebugLog('handleStartTracking called');
     setIsTracking(true);
     setHasStartedTracking(true);
+    setTrackingMode('local');
     
-    // Always start local camera for desktop interaction
-    // It will be used when no mobile session is active
+    // Start local camera for desktop interaction
     setTimeout(async () => { 
       if (videoRef.current) {
-        if (!sessionId || !isRemoteConnected) {
-          // Use local camera when no phone session or not connected
-          addDebugLog('Starting local camera for desktop interaction');
-          await startCamera();
-        } else {
-          addDebugLog('Phone session active, using remote landmarks');
-        }
+        addDebugLog('Starting local camera for desktop interaction');
+        await startCamera();
       } else {
         console.error('Video element not ready, retrying...');
         // Retry after another delay
