@@ -15,9 +15,9 @@ export const QRCodeConnection = ({ onSessionId }: QRCodeConnectionProps) => {
     // Pass session ID to parent
     onSessionId(sessionId);
 
-    // Always use production URL to avoid preview/publish issues
-    const productionUrl = 'https://hand-stage-control.lovable.app';
-    const mobileUrl = `${productionUrl}/mobile-camera?session=${sessionId}`;
+    // Use current environment URL (works in preview and production)
+    const baseUrl = window.location.origin;
+    const mobileUrl = `${baseUrl}/mobile-camera?session=${sessionId}`;
     setConnectionUrl(mobileUrl);
   }, [sessionId, onSessionId]);
 
