@@ -78,27 +78,27 @@ const MobileCamera = () => {
     }
   }, [isReady, isChannelReady]);
 
-  // Send landmarks to desktop when they update - throttled for performance
+  // Send landmarks to desktop when they update - optimized for reduced lag
   useEffect(() => {
-    if (!landmarks || !channelRef.current || landmarks.length === 0) return;
+    if (!landmarks || !channelRef.current || landmarks.length === 0 || !isTracking) return;
 
-    // Throttle to ~30fps for smooth performance
+    // Throttle to ~20fps to reduce network load and lag
     const timeoutId = setTimeout(() => {
       channelRef.current.send({
         type: 'broadcast',
         event: 'landmarks',
         payload: {
-          landmarks,
+          landmarks, // Send full landmarks but less frequently
           handedness,
           timestamp: Date.now(),
         }
       }).catch((error: Error) => {
         console.error('Error sending landmarks:', error);
       });
-    }, 33); // ~30fps
+    }, 50); // ~20fps instead of 30fps for lighter streaming
 
     return () => clearTimeout(timeoutId);
-  }, [landmarks, handedness]);
+  }, [landmarks, handedness, isTracking]);
 
   const handleStartTracking = async () => {
     setCameraError(null);
@@ -120,11 +120,12 @@ const MobileCamera = () => {
       addDebugLog('Requesting camera access...');
       await startCamera();
       setIsTracking(true);
+      setLoadingStatus('ready'); // Remove loader after camera starts
       addDebugLog('Camera started successfully');
       
       toast({
         title: "Tracking Started",
-        description: "Move your hands to control the desktop",
+        description: "Hand tracking is active",
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -197,10 +198,56 @@ const MobileCamera = () => {
           </div>
         )}
         
-        {isTracking && (
-          <div className="flex flex-col items-center gap-2">
+        {loadingStatus === 'ready' && isTracking && (
+          <div className="flex flex-col items-center gap-4 w-full max-w-md mx-auto">
             <p className="text-sm text-green-600 dark:text-green-400 font-medium">
               ✓ Tracking Active
+            </p>
+            {/* Show hand skeleton visualization */}
+            <div className="relative w-full aspect-video bg-muted/20 rounded-lg overflow-hidden border border-border">
+              <svg 
+                viewBox="0 0 640 480" 
+                className="w-full h-full"
+                style={{ transform: 'scaleX(-1)' }} // Mirror for natural movement
+              >
+                {landmarks && landmarks.map((hand: any, handIndex: number) => (
+                  <g key={handIndex}>
+                    {/* Draw connections between landmarks */}
+                    {[
+                      [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+                      [0, 5], [5, 6], [6, 7], [7, 8], // Index
+                      [0, 9], [9, 10], [10, 11], [11, 12], // Middle
+                      [0, 13], [13, 14], [14, 15], [15, 16], // Ring
+                      [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
+                    ].map(([start, end], idx) => (
+                      <line
+                        key={idx}
+                        x1={hand[start].x * 640}
+                        y1={hand[start].y * 480}
+                        x2={hand[end].x * 640}
+                        y2={hand[end].y * 480}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="2"
+                        opacity="0.6"
+                      />
+                    ))}
+                    {/* Draw landmark points */}
+                    {hand.map((landmark: any, idx: number) => (
+                      <circle
+                        key={idx}
+                        cx={landmark.x * 640}
+                        cy={landmark.y * 480}
+                        r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 6 : 4}
+                        fill="hsl(var(--primary))"
+                        opacity="0.8"
+                      />
+                    ))}
+                  </g>
+                ))}
+              </svg>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {landmarks?.length || 0} hand{landmarks?.length !== 1 ? 's' : ''} detected
             </p>
           </div>
         )}
