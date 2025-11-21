@@ -701,8 +701,8 @@ const Index = () => {
     setSmoothedPointerPosition(prev => {
       if (!prev) return pointerPosition;
       
-      // Smooth interpolation (lower = smoother but more lag)
-      const smoothing = 0.3;
+      // Smooth interpolation (lower = smoother but more lag, slower movement)
+      const smoothing = 0.15;
       return {
         x: prev.x + (pointerPosition.x - prev.x) * smoothing,
         y: prev.y + (pointerPosition.y - prev.y) * smoothing,
