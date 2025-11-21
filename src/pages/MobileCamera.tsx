@@ -207,10 +207,23 @@ const MobileCamera = () => {
         {loadingStatus === 'ready' && isTracking && (
           <div className="flex-1 flex flex-col w-full h-full">
             {/* Full-screen hand skeleton visualization */}
-            <div className="relative w-full h-full bg-background">
+            <div className="relative w-full h-full bg-background overflow-hidden">
+              {/* Figma Jam style dot grid background */}
+              <svg 
+                className="absolute inset-0 w-full h-full opacity-30"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <defs>
+                  <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <circle cx="1" cy="1" r="1" fill="hsl(var(--foreground))" opacity="0.3" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#dot-grid)" />
+              </svg>
+              
               <svg 
                 viewBox="0 0 640 480" 
-                className="w-full h-full"
+                className="relative w-full h-full"
                 preserveAspectRatio="xMidYMid slice"
                 style={{ transform: 'scaleX(-1)' }} // Mirror for natural movement
               >
