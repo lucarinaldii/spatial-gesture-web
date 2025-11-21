@@ -275,15 +275,12 @@ const Index = () => {
         setRemoteLandmarks(payload.landmarks);
         setRemoteHandedness(payload.handedness);
         
-        // First landmark received - hide loader and show canvas
-        if (waitingForPhone) {
-          setWaitingForPhone(false);
-          addDebugLog('First landmarks received - showing canvas');
-        }
-        
         if (!isRemoteConnected) {
+          // First landmark received - switch to canvas immediately
           setIsRemoteConnected(true);
-          addDebugLog('Phone now connected and sending data');
+          setTrackingMode('local');
+          setWaitingForPhone(false);
+          addDebugLog('First landmarks from phone - switching to canvas');
           toast({
             title: "Phone Connected",
             description: "Receiving hand tracking data from your phone",
@@ -298,17 +295,7 @@ const Index = () => {
         if (!mounted) return;
         addDebugLog(`Landmark channel status: ${status}`);
         if (status === 'SUBSCRIBED') {
-          // Immediately switch to canvas and show loader
-          setTrackingMode('local');
-          setWaitingForPhone(true);
-          if (!isTracking) {
-            handleStartTracking();
-          }
-          addDebugLog('Channel subscribed - switching to canvas, waiting for phone data...');
-          toast({
-            title: "Waiting for phone",
-            description: "Scan the QR code and tap 'Start Hand Tracking'",
-          });
+          addDebugLog('Desktop subscribed to landmark channel, waiting for phone to scan QR...');
         }
       });
 
