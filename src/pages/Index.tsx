@@ -19,6 +19,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
+import PointerCursor from '@/components/PointerCursor';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Plus } from 'lucide-react';
 
@@ -93,6 +94,8 @@ const Index = () => {
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'local'>('initial');
+  const [pointerPosition, setPointerPosition] = useState<{ x: number; y: number } | null>(null);
+  const [lastPinchState, setLastPinchState] = useState(false);
   const channelRef = useRef<any>(null);
   const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking();
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
@@ -614,6 +617,92 @@ const Index = () => {
     // Reset alignment parameters
     setAlignmentParams(defaultAlignmentParams);
   }, []);
+
+  // Pointer-based interaction with index finger
+  useEffect(() => {
+    if (!isTracking || handPositions.length === 0) {
+      setPointerPosition(null);
+      return;
+    }
+
+    // Get first hand and extract index finger tip position (landmark 8)
+    const currentLandmarks = (remoteLandmarks && remoteLandmarks.length > 0) ? remoteLandmarks : landmarks;
+    if (!currentLandmarks || currentLandmarks.length === 0) {
+      setPointerPosition(null);
+      return;
+    }
+
+    const hand = currentLandmarks[0];
+    const indexTip = hand[8]; // Index finger tip
+    
+    // Update pointer position
+    const pointerX = indexTip.x * window.innerWidth;
+    const pointerY = indexTip.y * window.innerHeight;
+    setPointerPosition({ x: pointerX, y: pointerY });
+
+    // Check pinch state
+    const gesture = gestureStates[0];
+    if (!gesture) return;
+
+    const isPinching = gesture.isPinching;
+
+    // Detect pinch start (click action)
+    if (isPinching && !lastPinchState) {
+      // Dispatch click event at pointer position
+      const elementAtPoint = document.elementFromPoint(pointerX, pointerY);
+      if (elementAtPoint) {
+        // Create and dispatch a click event
+        const clickEvent = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          clientX: pointerX,
+          clientY: pointerY,
+          screenX: pointerX,
+          screenY: pointerY,
+        });
+        elementAtPoint.dispatchEvent(clickEvent);
+        
+        // Also trigger mousedown and mouseup for drag operations
+        const mouseDownEvent = new MouseEvent('mousedown', {
+          bubbles: true,
+          cancelable: true,
+          clientX: pointerX,
+          clientY: pointerY,
+        });
+        elementAtPoint.dispatchEvent(mouseDownEvent);
+      }
+    }
+
+    // Detect pinch end (release)
+    if (!isPinching && lastPinchState) {
+      const elementAtPoint = document.elementFromPoint(pointerX, pointerY);
+      if (elementAtPoint) {
+        const mouseUpEvent = new MouseEvent('mouseup', {
+          bubbles: true,
+          cancelable: true,
+          clientX: pointerX,
+          clientY: pointerY,
+        });
+        elementAtPoint.dispatchEvent(mouseUpEvent);
+      }
+    }
+
+    // While pinching, dispatch mousemove for drag operations
+    if (isPinching) {
+      const elementAtPoint = document.elementFromPoint(pointerX, pointerY);
+      if (elementAtPoint) {
+        const mouseMoveEvent = new MouseEvent('mousemove', {
+          bubbles: true,
+          cancelable: true,
+          clientX: pointerX,
+          clientY: pointerY,
+        });
+        document.dispatchEvent(mouseMoveEvent);
+      }
+    }
+
+    setLastPinchState(isPinching);
+  }, [handPositions, gestureStates, remoteLandmarks, landmarks, isTracking, lastPinchState]);
 
   useEffect(() => {
     if (handPositions.length === 0) {
@@ -1736,6 +1825,15 @@ const Index = () => {
                 videoHeight={window.innerHeight} 
                 alignmentParams={alignmentParams} 
                 handedness={remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandedness : handedness} 
+              />
+            )}
+            
+            {/* Pointer Cursor following index finger */}
+            {pointerPosition && gestureStates[0] && (
+              <PointerCursor 
+                x={pointerPosition.x}
+                y={pointerPosition.y}
+                isPinching={gestureStates[0].isPinching}
               />
             )}
             
