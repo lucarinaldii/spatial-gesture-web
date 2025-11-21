@@ -1690,13 +1690,6 @@ const Index = () => {
                   alignmentParams={alignmentParams} 
                   handedness={remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandedness : handedness} 
                 />
-                {/* Show indicator when using remote tracking */}
-                {remoteLandmarks && remoteLandmarks.length > 0 && (
-                  <div className="fixed top-4 right-4 z-50 px-3 py-2 bg-green-600/90 backdrop-blur-sm rounded-lg text-white text-sm font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                    Mobile Tracking Active
-                  </div>
-                )}
               </>
             )}
             

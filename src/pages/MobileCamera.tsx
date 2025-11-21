@@ -263,15 +263,6 @@ const MobileCamera = () => {
                 ))}
               </svg>
             </div>
-            
-            {/* Status indicator overlay */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-              <div className="px-4 py-2 bg-background/80 backdrop-blur-sm rounded-full border border-border">
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-                  ✓ Tracking Active • {landmarks?.length || 0} hand{landmarks?.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-            </div>
           </div>
         )}
 
