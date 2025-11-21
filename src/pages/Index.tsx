@@ -1449,7 +1449,7 @@ const Index = () => {
               gestureStates={gestureStates}
               landmarks={landmarks}
               onUpdateObject={handleUpdate3DObject}
-              showPlane={false}
+              showPlane={showPlane && !show3DHand}
             />
             
             {/* Hidden file inputs */}
