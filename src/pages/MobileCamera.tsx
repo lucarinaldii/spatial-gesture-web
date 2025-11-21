@@ -149,8 +149,8 @@ const MobileCamera = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="text-center space-y-6 w-full">
+    <div className="fixed inset-0 bg-background flex items-center justify-center">
+      <div className="w-full h-full flex flex-col">
         {/* Always render video element so ref is available */}
         <video
           ref={videoRef}
@@ -161,7 +161,7 @@ const MobileCamera = () => {
         />
         
         {loadingStatus === 'loading' && (
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
             <p className="text-lg font-medium text-foreground">
               Loading...
@@ -170,7 +170,7 @@ const MobileCamera = () => {
         )}
 
         {loadingStatus === 'ready' && !isTracking && (
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6">
             <button
               onClick={handleStartTracking}
               disabled={!isReady}
@@ -187,7 +187,7 @@ const MobileCamera = () => {
         )}
 
         {loadingStatus === 'camera-loading' && (
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
             <p className="text-lg font-medium text-foreground">
               Starting camera...
@@ -199,15 +199,13 @@ const MobileCamera = () => {
         )}
         
         {loadingStatus === 'ready' && isTracking && (
-          <div className="flex flex-col items-center gap-4 w-full max-w-md mx-auto">
-            <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-              ✓ Tracking Active
-            </p>
-            {/* Show hand skeleton visualization */}
-            <div className="relative w-full aspect-video bg-muted/20 rounded-lg overflow-hidden border border-border">
+          <div className="flex-1 flex flex-col w-full h-full">
+            {/* Full-screen hand skeleton visualization */}
+            <div className="relative w-full h-full bg-background">
               <svg 
                 viewBox="0 0 640 480" 
                 className="w-full h-full"
+                preserveAspectRatio="xMidYMid slice"
                 style={{ transform: 'scaleX(-1)' }} // Mirror for natural movement
               >
                 {landmarks && landmarks.map((hand: any, handIndex: number) => (
@@ -227,8 +225,8 @@ const MobileCamera = () => {
                         x2={hand[end].x * 640}
                         y2={hand[end].y * 480}
                         stroke="hsl(var(--primary))"
-                        strokeWidth="2"
-                        opacity="0.6"
+                        strokeWidth="3"
+                        opacity="0.8"
                       />
                     ))}
                     {/* Draw landmark points */}
@@ -237,24 +235,30 @@ const MobileCamera = () => {
                         key={idx}
                         cx={landmark.x * 640}
                         cy={landmark.y * 480}
-                        r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 6 : 4}
+                        r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 8 : 5}
                         fill="hsl(var(--primary))"
-                        opacity="0.8"
+                        opacity="0.9"
                       />
                     ))}
                   </g>
                 ))}
               </svg>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {landmarks?.length || 0} hand{landmarks?.length !== 1 ? 's' : ''} detected
-            </p>
+            
+            {/* Status indicator overlay */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+              <div className="px-4 py-2 bg-background/80 backdrop-blur-sm rounded-full border border-border">
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                  ✓ Tracking Active • {landmarks?.length || 0} hand{landmarks?.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
         {loadingStatus === 'error' && (
-          <div className="px-4">
-            <div className="p-6 bg-destructive/10 border border-destructive rounded-lg max-w-md mx-auto space-y-4">
+          <div className="flex-1 flex items-center justify-center px-4">
+            <div className="p-6 bg-destructive/10 border border-destructive rounded-lg max-w-md w-full space-y-4">
               <p className="text-lg font-semibold text-destructive text-center">
                 Camera Error
               </p>
