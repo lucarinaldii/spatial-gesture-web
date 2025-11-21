@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useHandTracking } from '@/hooks/useHandTracking';
 import { useRemoteGestures } from '@/hooks/useRemoteGestures';
-import { useVoiceCommands } from '@/hooks/useVoiceCommands';
 import { supabase } from '@/integrations/supabase/client';
 import HandSkeleton from '@/components/HandSkeleton';
 import Hand3DModel from '@/components/Hand3DModel';
@@ -10,7 +9,6 @@ import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
 import { SettingsPanel } from '@/components/SettingsPanel';
-import { VoiceVisualizer } from '@/components/VoiceVisualizer';
 import { Scene3D } from '@/components/Scene3D';
 import { ObjectManipulationIndicator } from '@/components/ObjectManipulationIndicator';
 import { DeleteZone } from '@/components/DeleteZone';
@@ -508,32 +506,6 @@ const Index = () => {
     ));
   }, []);
 
-  // Voice commands hook
-  const grabbedCardIds = Array.from(grabbedObjects.values()).map(g => g.id);
-  const { isListening, startListening, stopListening, isSupported, commandRecognized, commandSuccess, commandError, transcriptText } = useVoiceCommands({
-    onAddCard: handleAddCard,
-    onDeleteCard: handleDeleteCard,
-    onClearAll: handleClearAll,
-    grabbedCardIds,
-  });
-
-  // Show toast for voice command errors (only once per error)
-  const errorShownRef = useRef(false);
-  useEffect(() => {
-    if (commandError && !errorShownRef.current) {
-      errorShownRef.current = true;
-      toast({
-        title: "Voice command unavailable",
-        description: "Please allow speech recognition in your browser settings and refresh the page.",
-        variant: "destructive",
-      });
-      // Reset after showing toast
-      setTimeout(() => {
-        errorShownRef.current = false;
-      }, 5000);
-    }
-  }, [commandError, toast]);
-
   // Load saved settings on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem('spatialUISettings');
@@ -544,18 +516,11 @@ const Index = () => {
         if (typeof settings.show3DHand === 'boolean') setShow3DHand(settings.show3DHand);
         if (typeof settings.showSkeleton === 'boolean') setShowSkeleton(settings.showSkeleton);
         if (typeof settings.showPlane === 'boolean') setShowPlane(settings.showPlane);
-        // Auto-start voice if it was enabled in saved settings
-        if (settings.isListening && isSupported) {
-          setTimeout(() => startListening(), 500);
-        }
       } catch (e) {
         console.error('Failed to load saved settings:', e);
       }
-    } else if (isSupported) {
-      // Default: auto-start voice if no saved settings
-      setTimeout(() => startListening(), 500);
     }
-  }, [isSupported]);
+  }, []);
 
   const handleRestart = useCallback(() => {
     // Clear all refs and state
@@ -1577,28 +1542,23 @@ const Index = () => {
             {/* Settings Panel */}
             {showSettingsPanel && (
               <div className="fixed top-8 right-8 z-50 pointer-events-auto animate-scale-in">
-                <SettingsPanel
-                  showConnectors={showConnectors}
-                  setShowConnectors={setShowConnectors}
-                  show3DHand={show3DHand}
-                  setShow3DHand={setShow3DHand}
-                  showSkeleton={showSkeleton}
-                  setShowSkeleton={setShowSkeleton}
-                  showPlane={showPlane}
-                  setShowPlane={setShowPlane}
-                  isListening={isListening}
-                  startListening={startListening}
-                  stopListening={stopListening}
-                  isVoiceSupported={isSupported}
-                  onRestart={handleRestart}
-                  onImportFile={() => fileInputRef.current?.click()}
-                  onBackgroundUpload={() => backgroundInputRef.current?.click()}
-                  onImportOBJ={() => objInputRef.current?.click()}
-                  onClose={() => setShowSettingsPanel(false)}
-                  commandRecognized={commandRecognized}
-                  onShowAdvancedSettings={() => setShowSettings(!showSettings)}
-                  alignmentParams={alignmentParams}
-                />
+            <SettingsPanel
+              showConnectors={showConnectors}
+              setShowConnectors={setShowConnectors}
+              show3DHand={show3DHand}
+              setShow3DHand={setShow3DHand}
+              showSkeleton={showSkeleton}
+              setShowSkeleton={setShowSkeleton}
+              showPlane={showPlane}
+              setShowPlane={setShowPlane}
+              onRestart={handleRestart}
+              onImportFile={() => fileInputRef.current?.click()}
+              onBackgroundUpload={() => backgroundInputRef.current?.click()}
+              onImportOBJ={() => objInputRef.current?.click()}
+              onClose={() => setShowSettingsPanel(false)}
+              onShowAdvancedSettings={() => setShowSettings(!showSettings)}
+              alignmentParams={alignmentParams}
+            />
               </div>
             )}
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
@@ -1798,14 +1758,6 @@ const Index = () => {
               </div>
             )}
 
-            {/* Voice Visualizer */}
-            <VoiceVisualizer 
-              isListening={isListening}
-              commandRecognized={commandRecognized}
-              commandSuccess={commandSuccess}
-              commandError={commandError}
-              transcriptText={transcriptText}
-            />
 
             {/* Object Manipulation Indicators for 3D objects */}
             {objects.filter(obj => obj.type === 'obj').map((obj) => {
