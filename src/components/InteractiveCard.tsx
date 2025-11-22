@@ -31,6 +31,7 @@ const InteractiveCard = memo(({
 }: InteractiveCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [wasClicked, setWasClicked] = useState(false);
+  const [showAddedFeedback, setShowAddedFeedback] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const lastPinchState = useRef(false);
 
@@ -56,7 +57,9 @@ const InteractiveCard = memo(({
     if (isInBounds && gestureState.isPinching && !lastPinchState.current) {
       onInteract();
       setWasClicked(true);
+      setShowAddedFeedback(true);
       setTimeout(() => setWasClicked(false), 150);
+      setTimeout(() => setShowAddedFeedback(false), 1500);
     }
 
     lastPinchState.current = gestureState.isPinching;
@@ -83,7 +86,7 @@ const InteractiveCard = memo(({
       >
         <Card
           className={`
-            glass-panel p-6 w-64 transition-all duration-200
+            glass-panel p-6 w-64 transition-all duration-200 relative
             ${isHovered ? 'border-primary' : 'border-border/30'}
             ${wasClicked ? 'scale-95' : ''}
             ${isBeingDragged ? 'scale-110 ring-2 ring-primary' : ''}
@@ -94,6 +97,12 @@ const InteractiveCard = memo(({
         >
           <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>
+          
+          {showAddedFeedback && (
+            <div className="absolute inset-0 flex items-center justify-center bg-primary/90 rounded-[2rem] animate-fade-in">
+              <p className="text-primary-foreground font-bold text-xl">Added to Cart! ✓</p>
+            </div>
+          )}
         </Card>
       </div>
     </div>
