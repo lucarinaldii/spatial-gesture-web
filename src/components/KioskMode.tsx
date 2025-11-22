@@ -235,7 +235,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
               id={`item-${item.id}`}
               data-id={`item-${item.id}`}
               data-clickable="true"
-              className={`p-4 cursor-pointer transition-all duration-200 ${
+              className={`p-4 transition-all duration-200 ${
                 hoveredElement === `item-${item.id}` 
                   ? 'shadow-xl scale-105 border-primary' 
                   : 'hover:shadow-lg'
