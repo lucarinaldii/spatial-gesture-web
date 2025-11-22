@@ -43,42 +43,61 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const [showCart, setShowCart] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const lastPinchStateRef = useRef<boolean[]>([]);
+  const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const categories = ['burgers', 'sides', 'drinks', 'desserts'];
 
-  // Detect pinch gestures for clicking
+  // Handle pinch gestures: click on release without movement, scroll on pinch + move
   useEffect(() => {
     if (!handPositions.length || !gestureStates.length) return;
 
-    gestureStates.forEach((gesture, index) => {
-      const wasPinching = lastPinchStateRef.current[index] || false;
-      const isPinching = gesture.isPinching;
+    const gesture = gestureStates[0];
+    const hand = handPositions[0];
+    if (!hand) return;
 
-      // Detect pinch release (click)
-      if (wasPinching && !isPinching) {
-        const hand = handPositions[index];
-        if (!hand) return;
+    const wasPinching = lastPinchStateRef.current[0] || false;
+    const isPinching = gesture?.isPinching || false;
 
+    if (isPinching && !wasPinching) {
+      // Pinch started - store position
+      pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+    } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
+      // Pinch + move = scroll
+      const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+      
+      // Scroll threshold - only scroll if moved more than 5px
+      if (Math.abs(deltaY) > 5 && scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop -= deltaY * 2; // Amplify scroll
+        pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+      }
+    } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
+      // Pinch released - check if it was a click (no significant movement)
+      const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
+      const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+      
+      // If movement is less than 10px, treat as click
+      if (deltaX < 10 && deltaY < 10) {
         const x = hand.x * window.innerWidth;
         const y = hand.y * window.innerHeight;
 
-        // Find and click the element at hand position
         const element = document.elementFromPoint(x, y);
         if (element instanceof HTMLElement) {
-          // Find the closest button or clickable card
           const clickable = element.closest('button, [data-clickable]');
           if (clickable instanceof HTMLElement) {
             clickable.click();
           }
         }
       }
+      
+      pinchStartPositionRef.current = null;
+    }
 
-      lastPinchStateRef.current[index] = isPinching;
-    });
+    lastPinchStateRef.current[0] = isPinching;
   }, [handPositions, gestureStates]);
 
-  // Detect hover
+  // Detect hover (no longer scrolls)
   useEffect(() => {
     if (!handPositions.length) {
       setHoveredElement(null);
@@ -178,7 +197,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       </div>
 
       {/* Menu Items */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4">
         <div className="grid grid-cols-2 gap-4">
           {filteredItems.map(item => (
             <Card
