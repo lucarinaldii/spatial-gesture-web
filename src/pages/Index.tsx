@@ -1379,7 +1379,7 @@ const Index = () => {
         {currentStep === 'mode-selection' ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-8">
             <div className="text-center space-y-8 max-w-4xl">
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Spatial UI Controller</h1>
+              <h1 className="text-6xl font-bold text-foreground">Spatial UI Controller</h1>
               <p className="text-xl text-muted-foreground">Choose your interaction mode</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
@@ -1413,7 +1413,7 @@ const Index = () => {
         ) : currentStep === 'tracking-selection' ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-8">
             <div className="text-center space-y-6 max-w-2xl">
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              <h1 className="text-5xl font-bold text-foreground">
                 {appMode === 'food-order' ? 'Food Order Mode' : 'Cards Mode'}
               </h1>
               <p className="text-xl text-muted-foreground">Choose your tracking method</p>
