@@ -107,15 +107,6 @@ All colors MUST be HSL.
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid hsl(var(--border) / 0.5);
   }
-  
-  .cursor-hand {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: hsl(var(--neon-cyan));
-    pointer-events: none;
-    z-index: 9999;
-  }
 }
 
 @layer base {
