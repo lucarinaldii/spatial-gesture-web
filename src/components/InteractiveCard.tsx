@@ -87,7 +87,7 @@ const InteractiveCard = memo(({
         <Card
           className={`
             glass-panel p-6 w-64 transition-all duration-200 relative
-            ${isHovered ? 'border-primary' : 'border-border/30'}
+            ${showAddedFeedback ? 'border-green-500 border-2' : isHovered ? 'border-primary' : 'border-border/30'}
             ${wasClicked ? 'scale-95' : ''}
             ${isBeingDragged ? 'scale-110 ring-2 ring-primary' : ''}
           `}
@@ -104,7 +104,7 @@ const InteractiveCard = memo(({
             <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
               <div className="relative">
                 <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
-                <div className="relative text-4xl text-green-500">✓</div>
+                <div className="relative text-4xl text-green-500 font-bold">✓</div>
               </div>
             </div>
           )}
