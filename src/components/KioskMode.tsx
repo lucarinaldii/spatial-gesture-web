@@ -484,11 +484,13 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 }`}
                 onClick={() => addToCart(item)}
               >
-                <div className="text-6xl text-center mb-3">{item.image}</div>
-                <h3 className="font-semibold text-center mb-2">{item.name}</h3>
-                <p className="text-2xl font-bold text-center text-primary">
-                  ${item.price.toFixed(2)}
-                </p>
+                <div className={`transition-opacity duration-300 ${addedItemId === item.id ? 'opacity-20' : 'opacity-100'}`}>
+                  <div className="text-6xl text-center mb-3">{item.image}</div>
+                  <h3 className="font-semibold text-center mb-2">{item.name}</h3>
+                  <p className="text-2xl font-bold text-center text-primary">
+                    ${item.price.toFixed(2)}
+                  </p>
+                </div>
                 
                 {addedItemId === item.id && (
                   <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
