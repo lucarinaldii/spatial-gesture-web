@@ -82,6 +82,8 @@ const getRandomPosition = () => ({
 });
 
 const Index = () => {
+  const [appMode, setAppMode] = useState<'food-order' | 'cards' | null>(null);
+  const [currentStep, setCurrentStep] = useState<'mode-selection' | 'tracking-selection' | 'canvas'>('mode-selection');
   const [isTracking, setIsTracking] = useState(false);
   const [hasStartedTracking, setHasStartedTracking] = useState(false);
   const [canvasBackground, setCanvasBackground] = useState<string | null>(null);
@@ -264,6 +266,7 @@ const Index = () => {
         setIsTracking(true);
         setHasStartedTracking(true);
         setTrackingMode('mobile-remote'); // Switch to canvas view with remote tracking
+        setCurrentStep('canvas');
         toast({
           title: "Mobile Connected",
           description: "Hand tracking active",
@@ -298,11 +301,20 @@ const Index = () => {
     };
   }, [sessionId, toast, addDebugLog]);
 
+  const handleModeSelection = (mode: 'food-order' | 'cards') => {
+    setAppMode(mode);
+    setCurrentStep('tracking-selection');
+    if (mode === 'food-order') {
+      setIsKioskMode(true);
+    }
+  };
+
   const handleStartTracking = async () => {
     addDebugLog('handleStartTracking called');
     setIsTracking(true);
     setHasStartedTracking(true);
     setTrackingMode('local');
+    setCurrentStep('canvas');
     
     // Start local camera for desktop interaction
     setTimeout(async () => { 
@@ -1364,15 +1376,50 @@ const Index = () => {
       <GesturesInfo />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
-        {!isTracking ? (
+        {currentStep === 'mode-selection' ? (
+          <div className="flex flex-col items-center justify-center min-h-screen p-8">
+            <div className="text-center space-y-8 max-w-4xl">
+              <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Spatial UI Controller</h1>
+              <p className="text-xl text-muted-foreground">Choose your interaction mode</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
+                <Button 
+                  onClick={() => handleModeSelection('food-order')}
+                  size="lg" 
+                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  <UtensilsCrossed className="w-16 h-16" />
+                  <div>
+                    <div className="font-bold text-2xl">Food Order</div>
+                    <div className="text-sm opacity-90 mt-2">Interactive kiosk for ordering food</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  onClick={() => handleModeSelection('cards')}
+                  size="lg" 
+                  variant="secondary"
+                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4"
+                >
+                  <Plus className="w-16 h-16" />
+                  <div>
+                    <div className="font-bold text-2xl">Cards</div>
+                    <div className="text-sm opacity-90 mt-2">Spatial cards with gesture controls</div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : currentStep === 'tracking-selection' ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-8">
             <div className="text-center space-y-6 max-w-2xl">
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">Spatial UI Controller</h1>
-              <p className="text-xl text-muted-foreground">Control your interface with natural hand gestures</p>
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+                {appMode === 'food-order' ? 'Food Order Mode' : 'Cards Mode'}
+              </h1>
+              <p className="text-xl text-muted-foreground">Choose your tracking method</p>
               
               {trackingMode === 'initial' && (
                 <div className="space-y-4 pt-8">
-                  <p className="text-lg text-muted-foreground mb-6">Choose your tracking method:</p>
                   <div className="flex flex-col gap-4">
                     <Button 
                       onClick={handleStartTracking} 
@@ -1380,7 +1427,7 @@ const Index = () => {
                       size="lg" 
                       className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
-                      {isReady ? '🖥️ Start Local Camera Tracking' : 'Loading Model...'}
+                      {isReady ? '🖥️ Use Local Camera' : 'Loading Model...'}
                     </Button>
                     <Button 
                       onClick={() => setTrackingMode('mobile-qr')} 
@@ -1389,9 +1436,21 @@ const Index = () => {
                       variant="secondary"
                       className="text-lg px-8 py-6"
                     >
-                      📱 Start Mobile Camera Tracking
+                      📱 Use Mobile Camera
                     </Button>
                   </div>
+                  <Button 
+                    onClick={() => {
+                      setCurrentStep('mode-selection');
+                      setTrackingMode('initial');
+                      setAppMode(null);
+                    }}
+                    variant="outline"
+                    size="lg"
+                    className="text-lg px-6 py-4 mt-4"
+                  >
+                    ← Back to Mode Selection
+                  </Button>
                 </div>
               )}
               
@@ -1467,20 +1526,6 @@ const Index = () => {
                 className="rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0"
               >
                 <Settings className="w-6 h-6" />
-              </Button>
-            </div>
-            
-            {/* Kiosk mode toggle - top left */}
-            <div className="fixed top-8 left-8 z-50 pointer-events-auto">
-              <Button 
-                onClick={() => setIsKioskMode(!isKioskMode)}
-                size="lg" 
-                className={`rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0 ${
-                  isKioskMode ? 'bg-accent hover:bg-accent/90' : ''
-                }`}
-                title={isKioskMode ? "Exit Kiosk Mode" : "Enter Kiosk Mode"}
-              >
-                <UtensilsCrossed className="w-6 h-6" />
               </Button>
             </div>
 
