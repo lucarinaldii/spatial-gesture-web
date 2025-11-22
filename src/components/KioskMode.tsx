@@ -42,6 +42,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
+  const [clickedElement, setClickedElement] = useState<string | null>(null);
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -150,6 +151,9 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   }, [handPositions]);
 
   const addToCart = (item: MenuItem) => {
+    setClickedElement(`item-${item.id}`);
+    setTimeout(() => setClickedElement(null), 300);
+    
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
@@ -236,7 +240,9 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
               data-id={`item-${item.id}`}
               data-clickable="true"
               className={`p-4 transition-all duration-200 ${
-                hoveredElement === `item-${item.id}` 
+                clickedElement === `item-${item.id}`
+                  ? 'scale-95 shadow-2xl border-primary animate-pulse'
+                  : hoveredElement === `item-${item.id}` 
                   ? 'shadow-xl scale-105 border-primary' 
                   : 'hover:shadow-lg'
               }`}
