@@ -225,9 +225,9 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const filteredItems = MENU_ITEMS.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none">
+    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none py-8">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-6 text-center">
+      <div className="bg-primary text-primary-foreground p-6 text-center mb-4">
         <h1 className="text-4xl font-bold mb-2">Order Here</h1>
         <p className="text-lg opacity-90">Touch to select items</p>
       </div>
@@ -309,7 +309,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       </div>
 
       {/* Cart Button */}
-      <div className="p-4 bg-muted/30 border-t">
+      <div className="p-6 bg-muted/30 border-t mt-4">
         <Button
           id="cart-button"
           data-id="cart-button"
