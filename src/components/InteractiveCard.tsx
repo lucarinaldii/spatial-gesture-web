@@ -56,7 +56,7 @@ const InteractiveCard = memo(({
     if (isInBounds && gestureState.isPinching && !lastPinchState.current) {
       onInteract();
       setWasClicked(true);
-      setTimeout(() => setWasClicked(false), 300);
+      setTimeout(() => setWasClicked(false), 150);
     }
 
     lastPinchState.current = gestureState.isPinching;
@@ -78,7 +78,7 @@ const InteractiveCard = memo(({
         style={{
           transform: isShaking ? undefined : `translate(-50%, -50%) scale(${scale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`,
           transformStyle: 'preserve-3d',
-          transition: isBeingDragged || isShaking ? 'none' : 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transition: isBeingDragged || isShaking ? 'none' : 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
       >
         <Card

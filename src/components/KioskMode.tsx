@@ -92,6 +92,46 @@ const MENU_ITEMS: MenuItem[] = [
   { id: '58', name: 'Macchiato', price: 4.49, category: 'coffee', image: '☕' },
   { id: '59', name: 'Iced Coffee', price: 3.99, category: 'coffee', image: '🧊' },
   { id: '60', name: 'Frappuccino', price: 5.49, category: 'coffee', image: '🥤' },
+  
+  { id: '61', name: 'BBQ Ribs', price: 14.99, category: 'burgers', image: '🍖' },
+  { id: '62', name: 'Fish Burger', price: 11.49, category: 'burgers', image: '🐟' },
+  { id: '63', name: 'Turkey Burger', price: 10.49, category: 'burgers', image: '🦃' },
+  { id: '64', name: 'Mushroom Burger', price: 9.99, category: 'burgers', image: '🍄' },
+  
+  { id: '65', name: 'Coleslaw', price: 3.49, category: 'sides', image: '🥗' },
+  { id: '66', name: 'Mac & Cheese', price: 4.99, category: 'sides', image: '🧀' },
+  { id: '67', name: 'Corn on the Cob', price: 3.99, category: 'sides', image: '🌽' },
+  { id: '68', name: 'Hash Browns', price: 3.49, category: 'sides', image: '🥔' },
+  
+  { id: '69', name: 'Hot Chocolate', price: 3.49, category: 'drinks', image: '☕' },
+  { id: '70', name: 'Fruit Punch', price: 2.99, category: 'drinks', image: '🍹' },
+  { id: '71', name: 'Sparkling Water', price: 2.49, category: 'drinks', image: '💧' },
+  { id: '72', name: 'Root Beer Float', price: 4.49, category: 'drinks', image: '🥤' },
+  
+  { id: '73', name: 'Tiramisu', price: 5.49, category: 'desserts', image: '🍰' },
+  { id: '74', name: 'Pudding', price: 3.49, category: 'desserts', image: '🍮' },
+  { id: '75', name: 'Muffin', price: 2.99, category: 'desserts', image: '🧁' },
+  { id: '76', name: 'Cinnamon Roll', price: 3.99, category: 'desserts', image: '🥐' },
+  
+  { id: '77', name: 'Caprese Salad', price: 8.99, category: 'salads', image: '🥗' },
+  { id: '78', name: 'Asian Salad', price: 9.49, category: 'salads', image: '🥗' },
+  { id: '79', name: 'Quinoa Bowl', price: 10.49, category: 'salads', image: '🥗' },
+  { id: '80', name: 'Spinach Salad', price: 8.49, category: 'salads', image: '🥗' },
+  
+  { id: '81', name: 'Breakfast Sandwich', price: 5.99, category: 'breakfast', image: '🥪' },
+  { id: '82', name: 'Yogurt Parfait', price: 4.99, category: 'breakfast', image: '🥤' },
+  { id: '83', name: 'Breakfast Bowl', price: 8.99, category: 'breakfast', image: '🥣' },
+  { id: '84', name: 'Smoothie Bowl', price: 7.49, category: 'breakfast', image: '🥣' },
+  
+  { id: '85', name: 'Spring Rolls', price: 5.49, category: 'snacks', image: '🥟' },
+  { id: '86', name: 'Jalapeno Poppers', price: 5.99, category: 'snacks', image: '🌶️' },
+  { id: '87', name: 'Mini Tacos', price: 6.49, category: 'snacks', image: '🌮' },
+  { id: '88', name: 'Sliders', price: 7.99, category: 'snacks', image: '🍔' },
+  
+  { id: '89', name: 'Cold Brew', price: 4.49, category: 'coffee', image: '🧊' },
+  { id: '90', name: 'Flat White', price: 4.29, category: 'coffee', image: '☕' },
+  { id: '91', name: 'Cortado', price: 3.79, category: 'coffee', image: '☕' },
+  { id: '92', name: 'Affogato', price: 5.49, category: 'coffee', image: '🍦' },
 ];
 
 export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskModeProps) => {
