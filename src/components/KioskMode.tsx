@@ -257,8 +257,8 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
           currentY: hand.y * window.innerHeight 
         });
         
-        // Scroll threshold - only scroll if moved more than 80px
-        if (Math.abs(deltaY) > 80 && scrollContainerRef.current) {
+        // Scroll threshold - only scroll if moved more than 40px
+        if (Math.abs(deltaY) > 40 && scrollContainerRef.current) {
           // Smooth scroll with animation
           const currentScroll = scrollContainerRef.current.scrollTop;
           const targetScroll = currentScroll - (deltaY * 1.5);
@@ -278,8 +278,8 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
         const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
         
-        // Only trigger click if no scrolling occurred and movement under 80px
-        if (!isScrolling && deltaX < 80 && deltaY < 80) {
+        // Only trigger click if no scrolling occurred and movement under 40px
+        if (!isScrolling && deltaX < 40 && deltaY < 40) {
           // Use the pinch START position for click detection
           const x = pinchStartPositionRef.current.x * window.innerWidth;
           const y = pinchStartPositionRef.current.y * window.innerHeight;
