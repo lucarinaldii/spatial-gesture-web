@@ -1485,43 +1485,45 @@ const Index = () => {
             </div>
 
             {/* Add card button - top center */}
-            <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-              <Button 
-                onClick={() => {
-                  maxZIndexRef.current += 1;
-                  const randomPos = getRandomPosition();
-                  const newCard: ObjectData = {
-                    id: Date.now().toString(),
-                    type: 'card',
-                    title: getRandomWord(),
-                    description: 'New spatial card',
-                    position: randomPos,
-                    zIndex: maxZIndexRef.current,
-                    rotation: { x: 0, y: 0, z: 0 },
-                    velocity: { x: 0, y: 0 },
-                    isPhysicsEnabled: false,
-                    scale: 0.5,
-                  };
-                  setObjects(prev => [...prev, newCard]);
-                  setTimeout(() => {
-                    setObjects(prev => prev.map(obj => 
-                      obj.id === newCard.id ? { ...obj, scale: 1 } : obj
-                    ));
-                  }, 10);
-                }}
-                size="lg" 
-                className={`rounded-full neon-glow transition-all duration-200 w-20 h-20 p-0 ${
-                  isPlusButtonClicked 
-                    ? 'scale-90' 
-                    : isPlusButtonHovered 
-                    ? 'scale-110' 
-                    : 'scale-100'
-                }`}
-                title="Add Card (or pinch with hand)"
-              >
-                <Plus className="w-10 h-10" />
-              </Button>
-            </div>
+            {!isKioskMode && (
+              <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+                <Button 
+                  onClick={() => {
+                    maxZIndexRef.current += 1;
+                    const randomPos = getRandomPosition();
+                    const newCard: ObjectData = {
+                      id: Date.now().toString(),
+                      type: 'card',
+                      title: getRandomWord(),
+                      description: 'New spatial card',
+                      position: randomPos,
+                      zIndex: maxZIndexRef.current,
+                      rotation: { x: 0, y: 0, z: 0 },
+                      velocity: { x: 0, y: 0 },
+                      isPhysicsEnabled: false,
+                      scale: 0.5,
+                    };
+                    setObjects(prev => [...prev, newCard]);
+                    setTimeout(() => {
+                      setObjects(prev => prev.map(obj => 
+                        obj.id === newCard.id ? { ...obj, scale: 1 } : obj
+                      ));
+                    }, 10);
+                  }}
+                  size="lg" 
+                  className={`rounded-full neon-glow transition-all duration-200 w-20 h-20 p-0 ${
+                    isPlusButtonClicked 
+                      ? 'scale-90' 
+                      : isPlusButtonHovered 
+                      ? 'scale-110' 
+                      : 'scale-100'
+                  }`}
+                  title="Add Card (or pinch with hand)"
+                >
+                  <Plus className="w-10 h-10" />
+                </Button>
+              </div>
+            )}
 
             {/* Settings Panel */}
             {showSettingsPanel && (
