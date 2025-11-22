@@ -550,8 +550,8 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
         </div>
       )}
 
-      {/* Hand cursor indicators - above everything */}
-      {handPositions.map((hand, index) => {
+      {/* Hand cursor indicators - above everything - only show first hand */}
+      {handPositions.length > 0 && handPositions.slice(0, 1).map((hand, index) => {
         const isPinching = gestureStates[index]?.isPinching || false;
         return (
           <div
