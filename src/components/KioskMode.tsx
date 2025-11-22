@@ -186,7 +186,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const filteredItems = MENU_ITEMS.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative">
+    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative z-[81]">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-6 text-center">
         <h1 className="text-4xl font-bold mb-2">Order Here</h1>
