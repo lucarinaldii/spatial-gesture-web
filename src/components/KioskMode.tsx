@@ -55,14 +55,15 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
 
     const gesture = gestureStates[0];
     const hand = handPositions[0];
-    if (!hand) return;
+    if (!hand || !gesture) return;
 
     const wasPinching = lastPinchStateRef.current[0] || false;
-    const isPinching = gesture?.isPinching || false;
+    const isPinching = gesture.isPinching || false;
 
     if (isPinching && !wasPinching) {
       // Pinch started - store position
       pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+      console.log('[KIOSK] Pinch started at', hand.x, hand.y);
     } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
       // Pinch + move = scroll
       const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
@@ -71,24 +72,38 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       if (Math.abs(deltaY) > 5 && scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop -= deltaY * 2; // Amplify scroll
         pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+        console.log('[KIOSK] Scrolling', deltaY);
       }
     } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
       // Pinch released - check if it was a click (no significant movement)
       const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
       const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
       
+      console.log('[KIOSK] Pinch released - deltaX:', deltaX, 'deltaY:', deltaY);
+      
       // If movement is less than 10px, treat as click
       if (deltaX < 10 && deltaY < 10) {
         const x = hand.x * window.innerWidth;
         const y = hand.y * window.innerHeight;
 
+        console.log('[KIOSK] Attempting click at', x, y);
+        
         const element = document.elementFromPoint(x, y);
+        console.log('[KIOSK] Element at point:', element);
+        
         if (element instanceof HTMLElement) {
           const clickable = element.closest('button, [data-clickable]');
+          console.log('[KIOSK] Clickable element:', clickable);
+          
           if (clickable instanceof HTMLElement) {
+            console.log('[KIOSK] Clicking element:', clickable.id || clickable.getAttribute('data-id'));
             clickable.click();
+          } else {
+            console.log('[KIOSK] No clickable element found');
           }
         }
+      } else {
+        console.log('[KIOSK] Movement too large for click');
       }
       
       pinchStartPositionRef.current = null;
