@@ -17,8 +17,9 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { GesturesInfo } from '@/components/GesturesInfo';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
+import { KioskMode } from '@/components/KioskMode';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Plus } from 'lucide-react';
+import { Settings, Plus, UtensilsCrossed } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -91,6 +92,7 @@ const Index = () => {
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'mobile-remote' | 'local'>('initial');
+  const [isKioskMode, setIsKioskMode] = useState(false);
   const channelRef = useRef<any>(null);
   const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking(trackingMode !== 'mobile-remote');
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
@@ -1468,6 +1470,20 @@ const Index = () => {
               </Button>
             </div>
             
+            {/* Kiosk mode toggle - top left */}
+            <div className="fixed top-8 left-8 z-50 pointer-events-auto">
+              <Button 
+                onClick={() => setIsKioskMode(!isKioskMode)}
+                size="lg" 
+                className={`rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0 ${
+                  isKioskMode ? 'bg-accent hover:bg-accent/90' : ''
+                }`}
+                title={isKioskMode ? "Exit Kiosk Mode" : "Enter Kiosk Mode"}
+              >
+                <UtensilsCrossed className="w-6 h-6" />
+              </Button>
+            </div>
+
             {/* Add card button - top center */}
             <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
               <Button 
@@ -1529,6 +1545,14 @@ const Index = () => {
             />
               </div>
             )}
+            
+            {/* Kiosk Mode Overlay */}
+            {isKioskMode && (
+              <div className="fixed inset-0 z-40 bg-background">
+                <KioskMode handPositions={handPositions} gestureStates={gestureStates} />
+              </div>
+            )}
+            
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
               {objects.sort((a, b) => a.zIndex - b.zIndex).map((obj) => {
                 const isBeingDragged = Array.from(grabbedObjects.values()).some(g => g.id === obj.id);
