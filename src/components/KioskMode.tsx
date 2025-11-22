@@ -145,9 +145,12 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   const [clickedElement, setClickedElement] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [isCarouselScrolling, setIsCarouselScrolling] = useState(false);
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const carouselPinchStartRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const carouselContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: true });
 
@@ -171,7 +174,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     }, 300);
   };
 
-  // Handle pinch gestures: click on release without movement, scroll on pinch + move
+  // Handle horizontal pinch gestures for category carousel
   useEffect(() => {
     if (!handPositions.length || !gestureStates.length) return;
 
@@ -179,89 +182,136 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     const hand = handPositions[0];
     if (!hand || !gesture) return;
 
+    const x = hand.x * window.innerWidth;
+    const y = hand.y * window.innerHeight;
+    
+    // Check if hand is over the carousel area
+    const isOverCarousel = carouselContainerRef.current && 
+      y >= carouselContainerRef.current.offsetTop && 
+      y <= carouselContainerRef.current.offsetTop + carouselContainerRef.current.offsetHeight;
+
     const wasPinching = lastPinchStateRef.current[0] || false;
     const isPinching = gesture.isPinching || false;
 
-    if (isPinching && !wasPinching) {
-      // Pinch started - store position
-      pinchStartPositionRef.current = { x: hand.x, y: hand.y };
-      setScrollLine({ startY: hand.y * window.innerHeight, currentY: hand.y * window.innerHeight });
-      setIsScrolling(false);
-      console.log('[KIOSK] Pinch started at', hand.x, hand.y);
-    } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
-      // Pinch + move = scroll
-      const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
-      
-      // Update scroll line
-      setScrollLine({ 
-        startY: pinchStartPositionRef.current.y * window.innerHeight, 
-        currentY: hand.y * window.innerHeight 
-      });
-      
-      // Scroll threshold - only scroll if moved more than 80px
-      if (Math.abs(deltaY) > 80 && scrollContainerRef.current) {
-        // Smooth scroll with animation
-        const currentScroll = scrollContainerRef.current.scrollTop;
-        const targetScroll = currentScroll - (deltaY * 1.5);
+    // Handle carousel horizontal scrolling
+    if (isOverCarousel && emblaApi) {
+      if (isPinching && !wasPinching) {
+        // Start carousel scroll
+        carouselPinchStartRef.current = { x: hand.x, y: hand.y };
+        setIsCarouselScrolling(false);
+      } else if (isPinching && wasPinching && carouselPinchStartRef.current) {
+        // Horizontal scroll on carousel
+        const deltaX = (hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
         
-        scrollContainerRef.current.scrollTo({
-          top: targetScroll,
-          behavior: 'smooth'
+        if (Math.abs(deltaX) > 30) {
+          // Scroll carousel based on horizontal movement
+          const scrollProgress = emblaApi.scrollProgress();
+          const targetProgress = scrollProgress - (deltaX / window.innerWidth) * 0.5;
+          emblaApi.scrollTo(Math.round(targetProgress * emblaApi.scrollSnapList().length));
+          
+          carouselPinchStartRef.current = { x: hand.x, y: hand.y };
+          setIsCarouselScrolling(true);
+        }
+      } else if (!isPinching && wasPinching && carouselPinchStartRef.current) {
+        // Carousel pinch released
+        const deltaX = Math.abs(hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
+        const deltaY = Math.abs(hand.y - carouselPinchStartRef.current.y) * window.innerHeight;
+        
+        // Only trigger click if no scrolling and minimal movement
+        if (!isCarouselScrolling && deltaX < 50 && deltaY < 50) {
+          const elements = document.elementsFromPoint(
+            carouselPinchStartRef.current.x * window.innerWidth, 
+            carouselPinchStartRef.current.y * window.innerHeight
+          );
+          let clickableElement: HTMLElement | null = null;
+          for (const el of elements) {
+            if (el instanceof HTMLElement) {
+              const clickable = el.closest('button, [data-clickable]');
+              if (clickable instanceof HTMLElement) {
+                clickableElement = clickable;
+                break;
+              }
+            }
+          }
+          if (clickableElement) clickableElement.click();
+        }
+        
+        carouselPinchStartRef.current = null;
+        setTimeout(() => setIsCarouselScrolling(false), 100);
+      }
+    }
+
+    // Handle main content vertical scrolling
+    if (!isOverCarousel) {
+      if (isPinching && !wasPinching) {
+        // Pinch started - store position
+        pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+        setScrollLine({ startY: hand.y * window.innerHeight, currentY: hand.y * window.innerHeight });
+        setIsScrolling(false);
+      } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
+        // Pinch + move = scroll
+        const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+        
+        // Update scroll line
+        setScrollLine({ 
+          startY: pinchStartPositionRef.current.y * window.innerHeight, 
+          currentY: hand.y * window.innerHeight 
         });
         
-        pinchStartPositionRef.current = { x: hand.x, y: hand.y };
-        setIsScrolling(true); // Mark that scrolling occurred
-        console.log('[KIOSK] Scrolling', deltaY);
-      }
-    } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
-      // Pinch released - clear scroll line
-      setScrollLine(null);
-      // Pinch released - check if it was a click (no significant movement)
-      const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
-      const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
-      
-      console.log('[KIOSK] Pinch released - deltaX:', deltaX, 'deltaY:', deltaY, 'isScrolling:', isScrolling);
-      
-      // Only trigger click if no scrolling occurred and movement under 80px
-      if (!isScrolling && deltaX < 80 && deltaY < 80) {
-        // Use the pinch START position for click detection
-        const x = pinchStartPositionRef.current.x * window.innerWidth;
-        const y = pinchStartPositionRef.current.y * window.innerHeight;
-
-        console.log('[KIOSK] Attempting click at', x, y);
+        // Scroll threshold - only scroll if moved more than 80px
+        if (Math.abs(deltaY) > 80 && scrollContainerRef.current) {
+          // Smooth scroll with animation
+          const currentScroll = scrollContainerRef.current.scrollTop;
+          const targetScroll = currentScroll - (deltaY * 1.5);
+          
+          scrollContainerRef.current.scrollTo({
+            top: targetScroll,
+            behavior: 'smooth'
+          });
+          
+          pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+          setIsScrolling(true);
+        }
+      } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
+        // Pinch released - clear scroll line
+        setScrollLine(null);
+        // Pinch released - check if it was a click (no significant movement)
+        const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
+        const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
         
-        // Get all elements at point and find the clickable one
-        const elements = document.elementsFromPoint(x, y);
-        console.log('[KIOSK] Elements at point:', elements.map(e => e.tagName + (e.id ? '#' + e.id : '')));
-        
-        let clickableElement: HTMLElement | null = null;
-        for (const el of elements) {
-          if (el instanceof HTMLElement) {
-            const clickable = el.closest('button, [data-clickable], a');
-            if (clickable instanceof HTMLElement) {
-              clickableElement = clickable;
-              break;
+        // Only trigger click if no scrolling occurred and movement under 80px
+        if (!isScrolling && deltaX < 80 && deltaY < 80) {
+          // Use the pinch START position for click detection
+          const x = pinchStartPositionRef.current.x * window.innerWidth;
+          const y = pinchStartPositionRef.current.y * window.innerHeight;
+          
+          // Get all elements at point and find the clickable one
+          const elements = document.elementsFromPoint(x, y);
+          
+          let clickableElement: HTMLElement | null = null;
+          for (const el of elements) {
+            if (el instanceof HTMLElement) {
+              const clickable = el.closest('button, [data-clickable], a');
+              if (clickable instanceof HTMLElement) {
+                clickableElement = clickable;
+                break;
+              }
             }
+          }
+          
+          if (clickableElement) {
+            clickableElement.click();
           }
         }
         
-        if (clickableElement) {
-          console.log('[KIOSK] Clicking element:', clickableElement.id || clickableElement.getAttribute('data-id'));
-          clickableElement.click();
-        } else {
-          console.log('[KIOSK] No clickable element found');
-        }
-      } else {
-        console.log('[KIOSK] Movement too large or scrolling occurred - no click');
+        pinchStartPositionRef.current = null;
+        // Reset scrolling flag after a short delay
+        setTimeout(() => setIsScrolling(false), 100);
       }
-      
-      pinchStartPositionRef.current = null;
-      // Reset scrolling flag after a short delay
-      setTimeout(() => setIsScrolling(false), 100);
     }
 
     lastPinchStateRef.current[0] = isPinching;
-  }, [handPositions, gestureStates]);
+  }, [handPositions, gestureStates, emblaApi]);
 
   // Detect hover - check all elements at point
   useEffect(() => {
@@ -365,7 +415,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
       </div>
 
       {/* Category Carousel */}
-      <div className="relative p-6 bg-muted/30 mb-6 rounded-[2rem]">
+      <div ref={carouselContainerRef} className="relative p-6 bg-muted/30 mb-6 rounded-[2rem]">
         <Button
           id="category-prev"
           data-id="category-prev"
