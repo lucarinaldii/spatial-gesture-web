@@ -170,8 +170,8 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       
       console.log('[KIOSK] Pinch released - deltaX:', deltaX, 'deltaY:', deltaY);
       
-      // If movement is less than 15px, treat as click
-      if (deltaX < 15 && deltaY < 15) {
+      // If movement is less than 25px, treat as click
+      if (deltaX < 25 && deltaY < 25) {
         // Use the pinch START position for click detection
         const x = pinchStartPositionRef.current.x * window.innerWidth;
         const y = pinchStartPositionRef.current.y * window.innerHeight;
@@ -239,6 +239,19 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   }, [handPositions]);
 
   const addToCart = (item: MenuItem) => {
+    // Check if this was triggered by a drag gesture
+    if (pinchStartPositionRef.current && handPositions.length > 0) {
+      const hand = handPositions[0];
+      const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
+      const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+      
+      // If movement is more than 25px, it's a drag, not a click
+      if (deltaX > 25 || deltaY > 25) {
+        console.log('[KIOSK] Prevented add to cart - drag detected');
+        return;
+      }
+    }
+    
     setClickedElement(`item-${item.id}`);
     setTimeout(() => setClickedElement(null), 300);
     
