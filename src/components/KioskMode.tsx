@@ -55,6 +55,7 @@ const MENU_ITEMS: MenuItem[] = [
 
 export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('burgers');
+  const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
@@ -69,6 +70,13 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
 
   const scrollPrev = () => emblaApi?.scrollPrev();
   const scrollNext = () => emblaApi?.scrollNext();
+
+  const handleCategoryChange = (category: string) => {
+    if (category === selectedCategory) return;
+    setIsLoadingCategory(true);
+    setSelectedCategory(category);
+    setTimeout(() => setIsLoadingCategory(false), 400);
+  };
 
   // Handle pinch gestures: click on release without movement, scroll on pinch + move
   useEffect(() => {
@@ -254,7 +262,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
                 key={cat}
                 id={`category-${cat}`}
                 data-id={`category-${cat}`}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => handleCategoryChange(cat)}
                 variant={selectedCategory === cat ? "default" : "outline"}
                 className={`h-14 px-8 text-base font-semibold capitalize transition-all flex-shrink-0 ${
                   hoveredElement === `category-${cat}` ? 'scale-105 shadow-lg' : ''
@@ -282,30 +290,39 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
 
       {/* Menu Items */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-2 gap-4">
-          {filteredItems.map(item => (
-            <Card
-              key={item.id}
-              id={`item-${item.id}`}
-              data-id={`item-${item.id}`}
-              data-clickable="true"
-              className={`p-4 transition-all duration-200 ${
-                clickedElement === `item-${item.id}`
-                  ? 'scale-95 shadow-2xl border-primary animate-pulse'
-                  : hoveredElement === `item-${item.id}` 
-                  ? 'shadow-xl scale-105 border-primary' 
-                  : 'hover:shadow-lg'
-              }`}
-              onClick={() => addToCart(item)}
-            >
-              <div className="text-6xl text-center mb-3">{item.image}</div>
-              <h3 className="font-semibold text-center mb-2">{item.name}</h3>
-              <p className="text-2xl font-bold text-center text-primary">
-                ${item.price.toFixed(2)}
-              </p>
-            </Card>
-          ))}
-        </div>
+        {isLoadingCategory ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent"></div>
+              <p className="text-lg font-medium text-muted-foreground">Loading menu...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 animate-fade-in">
+            {filteredItems.map(item => (
+              <Card
+                key={item.id}
+                id={`item-${item.id}`}
+                data-id={`item-${item.id}`}
+                data-clickable="true"
+                className={`p-4 transition-all duration-200 ${
+                  clickedElement === `item-${item.id}`
+                    ? 'scale-95 shadow-2xl border-primary'
+                    : hoveredElement === `item-${item.id}` 
+                    ? 'shadow-xl scale-105 border-primary' 
+                    : 'hover:shadow-lg'
+                }`}
+                onClick={() => addToCart(item)}
+              >
+                <div className="text-6xl text-center mb-3">{item.image}</div>
+                <h3 className="font-semibold text-center mb-2">{item.name}</h3>
+                <p className="text-2xl font-bold text-center text-primary">
+                  ${item.price.toFixed(2)}
+                </p>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Cart Button */}
@@ -431,14 +448,15 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
         return (
           <div
             key={index}
-            className="fixed rounded-full pointer-events-none z-[60] transition-all duration-100"
+            className="fixed rounded-full pointer-events-none z-[60] transition-all duration-150"
             style={{
               left: `${hand.x * 100}%`,
               top: `${hand.y * 100}%`,
               transform: 'translate(-50%, -50%)',
-              width: isPinching ? '24px' : '32px',
-              height: isPinching ? '24px' : '32px',
-              backgroundColor: isPinching ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.6)',
+              width: isPinching ? '20px' : '32px',
+              height: isPinching ? '20px' : '32px',
+              backgroundColor: isPinching ? 'hsl(var(--primary) / 0.8)' : 'hsl(var(--primary) / 0.5)',
+              border: '3px solid hsl(var(--primary))',
               boxShadow: isPinching ? '0 0 20px hsl(var(--primary))' : 'none',
             }}
           />
