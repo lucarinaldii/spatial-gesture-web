@@ -1548,7 +1548,7 @@ const Index = () => {
             
             {/* Kiosk Mode Overlay */}
             {isKioskMode && (
-              <div className="fixed inset-0 z-30 bg-background pointer-events-none">
+              <div className="fixed inset-0 z-30 bg-background">
                 <KioskMode handPositions={handPositions} gestureStates={gestureStates} />
               </div>
             )}

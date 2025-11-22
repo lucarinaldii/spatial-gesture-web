@@ -81,26 +81,34 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       
       console.log('[KIOSK] Pinch released - deltaX:', deltaX, 'deltaY:', deltaY);
       
-      // If movement is less than 10px, treat as click
-      if (deltaX < 10 && deltaY < 10) {
-        const x = hand.x * window.innerWidth;
-        const y = hand.y * window.innerHeight;
+      // If movement is less than 15px, treat as click
+      if (deltaX < 15 && deltaY < 15) {
+        // Use the pinch START position for click detection
+        const x = pinchStartPositionRef.current.x * window.innerWidth;
+        const y = pinchStartPositionRef.current.y * window.innerHeight;
 
         console.log('[KIOSK] Attempting click at', x, y);
         
-        const element = document.elementFromPoint(x, y);
-        console.log('[KIOSK] Element at point:', element);
+        // Get all elements at point and find the clickable one
+        const elements = document.elementsFromPoint(x, y);
+        console.log('[KIOSK] Elements at point:', elements.map(e => e.tagName + (e.id ? '#' + e.id : '')));
         
-        if (element instanceof HTMLElement) {
-          const clickable = element.closest('button, [data-clickable]');
-          console.log('[KIOSK] Clickable element:', clickable);
-          
-          if (clickable instanceof HTMLElement) {
-            console.log('[KIOSK] Clicking element:', clickable.id || clickable.getAttribute('data-id'));
-            clickable.click();
-          } else {
-            console.log('[KIOSK] No clickable element found');
+        let clickableElement: HTMLElement | null = null;
+        for (const el of elements) {
+          if (el instanceof HTMLElement) {
+            const clickable = el.closest('button, [data-clickable], a');
+            if (clickable instanceof HTMLElement) {
+              clickableElement = clickable;
+              break;
+            }
           }
+        }
+        
+        if (clickableElement) {
+          console.log('[KIOSK] Clicking element:', clickableElement.id || clickableElement.getAttribute('data-id'));
+          clickableElement.click();
+        } else {
+          console.log('[KIOSK] No clickable element found');
         }
       } else {
         console.log('[KIOSK] Movement too large for click');
@@ -186,7 +194,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const filteredItems = MENU_ITEMS.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative pointer-events-auto">
+    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-6 text-center">
         <h1 className="text-4xl font-bold mb-2">Order Here</h1>
