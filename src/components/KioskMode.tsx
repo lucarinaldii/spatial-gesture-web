@@ -159,7 +159,15 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       
       // Scroll threshold - only scroll if moved more than 80px
       if (Math.abs(deltaY) > 80 && scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop -= deltaY * 2; // Amplify scroll
+        // Smooth scroll with animation
+        const currentScroll = scrollContainerRef.current.scrollTop;
+        const targetScroll = currentScroll - (deltaY * 1.5);
+        
+        scrollContainerRef.current.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth'
+        });
+        
         pinchStartPositionRef.current = { x: hand.x, y: hand.y };
         setIsScrolling(true); // Mark that scrolling occurred
         console.log('[KIOSK] Scrolling', deltaY);
@@ -364,7 +372,14 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       </div>
 
       {/* Menu Items */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-6 mb-6">
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 overflow-y-auto px-6 mb-6 scroll-smooth"
+        style={{
+          scrollBehavior: 'smooth',
+          WebkitOverflowScrolling: 'touch'
+        }}
+      >
         {isLoadingCategory ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-4">
@@ -445,7 +460,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-2 mb-6">
+          <div className="flex-1 overflow-y-auto px-2 mb-6 scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
             {cart.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-muted-foreground" />
