@@ -99,8 +99,11 @@ const InteractiveCard = memo(({
           <p className="text-sm text-muted-foreground">{description}</p>
           
           {showAddedFeedback && (
-            <div className="absolute inset-0 flex items-center justify-center bg-primary/90 rounded-[2rem] animate-fade-in">
-              <p className="text-primary-foreground font-bold text-xl">Added to Cart! ✓</p>
+            <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
+              <div className="relative">
+                <div className="absolute inset-0 bg-green-500 blur-3xl opacity-60 animate-pulse"></div>
+                <div className="relative text-6xl">✓</div>
+              </div>
             </div>
           )}
         </Card>
