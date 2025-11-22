@@ -1386,7 +1386,7 @@ const Index = () => {
                 <Button 
                   onClick={() => handleModeSelection('food-order')}
                   size="lg" 
-                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem]"
                 >
                   <UtensilsCrossed className="w-16 h-16" />
                   <div>
@@ -1399,7 +1399,7 @@ const Index = () => {
                   onClick={() => handleModeSelection('cards')}
                   size="lg" 
                   variant="secondary"
-                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4"
+                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 rounded-[2rem]"
                 >
                   <Plus className="w-16 h-16" />
                   <div>
