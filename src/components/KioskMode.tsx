@@ -476,7 +476,9 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 data-id={`item-${item.id}`}
                 data-clickable="true"
                 className={`p-6 transition-all duration-200 relative ${
-                  clickedElement === `item-${item.id}`
+                  addedItemId === item.id
+                    ? 'border-green-500 border-2 shadow-2xl'
+                    : clickedElement === `item-${item.id}`
                     ? 'scale-95 shadow-2xl border-primary'
                     : hoveredElement === `item-${item.id}` 
                     ? 'shadow-xl scale-105 border-primary' 
@@ -496,7 +498,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                   <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
                     <div className="relative">
                       <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
-                      <div className="relative text-5xl text-green-500">✓</div>
+                      <div className="relative text-5xl text-green-500 font-bold">✓</div>
                     </div>
                   </div>
                 )}
