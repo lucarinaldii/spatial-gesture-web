@@ -1548,9 +1548,37 @@ const Index = () => {
             
             {/* Kiosk Mode Overlay */}
             {isKioskMode && (
-              <div className="fixed inset-0 z-40 bg-background">
+              <div className="fixed inset-0 z-40 bg-background pointer-events-auto">
                 <KioskMode handPositions={handPositions} gestureStates={gestureStates} />
               </div>
+            )}
+            
+            {/* 3D Hand and Skeleton - always on top in kiosk mode */}
+            {isKioskMode && (
+              <>
+                {show3DHand && ((remoteLandmarks && remoteLandmarks.length > 0) || (landmarks && landmarks.length > 0)) && (
+                  <div className="fixed inset-0 pointer-events-none z-50">
+                    <Hand3DModel 
+                      landmarks={remoteLandmarks && remoteLandmarks.length > 0 ? remoteLandmarks : landmarks} 
+                      videoWidth={window.innerWidth} 
+                      videoHeight={window.innerHeight} 
+                      alignmentParams={alignmentParams} 
+                      handedness={remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandedness : handedness} 
+                    />
+                  </div>
+                )}
+                {showSkeleton && ((remoteLandmarks && remoteLandmarks.length > 0) || (landmarks && landmarks.length > 0)) && (
+                  <div className="fixed inset-0 pointer-events-none z-50">
+                    <HandSkeleton 
+                      landmarks={remoteLandmarks && remoteLandmarks.length > 0 ? remoteLandmarks : landmarks} 
+                      videoWidth={window.innerWidth} 
+                      videoHeight={window.innerHeight} 
+                      alignmentParams={alignmentParams} 
+                      handedness={remoteLandmarks && remoteLandmarks.length > 0 ? remoteHandedness : handedness} 
+                    />
+                  </div>
+                )}
+              </>
             )}
             
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
