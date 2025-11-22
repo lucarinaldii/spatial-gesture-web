@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GestureState, HandPosition } from '@/hooks/useHandTracking';
-import { useToast } from '@/hooks/use-toast';
 import useEmblaCarousel from 'embla-carousel-react';
 
 interface MenuItem {
@@ -143,6 +142,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   const [showCart, setShowCart] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [clickedElement, setClickedElement] = useState<string | null>(null);
+  const [addedItemId, setAddedItemId] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const [isCarouselScrolling, setIsCarouselScrolling] = useState(false);
@@ -151,7 +151,6 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   const carouselPinchStartRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const carouselContainerRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: true });
 
   const categories = ['burgers', 'sides', 'drinks', 'desserts', 'salads', 'breakfast', 'snacks', 'coffee'];
@@ -352,16 +351,15 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     setClickedElement(`item-${item.id}`);
     setTimeout(() => setClickedElement(null), 300);
     
+    setAddedItemId(item.id);
+    setTimeout(() => setAddedItemId(null), 1500);
+    
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
         return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
       return [...prev, { ...item, quantity: 1 }];
-    });
-    toast({
-      title: "Added to cart",
-      description: `${item.name} added`,
     });
   };
 
@@ -385,19 +383,10 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
 
   const handleCheckout = () => {
     if (cart.length === 0) {
-      toast({
-        title: "Cart is empty",
-        description: "Please add items to your cart",
-        variant: "destructive",
-      });
       return;
     }
     setIsLoadingCheckout(true);
     setTimeout(() => {
-      toast({
-        title: "Order placed!",
-        description: `Total: $${getTotal()}. Thank you for your order!`,
-      });
       setCart([]);
       setShowCart(false);
       setIsLoadingCheckout(false);
@@ -486,7 +475,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 id={`item-${item.id}`}
                 data-id={`item-${item.id}`}
                 data-clickable="true"
-                className={`p-6 transition-all duration-200 ${
+                className={`p-6 transition-all duration-200 relative ${
                   clickedElement === `item-${item.id}`
                     ? 'scale-95 shadow-2xl border-primary'
                     : hoveredElement === `item-${item.id}` 
@@ -500,6 +489,12 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 <p className="text-2xl font-bold text-center text-primary">
                   ${item.price.toFixed(2)}
                 </p>
+                
+                {addedItemId === item.id && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-primary/90 rounded-[2rem] animate-fade-in">
+                    <p className="text-primary-foreground font-bold text-2xl">Added to Cart! ✓</p>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
