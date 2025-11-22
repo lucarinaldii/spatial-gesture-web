@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import { GestureState, HandPosition } from '@/hooks/useHandTracking';
 import { useToast } from '@/hooks/use-toast';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -104,6 +104,10 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const [clickedElement, setClickedElement] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [showCursor, setShowCursor] = useState(() => {
+    const saved = localStorage.getItem('kioskShowCursor');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -128,6 +132,12 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       setShowCart(true);
       setIsLoadingCart(false);
     }, 300);
+  };
+
+  const toggleCursor = () => {
+    const newValue = !showCursor;
+    setShowCursor(newValue);
+    localStorage.setItem('kioskShowCursor', JSON.stringify(newValue));
   };
 
   // Handle pinch gestures: click on release without movement, scroll on pinch + move
@@ -318,9 +328,24 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   return (
     <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none py-8 px-6">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-8 text-center mb-6 rounded-[2rem]">
+      <div className="bg-primary text-primary-foreground p-8 text-center mb-6 rounded-[2rem] relative">
         <h1 className="text-4xl font-bold mb-2">Order Here</h1>
         <p className="text-lg opacity-90">Touch to select items</p>
+        
+        {/* Cursor toggle button */}
+        <Button
+          id="cursor-toggle"
+          data-id="cursor-toggle"
+          variant="ghost"
+          size="icon"
+          onClick={toggleCursor}
+          className={`absolute top-4 right-4 text-primary-foreground hover:bg-primary-foreground/20 transition-all ${
+            hoveredElement === 'cursor-toggle' ? 'scale-110 bg-primary-foreground/20' : ''
+          }`}
+          title={showCursor ? "Hide cursor" : "Show cursor"}
+        >
+          {showCursor ? <Eye className="h-6 w-6" /> : <EyeOff className="h-6 w-6" />}
+        </Button>
       </div>
 
       {/* Category Carousel */}
@@ -551,7 +576,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       )}
 
       {/* Hand cursor indicators - above everything - only show first hand */}
-      {handPositions.length > 0 && handPositions.slice(0, 1).map((hand, index) => {
+      {showCursor && handPositions.length > 0 && handPositions.slice(0, 1).map((hand, index) => {
         const isPinching = gestureStates[index]?.isPinching || false;
         return (
           <div
@@ -572,7 +597,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       })}
       
       {/* Scroll line indicator */}
-      {scrollLine && (
+      {showCursor && scrollLine && (
         <svg 
           className="fixed inset-0 pointer-events-none z-[59]" 
           style={{ width: '100%', height: '100%' }}
