@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Minus, ShoppingCart, X } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GestureState, HandPosition } from '@/hooks/useHandTracking';
 import { useToast } from '@/hooks/use-toast';
+import useEmblaCarousel from 'embla-carousel-react';
 
 interface MenuItem {
   id: string;
   name: string;
   price: number;
-  category: 'burgers' | 'sides' | 'drinks' | 'desserts';
+  category: 'burgers' | 'sides' | 'drinks' | 'desserts' | 'salads' | 'breakfast' | 'snacks' | 'coffee';
   image: string;
 }
 
@@ -30,11 +31,26 @@ const MENU_ITEMS: MenuItem[] = [
   { id: '5', name: 'French Fries', price: 3.99, category: 'sides', image: '🍟' },
   { id: '6', name: 'Onion Rings', price: 4.49, category: 'sides', image: '🧅' },
   { id: '7', name: 'Chicken Nuggets', price: 5.99, category: 'sides', image: '🍗' },
-  { id: '8', name: 'Cola', price: 2.49, category: 'drinks', image: '🥤' },
-  { id: '9', name: 'Lemonade', price: 2.99, category: 'drinks', image: '🍋' },
-  { id: '10', name: 'Milkshake', price: 4.99, category: 'drinks', image: '🥤' },
-  { id: '11', name: 'Ice Cream', price: 3.49, category: 'desserts', image: '🍦' },
-  { id: '12', name: 'Apple Pie', price: 2.99, category: 'desserts', image: '🥧' },
+  { id: '8', name: 'Mozzarella Sticks', price: 5.49, category: 'sides', image: '🧀' },
+  { id: '9', name: 'Cola', price: 2.49, category: 'drinks', image: '🥤' },
+  { id: '10', name: 'Lemonade', price: 2.99, category: 'drinks', image: '🍋' },
+  { id: '11', name: 'Milkshake', price: 4.99, category: 'drinks', image: '🥤' },
+  { id: '12', name: 'Iced Tea', price: 2.49, category: 'drinks', image: '🧋' },
+  { id: '13', name: 'Ice Cream', price: 3.49, category: 'desserts', image: '🍦' },
+  { id: '14', name: 'Apple Pie', price: 2.99, category: 'desserts', image: '🥧' },
+  { id: '15', name: 'Brownie', price: 3.99, category: 'desserts', image: '🍫' },
+  { id: '16', name: 'Caesar Salad', price: 7.99, category: 'salads', image: '🥗' },
+  { id: '17', name: 'Greek Salad', price: 8.49, category: 'salads', image: '🥗' },
+  { id: '18', name: 'Garden Salad', price: 6.99, category: 'salads', image: '🥗' },
+  { id: '19', name: 'Pancakes', price: 6.99, category: 'breakfast', image: '🥞' },
+  { id: '20', name: 'Eggs & Bacon', price: 7.99, category: 'breakfast', image: '🍳' },
+  { id: '21', name: 'Breakfast Burrito', price: 8.49, category: 'breakfast', image: '🌯' },
+  { id: '22', name: 'Nachos', price: 5.99, category: 'snacks', image: '🧀' },
+  { id: '23', name: 'Popcorn', price: 3.49, category: 'snacks', image: '🍿' },
+  { id: '24', name: 'Pretzel', price: 3.99, category: 'snacks', image: '🥨' },
+  { id: '25', name: 'Espresso', price: 2.99, category: 'coffee', image: '☕' },
+  { id: '26', name: 'Cappuccino', price: 3.99, category: 'coffee', image: '☕' },
+  { id: '27', name: 'Latte', price: 4.49, category: 'coffee', image: '☕' },
 ];
 
 export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
@@ -47,8 +63,12 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: true });
 
-  const categories = ['burgers', 'sides', 'drinks', 'desserts'];
+  const categories = ['burgers', 'sides', 'drinks', 'desserts', 'salads', 'breakfast', 'snacks', 'coffee'];
+
+  const scrollPrev = () => emblaApi?.scrollPrev();
+  const scrollNext = () => emblaApi?.scrollNext();
 
   // Handle pinch gestures: click on release without movement, scroll on pinch + move
   useEffect(() => {
@@ -212,22 +232,52 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
         <p className="text-lg opacity-90">Touch to select items</p>
       </div>
 
-      {/* Category Tabs */}
-      <div className="grid grid-cols-4 gap-2 p-4 bg-muted/30">
-        {categories.map(cat => (
-          <Button
-            key={cat}
-            id={`category-${cat}`}
-            data-id={`category-${cat}`}
-            onClick={() => setSelectedCategory(cat)}
-            variant={selectedCategory === cat ? "default" : "outline"}
-            className={`h-16 text-sm font-semibold capitalize transition-all ${
-              hoveredElement === `category-${cat}` ? 'scale-105 shadow-lg' : ''
-            }`}
-          >
-            {cat}
-          </Button>
-        ))}
+      {/* Category Carousel */}
+      <div className="relative p-4 bg-muted/30">
+        <Button
+          id="category-prev"
+          data-id="category-prev"
+          variant="ghost"
+          size="icon"
+          onClick={scrollPrev}
+          className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 h-12 w-12 transition-all ${
+            hoveredElement === 'category-prev' ? 'scale-110 shadow-lg' : ''
+          }`}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+        
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex gap-3">
+            {categories.map(cat => (
+              <Button
+                key={cat}
+                id={`category-${cat}`}
+                data-id={`category-${cat}`}
+                onClick={() => setSelectedCategory(cat)}
+                variant={selectedCategory === cat ? "default" : "outline"}
+                className={`h-14 px-8 text-base font-semibold capitalize transition-all flex-shrink-0 ${
+                  hoveredElement === `category-${cat}` ? 'scale-105 shadow-lg' : ''
+                }`}
+              >
+                {cat}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <Button
+          id="category-next"
+          data-id="category-next"
+          variant="ghost"
+          size="icon"
+          onClick={scrollNext}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 h-12 w-12 transition-all ${
+            hoveredElement === 'category-next' ? 'scale-110 shadow-lg' : ''
+          }`}
+        >
+          <ChevronRight className="h-6 w-6" />
+        </Button>
       </div>
 
       {/* Menu Items */}
