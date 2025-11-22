@@ -142,41 +142,7 @@ const HandSkeleton = ({ landmarks, videoWidth, videoHeight, alignmentParams, han
         ctx.stroke();
       });
 
-      // Draw all fingertip landmarks (smaller)
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = skeletonColor;
-      
-      // Draw all fingertips: Thumb(4), Index(8), Middle(12), Ring(16), Pinky(20)
-      const fingertips = [4, 8, 12, 16, 20];
-      fingertips.forEach(tipIndex => {
-        const tip = hand[tipIndex];
-        const tipZ = tip.z || 0;
-        const depthScale = 1 + tipZ * handParams.skeletonZDepth;
-        ctx.beginPath();
-        ctx.arc(
-          tip.x * baseWidth * depthScale,
-          tip.y * baseHeight * depthScale,
-          3,
-          0,
-          2 * Math.PI
-        );
-        ctx.fill();
-      });
-
-      // Draw wrist (smaller)
-      ctx.fillStyle = skeletonColor;
-      const wrist = hand[0];
-      const wristZ = wrist.z || 0;
-      const wristDepthScale = 1 + wristZ * handParams.skeletonZDepth;
-      ctx.beginPath();
-      ctx.arc(
-        wrist.x * baseWidth * wristDepthScale,
-        wrist.y * baseHeight * wristDepthScale,
-        3,
-        0,
-        2 * Math.PI
-      );
-      ctx.fill();
+      // Circles removed - showing only skeleton lines
       ctx.restore(); // Restore for this hand
     });
     
