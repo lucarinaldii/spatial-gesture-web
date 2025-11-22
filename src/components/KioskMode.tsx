@@ -145,6 +145,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       // Pinch started - store position
       pinchStartPositionRef.current = { x: hand.x, y: hand.y };
       setScrollLine({ startY: hand.y * window.innerHeight, currentY: hand.y * window.innerHeight });
+      setIsScrolling(false);
       console.log('[KIOSK] Pinch started at', hand.x, hand.y);
     } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
       // Pinch + move = scroll
@@ -156,10 +157,11 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
         currentY: hand.y * window.innerHeight 
       });
       
-      // Scroll threshold - only scroll if moved more than 5px
-      if (Math.abs(deltaY) > 5 && scrollContainerRef.current) {
+      // Scroll threshold - only scroll if moved more than 80px
+      if (Math.abs(deltaY) > 80 && scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop -= deltaY * 2; // Amplify scroll
         pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+        setIsScrolling(true); // Mark that scrolling occurred
         console.log('[KIOSK] Scrolling', deltaY);
       }
     } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
@@ -169,10 +171,10 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
       const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
       
-      console.log('[KIOSK] Pinch released - deltaX:', deltaX, 'deltaY:', deltaY);
+      console.log('[KIOSK] Pinch released - deltaX:', deltaX, 'deltaY:', deltaY, 'isScrolling:', isScrolling);
       
-      // If movement is less than 25px, treat as click
-      if (deltaX < 25 && deltaY < 25) {
+      // Only trigger click if no scrolling occurred and movement under 80px
+      if (!isScrolling && deltaX < 80 && deltaY < 80) {
         // Use the pinch START position for click detection
         const x = pinchStartPositionRef.current.x * window.innerWidth;
         const y = pinchStartPositionRef.current.y * window.innerHeight;
