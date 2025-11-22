@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight, Eye, EyeOff, Settings } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GestureState, HandPosition } from '@/hooks/useHandTracking';
 import { useToast } from '@/hooks/use-toast';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -21,6 +21,7 @@ interface CartItem extends MenuItem {
 interface KioskModeProps {
   handPositions: HandPosition[];
   gestureStates: GestureState[];
+  showCursor: boolean;
 }
 
 const MENU_ITEMS: MenuItem[] = [
@@ -93,22 +94,17 @@ const MENU_ITEMS: MenuItem[] = [
   { id: '60', name: 'Frappuccino', price: 5.49, category: 'coffee', image: '🥤' },
 ];
 
-export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
+export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskModeProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('burgers');
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
   const [isLoadingCart, setIsLoadingCart] = useState(false);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [clickedElement, setClickedElement] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
-  const [showCursor, setShowCursor] = useState(() => {
-    const saved = localStorage.getItem('kioskShowCursor');
-    return saved !== null ? JSON.parse(saved) : false;
-  });
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -133,12 +129,6 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       setShowCart(true);
       setIsLoadingCart(false);
     }, 300);
-  };
-
-  const toggleCursor = () => {
-    const newValue = !showCursor;
-    setShowCursor(newValue);
-    localStorage.setItem('kioskShowCursor', JSON.stringify(newValue));
   };
 
   // Handle pinch gestures: click on release without movement, scroll on pinch + move
@@ -329,24 +319,9 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   return (
     <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none py-8 px-6">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-8 text-center mb-6 rounded-[2rem] relative">
+      <div className="bg-primary text-primary-foreground p-8 text-center mb-6 rounded-[2rem]">
         <h1 className="text-4xl font-bold mb-2">Order Here</h1>
         <p className="text-lg opacity-90">Touch to select items</p>
-        
-        {/* Settings button */}
-        <Button
-          id="settings-toggle"
-          data-id="settings-toggle"
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowSettings(!showSettings)}
-          className={`absolute top-4 right-4 text-primary-foreground hover:bg-primary-foreground/20 transition-all ${
-            hoveredElement === 'settings-toggle' ? 'scale-110 bg-primary-foreground/20' : ''
-          }`}
-          title="Settings"
-        >
-          <Settings className="h-6 w-6" />
-        </Button>
       </div>
 
       {/* Category Carousel */}
@@ -466,53 +441,6 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
           )}
         </Button>
       </div>
-
-      {/* Settings Panel Overlay */}
-      {showSettings && (
-        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-20 flex items-center justify-center p-6">
-          <Card className="max-w-md w-full p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Settings</h2>
-              <Button
-                id="close-settings"
-                data-id="close-settings"
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowSettings(false)}
-                className={`transition-all ${
-                  hoveredElement === 'close-settings' ? 'scale-110' : ''
-                }`}
-              >
-                <X className="h-6 w-6" />
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Cursor toggle */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {showCursor ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
-                  <div>
-                    <p className="font-medium">Show Cursor</p>
-                    <p className="text-sm text-muted-foreground">Display hand tracking cursor</p>
-                  </div>
-                </div>
-                <Button
-                  id="cursor-toggle-setting"
-                  data-id="cursor-toggle-setting"
-                  onClick={toggleCursor}
-                  variant={showCursor ? "default" : "outline"}
-                  className={`transition-all ${
-                    hoveredElement === 'cursor-toggle-setting' ? 'scale-105' : ''
-                  }`}
-                >
-                  {showCursor ? 'On' : 'Off'}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* Cart Overlay */}
       {showCart && (

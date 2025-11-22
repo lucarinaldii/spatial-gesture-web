@@ -175,6 +175,15 @@ const Index = () => {
   const [isPlusButtonHovered, setIsPlusButtonHovered] = useState(false);
   const [isPlusButtonClicked, setIsPlusButtonClicked] = useState(false);
   const plusButtonCooldownRef = useRef<number>(0);
+  const [showKioskCursor, setShowKioskCursor] = useState(() => {
+    const saved = localStorage.getItem('kioskShowCursor');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+  
+  const handleToggleKioskCursor = (value: boolean) => {
+    setShowKioskCursor(value);
+    localStorage.setItem('kioskShowCursor', JSON.stringify(value));
+  };
   
   // Wire connection state
   const [activeWire, setActiveWire] = useState<{ startCardId: string; startConnector: string; handIndex: number } | null>(null);
@@ -1582,6 +1591,8 @@ const Index = () => {
               setShowSkeleton={setShowSkeleton}
               showPlane={showPlane}
               setShowPlane={setShowPlane}
+              showKioskCursor={showKioskCursor}
+              setShowKioskCursor={handleToggleKioskCursor}
               onRestart={handleRestart}
               onImportFile={() => fileInputRef.current?.click()}
               onBackgroundUpload={() => backgroundInputRef.current?.click()}
@@ -1596,7 +1607,7 @@ const Index = () => {
             {/* Kiosk Mode Overlay */}
             {isKioskMode && (
               <div className="fixed inset-0 z-30 bg-background cursor-none">
-                <KioskMode handPositions={handPositions} gestureStates={gestureStates} />
+                <KioskMode handPositions={handPositions} gestureStates={gestureStates} showCursor={showKioskCursor} />
               </div>
             )}
             
