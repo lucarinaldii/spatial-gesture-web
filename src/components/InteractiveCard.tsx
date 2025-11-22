@@ -95,8 +95,10 @@ const InteractiveCard = memo(({
             backfaceVisibility: 'hidden',
           }}
         >
-          <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <div className={`transition-opacity duration-300 ${showAddedFeedback ? 'opacity-20' : 'opacity-100'}`}>
+            <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </div>
           
           {showAddedFeedback && (
             <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
