@@ -103,6 +103,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [clickedElement, setClickedElement] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -200,10 +201,12 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
           console.log('[KIOSK] No clickable element found');
         }
       } else {
-        console.log('[KIOSK] Movement too large for click');
+        console.log('[KIOSK] Movement too large or scrolling occurred - no click');
       }
       
       pinchStartPositionRef.current = null;
+      // Reset scrolling flag after a short delay
+      setTimeout(() => setIsScrolling(false), 100);
     }
 
     lastPinchStateRef.current[0] = isPinching;
@@ -239,17 +242,10 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   }, [handPositions]);
 
   const addToCart = (item: MenuItem) => {
-    // Check if this was triggered by a drag gesture
-    if (pinchStartPositionRef.current && handPositions.length > 0) {
-      const hand = handPositions[0];
-      const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
-      const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
-      
-      // If movement is more than 25px, it's a drag, not a click
-      if (deltaX > 25 || deltaY > 25) {
-        console.log('[KIOSK] Prevented add to cart - drag detected');
-        return;
-      }
+    // Prevent adding to cart if scrolling just occurred
+    if (isScrolling) {
+      console.log('[KIOSK] Prevented add to cart - scrolling detected');
+      return;
     }
     
     setClickedElement(`item-${item.id}`);
