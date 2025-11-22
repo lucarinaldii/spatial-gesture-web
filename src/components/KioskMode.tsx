@@ -28,29 +28,69 @@ const MENU_ITEMS: MenuItem[] = [
   { id: '2', name: 'Cheese Burger', price: 9.99, category: 'burgers', image: '🍔' },
   { id: '3', name: 'Chicken Burger', price: 10.99, category: 'burgers', image: '🍗' },
   { id: '4', name: 'Veggie Burger', price: 8.49, category: 'burgers', image: '🥗' },
-  { id: '5', name: 'French Fries', price: 3.99, category: 'sides', image: '🍟' },
-  { id: '6', name: 'Onion Rings', price: 4.49, category: 'sides', image: '🧅' },
-  { id: '7', name: 'Chicken Nuggets', price: 5.99, category: 'sides', image: '🍗' },
-  { id: '8', name: 'Mozzarella Sticks', price: 5.49, category: 'sides', image: '🧀' },
-  { id: '9', name: 'Cola', price: 2.49, category: 'drinks', image: '🥤' },
-  { id: '10', name: 'Lemonade', price: 2.99, category: 'drinks', image: '🍋' },
-  { id: '11', name: 'Milkshake', price: 4.99, category: 'drinks', image: '🥤' },
-  { id: '12', name: 'Iced Tea', price: 2.49, category: 'drinks', image: '🧋' },
-  { id: '13', name: 'Ice Cream', price: 3.49, category: 'desserts', image: '🍦' },
-  { id: '14', name: 'Apple Pie', price: 2.99, category: 'desserts', image: '🥧' },
-  { id: '15', name: 'Brownie', price: 3.99, category: 'desserts', image: '🍫' },
-  { id: '16', name: 'Caesar Salad', price: 7.99, category: 'salads', image: '🥗' },
-  { id: '17', name: 'Greek Salad', price: 8.49, category: 'salads', image: '🥗' },
-  { id: '18', name: 'Garden Salad', price: 6.99, category: 'salads', image: '🥗' },
-  { id: '19', name: 'Pancakes', price: 6.99, category: 'breakfast', image: '🥞' },
-  { id: '20', name: 'Eggs & Bacon', price: 7.99, category: 'breakfast', image: '🍳' },
-  { id: '21', name: 'Breakfast Burrito', price: 8.49, category: 'breakfast', image: '🌯' },
-  { id: '22', name: 'Nachos', price: 5.99, category: 'snacks', image: '🧀' },
-  { id: '23', name: 'Popcorn', price: 3.49, category: 'snacks', image: '🍿' },
-  { id: '24', name: 'Pretzel', price: 3.99, category: 'snacks', image: '🥨' },
-  { id: '25', name: 'Espresso', price: 2.99, category: 'coffee', image: '☕' },
-  { id: '26', name: 'Cappuccino', price: 3.99, category: 'coffee', image: '☕' },
-  { id: '27', name: 'Latte', price: 4.49, category: 'coffee', image: '☕' },
+  { id: '5', name: 'Double Burger', price: 11.99, category: 'burgers', image: '🍔' },
+  { id: '6', name: 'Bacon Burger', price: 10.49, category: 'burgers', image: '🥓' },
+  { id: '7', name: 'BBQ Burger', price: 10.99, category: 'burgers', image: '🍔' },
+  { id: '8', name: 'Spicy Burger', price: 9.49, category: 'burgers', image: '🌶️' },
+  
+  { id: '9', name: 'French Fries', price: 3.99, category: 'sides', image: '🍟' },
+  { id: '10', name: 'Onion Rings', price: 4.49, category: 'sides', image: '🧅' },
+  { id: '11', name: 'Chicken Nuggets', price: 5.99, category: 'sides', image: '🍗' },
+  { id: '12', name: 'Mozzarella Sticks', price: 5.49, category: 'sides', image: '🧀' },
+  { id: '13', name: 'Sweet Potato Fries', price: 4.49, category: 'sides', image: '🍠' },
+  { id: '14', name: 'Garlic Bread', price: 3.49, category: 'sides', image: '🥖' },
+  { id: '15', name: 'Wings', price: 6.99, category: 'sides', image: '🍗' },
+  { id: '16', name: 'Loaded Fries', price: 5.99, category: 'sides', image: '🍟' },
+  
+  { id: '17', name: 'Cola', price: 2.49, category: 'drinks', image: '🥤' },
+  { id: '18', name: 'Lemonade', price: 2.99, category: 'drinks', image: '🍋' },
+  { id: '19', name: 'Milkshake', price: 4.99, category: 'drinks', image: '🥤' },
+  { id: '20', name: 'Iced Tea', price: 2.49, category: 'drinks', image: '🧋' },
+  { id: '21', name: 'Orange Juice', price: 3.49, category: 'drinks', image: '🍊' },
+  { id: '22', name: 'Smoothie', price: 4.99, category: 'drinks', image: '🥤' },
+  { id: '23', name: 'Water', price: 1.99, category: 'drinks', image: '💧' },
+  { id: '24', name: 'Energy Drink', price: 3.99, category: 'drinks', image: '⚡' },
+  
+  { id: '25', name: 'Ice Cream', price: 3.49, category: 'desserts', image: '🍦' },
+  { id: '26', name: 'Apple Pie', price: 2.99, category: 'desserts', image: '🥧' },
+  { id: '27', name: 'Brownie', price: 3.99, category: 'desserts', image: '🍫' },
+  { id: '28', name: 'Cheesecake', price: 4.99, category: 'desserts', image: '🍰' },
+  { id: '29', name: 'Cookies', price: 2.49, category: 'desserts', image: '🍪' },
+  { id: '30', name: 'Donut', price: 2.99, category: 'desserts', image: '🍩' },
+  { id: '31', name: 'Sundae', price: 4.49, category: 'desserts', image: '🍨' },
+  { id: '32', name: 'Cupcake', price: 3.49, category: 'desserts', image: '🧁' },
+  
+  { id: '33', name: 'Caesar Salad', price: 7.99, category: 'salads', image: '🥗' },
+  { id: '34', name: 'Greek Salad', price: 8.49, category: 'salads', image: '🥗' },
+  { id: '35', name: 'Garden Salad', price: 6.99, category: 'salads', image: '🥗' },
+  { id: '36', name: 'Chicken Salad', price: 9.49, category: 'salads', image: '🥗' },
+  { id: '37', name: 'Cobb Salad', price: 9.99, category: 'salads', image: '🥗' },
+  { id: '38', name: 'Taco Salad', price: 8.99, category: 'salads', image: '🌮' },
+  
+  { id: '39', name: 'Pancakes', price: 6.99, category: 'breakfast', image: '🥞' },
+  { id: '40', name: 'Eggs & Bacon', price: 7.99, category: 'breakfast', image: '🍳' },
+  { id: '41', name: 'Breakfast Burrito', price: 8.49, category: 'breakfast', image: '🌯' },
+  { id: '42', name: 'French Toast', price: 7.49, category: 'breakfast', image: '🍞' },
+  { id: '43', name: 'Omelette', price: 8.99, category: 'breakfast', image: '🍳' },
+  { id: '44', name: 'Waffles', price: 7.99, category: 'breakfast', image: '🧇' },
+  { id: '45', name: 'Bagel', price: 3.99, category: 'breakfast', image: '🥯' },
+  { id: '46', name: 'Croissant', price: 4.49, category: 'breakfast', image: '🥐' },
+  
+  { id: '47', name: 'Nachos', price: 5.99, category: 'snacks', image: '🧀' },
+  { id: '48', name: 'Popcorn', price: 3.49, category: 'snacks', image: '🍿' },
+  { id: '49', name: 'Pretzel', price: 3.99, category: 'snacks', image: '🥨' },
+  { id: '50', name: 'Chips', price: 2.99, category: 'snacks', image: '🥔' },
+  { id: '51', name: 'Churros', price: 4.49, category: 'snacks', image: '🥖' },
+  { id: '52', name: 'Quesadilla', price: 6.49, category: 'snacks', image: '🌮' },
+  
+  { id: '53', name: 'Espresso', price: 2.99, category: 'coffee', image: '☕' },
+  { id: '54', name: 'Cappuccino', price: 3.99, category: 'coffee', image: '☕' },
+  { id: '55', name: 'Latte', price: 4.49, category: 'coffee', image: '☕' },
+  { id: '56', name: 'Americano', price: 3.49, category: 'coffee', image: '☕' },
+  { id: '57', name: 'Mocha', price: 4.99, category: 'coffee', image: '☕' },
+  { id: '58', name: 'Macchiato', price: 4.49, category: 'coffee', image: '☕' },
+  { id: '59', name: 'Iced Coffee', price: 3.99, category: 'coffee', image: '🧊' },
+  { id: '60', name: 'Frappuccino', price: 5.49, category: 'coffee', image: '🥤' },
 ];
 
 export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
@@ -62,6 +102,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const [showCart, setShowCart] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [clickedElement, setClickedElement] = useState<string | null>(null);
+  const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -102,10 +143,17 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
     if (isPinching && !wasPinching) {
       // Pinch started - store position
       pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+      setScrollLine({ startY: hand.y * window.innerHeight, currentY: hand.y * window.innerHeight });
       console.log('[KIOSK] Pinch started at', hand.x, hand.y);
     } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
       // Pinch + move = scroll
       const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+      
+      // Update scroll line
+      setScrollLine({ 
+        startY: pinchStartPositionRef.current.y * window.innerHeight, 
+        currentY: hand.y * window.innerHeight 
+      });
       
       // Scroll threshold - only scroll if moved more than 5px
       if (Math.abs(deltaY) > 5 && scrollContainerRef.current) {
@@ -114,6 +162,8 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
         console.log('[KIOSK] Scrolling', deltaY);
       }
     } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
+      // Pinch released - clear scroll line
+      setScrollLine(null);
       // Pinch released - check if it was a click (no significant movement)
       const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
       const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
@@ -494,6 +544,38 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
           />
         );
       })}
+      
+      {/* Scroll line indicator */}
+      {scrollLine && (
+        <svg 
+          className="fixed inset-0 pointer-events-none z-[59]" 
+          style={{ width: '100%', height: '100%' }}
+        >
+          <defs>
+            <linearGradient id="scrollLineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+            </linearGradient>
+          </defs>
+          <line
+            x1="50%"
+            y1={scrollLine.startY}
+            x2="50%"
+            y2={scrollLine.currentY}
+            stroke="url(#scrollLineGradient)"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray="10,5"
+          />
+          <circle
+            cx="50%"
+            cy={scrollLine.startY}
+            r="6"
+            fill="hsl(var(--primary))"
+            opacity="0.6"
+          />
+        </svg>
+      )}
     </div>
   );
 };
