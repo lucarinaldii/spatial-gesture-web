@@ -59,7 +59,7 @@ const InteractiveCard = memo(({
       setWasClicked(true);
       setShowAddedFeedback(true);
       setTimeout(() => setWasClicked(false), 150);
-      setTimeout(() => setShowAddedFeedback(false), 1500);
+      setTimeout(() => setShowAddedFeedback(false), 800);
     }
 
     lastPinchState.current = gestureState.isPinching;
@@ -101,8 +101,8 @@ const InteractiveCard = memo(({
           {showAddedFeedback && (
             <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
               <div className="relative">
-                <div className="absolute inset-0 bg-green-500 blur-3xl opacity-60 animate-pulse"></div>
-                <div className="relative text-6xl">✓</div>
+                <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
+                <div className="relative text-4xl text-green-500">✓</div>
               </div>
             </div>
           )}

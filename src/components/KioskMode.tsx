@@ -352,7 +352,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     setTimeout(() => setClickedElement(null), 300);
     
     setAddedItemId(item.id);
-    setTimeout(() => setAddedItemId(null), 1500);
+    setTimeout(() => setAddedItemId(null), 800);
     
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
@@ -493,8 +493,8 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 {addedItemId === item.id && (
                   <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-green-500 blur-3xl opacity-60 animate-pulse"></div>
-                      <div className="relative text-8xl">✓</div>
+                      <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
+                      <div className="relative text-5xl text-green-500">✓</div>
                     </div>
                   </div>
                 )}
