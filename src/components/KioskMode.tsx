@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight, Eye, EyeOff, Settings } from 'lucide-react';
 import { GestureState, HandPosition } from '@/hooks/useHandTracking';
 import { useToast } from '@/hooks/use-toast';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -100,13 +100,14 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [clickedElement, setClickedElement] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const [showCursor, setShowCursor] = useState(() => {
     const saved = localStorage.getItem('kioskShowCursor');
-    return saved !== null ? JSON.parse(saved) : true;
+    return saved !== null ? JSON.parse(saved) : false;
   });
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -332,19 +333,19 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
         <h1 className="text-4xl font-bold mb-2">Order Here</h1>
         <p className="text-lg opacity-90">Touch to select items</p>
         
-        {/* Cursor toggle button */}
+        {/* Settings button */}
         <Button
-          id="cursor-toggle"
-          data-id="cursor-toggle"
+          id="settings-toggle"
+          data-id="settings-toggle"
           variant="ghost"
           size="icon"
-          onClick={toggleCursor}
+          onClick={() => setShowSettings(!showSettings)}
           className={`absolute top-4 right-4 text-primary-foreground hover:bg-primary-foreground/20 transition-all ${
-            hoveredElement === 'cursor-toggle' ? 'scale-110 bg-primary-foreground/20' : ''
+            hoveredElement === 'settings-toggle' ? 'scale-110 bg-primary-foreground/20' : ''
           }`}
-          title={showCursor ? "Hide cursor" : "Show cursor"}
+          title="Settings"
         >
-          {showCursor ? <Eye className="h-6 w-6" /> : <EyeOff className="h-6 w-6" />}
+          <Settings className="h-6 w-6" />
         </Button>
       </div>
 
@@ -413,7 +414,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-6 animate-fade-in">
+          <div className="grid grid-cols-3 gap-6 animate-fade-in">
             {filteredItems.map(item => (
               <Card
                 key={item.id}
@@ -465,6 +466,53 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
           )}
         </Button>
       </div>
+
+      {/* Settings Panel Overlay */}
+      {showSettings && (
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-sm z-20 flex items-center justify-center p-6">
+          <Card className="max-w-md w-full p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Settings</h2>
+              <Button
+                id="close-settings"
+                data-id="close-settings"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSettings(false)}
+                className={`transition-all ${
+                  hoveredElement === 'close-settings' ? 'scale-110' : ''
+                }`}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Cursor toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {showCursor ? <Eye className="h-5 w-5 text-muted-foreground" /> : <EyeOff className="h-5 w-5 text-muted-foreground" />}
+                  <div>
+                    <p className="font-medium">Show Cursor</p>
+                    <p className="text-sm text-muted-foreground">Display hand tracking cursor</p>
+                  </div>
+                </div>
+                <Button
+                  id="cursor-toggle-setting"
+                  data-id="cursor-toggle-setting"
+                  onClick={toggleCursor}
+                  variant={showCursor ? "default" : "outline"}
+                  className={`transition-all ${
+                    hoveredElement === 'cursor-toggle-setting' ? 'scale-105' : ''
+                  }`}
+                >
+                  {showCursor ? 'On' : 'Off'}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Cart Overlay */}
       {showCart && (
