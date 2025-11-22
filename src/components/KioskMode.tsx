@@ -56,6 +56,8 @@ const MENU_ITEMS: MenuItem[] = [
 export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('burgers');
   const [isLoadingCategory, setIsLoadingCategory] = useState(false);
+  const [isLoadingCart, setIsLoadingCart] = useState(false);
+  const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
@@ -76,6 +78,14 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
     setIsLoadingCategory(true);
     setSelectedCategory(category);
     setTimeout(() => setIsLoadingCategory(false), 400);
+  };
+
+  const handleViewCart = () => {
+    setIsLoadingCart(true);
+    setTimeout(() => {
+      setShowCart(true);
+      setIsLoadingCart(false);
+    }, 300);
   };
 
   // Handle pinch gestures: click on release without movement, scroll on pinch + move
@@ -222,26 +232,30 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       });
       return;
     }
-    toast({
-      title: "Order placed!",
-      description: `Total: $${getTotal()}. Thank you for your order!`,
-    });
-    setCart([]);
-    setShowCart(false);
+    setIsLoadingCheckout(true);
+    setTimeout(() => {
+      toast({
+        title: "Order placed!",
+        description: `Total: $${getTotal()}. Thank you for your order!`,
+      });
+      setCart([]);
+      setShowCart(false);
+      setIsLoadingCheckout(false);
+    }, 800);
   };
 
   const filteredItems = MENU_ITEMS.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none py-8">
+    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none py-8 px-6">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-6 text-center mb-4">
+      <div className="bg-primary text-primary-foreground p-8 text-center mb-6 rounded-[2rem]">
         <h1 className="text-4xl font-bold mb-2">Order Here</h1>
         <p className="text-lg opacity-90">Touch to select items</p>
       </div>
 
       {/* Category Carousel */}
-      <div className="relative p-4 bg-muted/30">
+      <div className="relative p-6 bg-muted/30 mb-6 rounded-[2rem]">
         <Button
           id="category-prev"
           data-id="category-prev"
@@ -289,7 +303,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       </div>
 
       {/* Menu Items */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-6 mb-6">
         {isLoadingCategory ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-4">
@@ -298,14 +312,14 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 animate-fade-in">
+          <div className="grid grid-cols-2 gap-6 animate-fade-in">
             {filteredItems.map(item => (
               <Card
                 key={item.id}
                 id={`item-${item.id}`}
                 data-id={`item-${item.id}`}
                 data-clickable="true"
-                className={`p-4 transition-all duration-200 ${
+                className={`p-6 transition-all duration-200 ${
                   clickedElement === `item-${item.id}`
                     ? 'scale-95 shadow-2xl border-primary'
                     : hoveredElement === `item-${item.id}` 
@@ -326,25 +340,35 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
       </div>
 
       {/* Cart Button */}
-      <div className="p-6 bg-muted/30 border-t mt-4">
+      <div className="px-6 py-6 bg-muted/30 border-t rounded-t-[2rem]">
         <Button
           id="cart-button"
           data-id="cart-button"
-          onClick={() => setShowCart(!showCart)}
+          onClick={handleViewCart}
+          disabled={isLoadingCart}
           className={`w-full h-16 text-lg font-bold relative transition-all ${
             hoveredElement === 'cart-button' ? 'scale-105 shadow-xl' : ''
           }`}
           size="lg"
         >
-          <ShoppingCart className="mr-2 h-6 w-6" />
-          View Cart ({cart.length} items) - ${getTotal()}
+          {isLoadingCart ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-foreground border-t-transparent mr-2"></div>
+              Loading...
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="mr-2 h-6 w-6" />
+              View Cart ({cart.length} items) - ${getTotal()}
+            </>
+          )}
         </Button>
       </div>
 
       {/* Cart Overlay */}
       {showCart && (
-        <div className="absolute inset-0 bg-background z-10 flex flex-col">
-          <div className="bg-primary text-primary-foreground p-6 flex items-center justify-between">
+        <div className="absolute inset-0 bg-background z-10 flex flex-col p-6">
+          <div className="bg-primary text-primary-foreground p-8 flex items-center justify-between mb-6 rounded-[2rem]">
             <h2 className="text-3xl font-bold">Your Cart</h2>
             <Button
               id="close-cart"
@@ -352,7 +376,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
               variant="ghost"
               size="icon"
               onClick={() => setShowCart(false)}
-              className={`text-primary-foreground hover:bg-primary-foreground/20 transition-all ${
+              className={`text-primary-foreground hover:bg-primary-foreground/20 transition-all h-12 w-12 ${
                 hoveredElement === 'close-cart' ? 'scale-110 bg-primary-foreground/20' : ''
               }`}
             >
@@ -360,7 +384,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto px-2 mb-6">
             {cart.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-muted-foreground" />
@@ -369,7 +393,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
             ) : (
               <div className="space-y-4">
                 {cart.map(item => (
-                  <Card key={item.id} className="p-4">
+                  <Card key={item.id} className="p-6">
                     <div className="flex items-center gap-4">
                       <div className="text-4xl">{item.image}</div>
                       <div className="flex-1">
@@ -383,11 +407,11 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
                           variant="outline"
                           size="icon"
                           onClick={() => updateQuantity(item.id, -1)}
-                          className={`transition-all ${
+                          className={`h-12 w-12 transition-all ${
                             hoveredElement === `minus-${item.id}` ? 'scale-110 shadow-lg' : ''
                           }`}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-5 w-5" />
                         </Button>
                         <span className="text-xl font-bold w-8 text-center">{item.quantity}</span>
                         <Button
@@ -396,11 +420,11 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
                           variant="outline"
                           size="icon"
                           onClick={() => updateQuantity(item.id, 1)}
-                          className={`transition-all ${
+                          className={`h-12 w-12 transition-all ${
                             hoveredElement === `plus-${item.id}` ? 'scale-110 shadow-lg' : ''
                           }`}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-5 w-5" />
                         </Button>
                         <Button
                           id={`remove-${item.id}`}
@@ -408,11 +432,11 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
                           variant="destructive"
                           size="icon"
                           onClick={() => removeFromCart(item.id)}
-                          className={`transition-all ${
+                          className={`h-12 w-12 transition-all ${
                             hoveredElement === `remove-${item.id}` ? 'scale-110 shadow-lg' : ''
                           }`}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
@@ -422,7 +446,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
             )}
           </div>
 
-          <div className="p-6 bg-muted/30 border-t space-y-4">
+          <div className="p-8 bg-muted/30 border-t space-y-4 rounded-[2rem]">
             <div className="flex justify-between items-center text-2xl font-bold">
               <span>Total:</span>
               <span className="text-primary">${getTotal()}</span>
@@ -431,12 +455,20 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
               id="checkout-button"
               data-id="checkout-button"
               onClick={handleCheckout}
+              disabled={isLoadingCheckout}
               className={`w-full h-16 text-xl font-bold transition-all ${
                 hoveredElement === 'checkout-button' ? 'scale-105 shadow-xl' : ''
               }`}
               size="lg"
             >
-              Checkout
+              {isLoadingCheckout ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-foreground border-t-transparent mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                'Checkout'
+              )}
             </Button>
           </div>
         </div>
