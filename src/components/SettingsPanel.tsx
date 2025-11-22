@@ -17,6 +17,8 @@ export interface SettingsPanelProps {
   setShowSkeleton: (show: boolean) => void;
   showPlane: boolean;
   setShowPlane: (show: boolean) => void;
+  showKioskCursor?: boolean;
+  setShowKioskCursor?: (show: boolean) => void;
   onRestart: () => void;
   onImportFile: () => void;
   onBackgroundUpload: () => void;
@@ -35,6 +37,8 @@ export const SettingsPanel = ({
   setShowSkeleton,
   showPlane,
   setShowPlane,
+  showKioskCursor,
+  setShowKioskCursor,
   onRestart,
   onImportFile,
   onBackgroundUpload,
@@ -151,6 +155,20 @@ export const SettingsPanel = ({
               onCheckedChange={setShowPlane}
             />
           </div>
+
+          {showKioskCursor !== undefined && setShowKioskCursor && (
+            <div className="flex items-center justify-between">
+              <Label htmlFor="kiosk-cursor" className="flex items-center gap-2 cursor-pointer">
+                {showKioskCursor ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                Kiosk Cursor
+              </Label>
+              <Switch
+                id="kiosk-cursor"
+                checked={showKioskCursor}
+                onCheckedChange={setShowKioskCursor}
+              />
+            </div>
+          )}
         </div>
 
         <Separator />
