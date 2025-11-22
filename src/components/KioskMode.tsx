@@ -120,7 +120,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
     lastPinchStateRef.current[0] = isPinching;
   }, [handPositions, gestureStates]);
 
-  // Detect hover (no longer scrolls)
+  // Detect hover - check all elements at point
   useEffect(() => {
     if (!handPositions.length) {
       setHoveredElement(null);
@@ -131,15 +131,22 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
     const x = hand.x * window.innerWidth;
     const y = hand.y * window.innerHeight;
 
-    const element = document.elementFromPoint(x, y);
-    if (element instanceof HTMLElement) {
-      const clickable = element.closest('button, [data-clickable]');
-      if (clickable instanceof HTMLElement) {
-        setHoveredElement(clickable.id || clickable.getAttribute('data-id') || 'unknown');
-      } else {
-        setHoveredElement(null);
+    // Get all elements at this point to find the interactive one
+    const elements = document.elementsFromPoint(x, y);
+    let foundId: string | null = null;
+    
+    for (const element of elements) {
+      if (element instanceof HTMLElement) {
+        // Check if it's a clickable element
+        const clickable = element.closest('button, [data-clickable]');
+        if (clickable instanceof HTMLElement) {
+          foundId = clickable.id || clickable.getAttribute('data-id') || null;
+          break;
+        }
       }
     }
+    
+    setHoveredElement(foundId);
   }, [handPositions]);
 
   const addToCart = (item: MenuItem) => {
@@ -194,7 +201,7 @@ export const KioskMode = ({ handPositions, gestureStates }: KioskModeProps) => {
   const filteredItems = MENU_ITEMS.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative">
+    <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-6 text-center">
         <h1 className="text-4xl font-bold mb-2">Order Here</h1>
