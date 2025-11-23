@@ -7,6 +7,7 @@ interface EVChargingModeProps {
   handPositions: any;
   gestureStates: any;
   onBack: () => void;
+  showCursor?: boolean;
 }
 
 const CHARGING_COLUMNS = [
@@ -25,7 +26,7 @@ const CONNECTORS = [
   { id: 'tesla', name: 'Tesla Supercharger', icon: '⚡' },
 ];
 
-export const EVChargingMode = ({ handPositions, gestureStates, onBack }: EVChargingModeProps) => {
+export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCursor = true }: EVChargingModeProps) => {
   const [selectedColumn, setSelectedColumn] = useState<number | null>(null);
   const [selectedConnector, setSelectedConnector] = useState<string | null>(null);
   const [step, setStep] = useState<'column' | 'connector' | 'confirmation'>('column');
@@ -175,6 +176,23 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack }: EVCharg
           )}
         </div>
       </div>
+
+      {/* Hand cursor indicators - above everything - only show first hand */}
+      {showCursor && handPositions?.Right && (
+        <div
+          className="fixed rounded-full pointer-events-none z-[60] transition-all duration-150"
+          style={{
+            left: `${handPositions.Right.x * 100}%`,
+            top: `${handPositions.Right.y * 100}%`,
+            transform: 'translate(-50%, -50%)',
+            width: gestureStates?.Right === 'Closed_Fist' ? '32px' : '24px',
+            height: gestureStates?.Right === 'Closed_Fist' ? '32px' : '24px',
+            backgroundColor: gestureStates?.Right === 'Closed_Fist' ? 'hsl(var(--primary) / 0.8)' : 'hsl(var(--primary) / 0.5)',
+            border: '3px solid hsl(var(--primary))',
+            boxShadow: gestureStates?.Right === 'Closed_Fist' ? '0 0 20px hsl(var(--primary))' : 'none',
+          }}
+        />
+      )}
     </div>
   );
 };

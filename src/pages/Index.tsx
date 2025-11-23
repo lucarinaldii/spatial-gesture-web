@@ -1649,6 +1649,7 @@ const Index = () => {
                   handPositions={handPositions} 
                   gestureStates={gestureStates}
                   onBack={handleRestart}
+                  showCursor={showKioskCursor}
                 />
               </div>
             )}
@@ -1660,12 +1661,13 @@ const Index = () => {
                   handPositions={handPositions} 
                   gestureStates={gestureStates}
                   onBack={handleRestart}
+                  showCursor={showKioskCursor}
                 />
               </div>
             )}
             
-            {/* 3D Hand and Skeleton - always on top in kiosk mode */}
-            {isKioskMode && appMode === 'food-order' && (
+            {/* 3D Hand and Skeleton - always on top in kiosk/gas/ev modes */}
+            {(isKioskMode && appMode === 'food-order') || appMode === 'gas-station' || appMode === 'ev-charging' ? (
               <>
                 {show3DHand && ((remoteLandmarks && remoteLandmarks.length > 0) || (landmarks && landmarks.length > 0)) && (
                   <div className="fixed inset-0 pointer-events-none z-50">
@@ -1690,7 +1692,7 @@ const Index = () => {
                   </div>
                 )}
               </>
-            )}
+            ) : null}
             
             <div className="absolute inset-0 origin-center transition-transform duration-200" style={{ transform: `scale(${canvasZoom})`, willChange: 'transform' }}>
               {objects.sort((a, b) => a.zIndex - b.zIndex).map((obj) => {
