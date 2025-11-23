@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, X } from 'lucide-react';
 import { GestureState, HandPosition } from '@/hooks/useHandTracking';
-import useEmblaCarousel from 'embla-carousel-react';
 
 interface MenuItem {
   id: string;
@@ -145,18 +144,11 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   const [addedItemId, setAddedItemId] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
-  const [isCarouselScrolling, setIsCarouselScrolling] = useState(false);
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
-  const carouselPinchStartRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const carouselContainerRef = useRef<HTMLDivElement>(null);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: true });
 
   const categories = ['burgers', 'sides', 'drinks', 'desserts', 'salads', 'breakfast', 'snacks', 'coffee'];
-
-  const scrollPrev = () => emblaApi?.scrollPrev();
-  const scrollNext = () => emblaApi?.scrollNext();
 
   const handleCategoryChange = (category: string) => {
     if (category === selectedCategory) return;
@@ -173,7 +165,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     }, 300);
   };
 
-  // Handle horizontal pinch gestures for category carousel
+  // Handle pinch gestures for scrolling
   useEffect(() => {
     if (!handPositions.length || !gestureStates.length) return;
 
@@ -181,137 +173,74 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     const hand = handPositions[0];
     if (!hand || !gesture) return;
 
-    const x = hand.x * window.innerWidth;
-    const y = hand.y * window.innerHeight;
-    
-    // Check if hand is over the carousel area
-    const isOverCarousel = carouselContainerRef.current && 
-      y >= carouselContainerRef.current.offsetTop && 
-      y <= carouselContainerRef.current.offsetTop + carouselContainerRef.current.offsetHeight;
-
     const wasPinching = lastPinchStateRef.current[0] || false;
     const isPinching = gesture.isPinching || false;
 
-    // Handle carousel horizontal scrolling
-    if (isOverCarousel && emblaApi) {
-      if (isPinching && !wasPinching) {
-        // Start carousel scroll
-        carouselPinchStartRef.current = { x: hand.x, y: hand.y };
-        setIsCarouselScrolling(false);
-      } else if (isPinching && wasPinching && carouselPinchStartRef.current) {
-        // Horizontal scroll on carousel
-        const deltaX = (hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
+    if (isPinching && !wasPinching) {
+      // Pinch started - store position
+      pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+      setScrollLine({ startY: hand.y * window.innerHeight, currentY: hand.y * window.innerHeight });
+      setIsScrolling(false);
+    } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
+      // Pinch + move = scroll
+      const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+      
+      // Update scroll line
+      setScrollLine({ 
+        startY: pinchStartPositionRef.current.y * window.innerHeight, 
+        currentY: hand.y * window.innerHeight 
+      });
+      
+      // Scroll threshold - only scroll if moved more than 20px
+      if (Math.abs(deltaY) > 20 && scrollContainerRef.current) {
+        // Direct scroll for responsive feel
+        const currentScroll = scrollContainerRef.current.scrollTop;
+        const scrollDelta = deltaY * 1.2;
+        scrollContainerRef.current.scrollTop = currentScroll - scrollDelta;
         
-        // Scroll threshold - only scroll if moved more than 20px
-        if (Math.abs(deltaX) > 20) {
-          // Direct scroll for responsive feel (same as vertical)
-          const container = emblaApi.containerNode();
-          if (container) {
-            const currentScroll = container.scrollLeft;
-            const scrollDelta = deltaX * 1.2;
-            container.scrollLeft = currentScroll - scrollDelta;
-          }
-          
-          carouselPinchStartRef.current = { x: hand.x, y: hand.y };
-          setIsCarouselScrolling(true);
-        }
-      } else if (!isPinching && wasPinching && carouselPinchStartRef.current) {
-        // Carousel pinch released
-        const deltaX = Math.abs(hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
-        const deltaY = Math.abs(hand.y - carouselPinchStartRef.current.y) * window.innerHeight;
-        
-        // Only trigger click if no scrolling and minimal movement
-        if (!isCarouselScrolling && deltaX < 50 && deltaY < 50) {
-          const elements = document.elementsFromPoint(
-            carouselPinchStartRef.current.x * window.innerWidth, 
-            carouselPinchStartRef.current.y * window.innerHeight
-          );
-          let clickableElement: HTMLElement | null = null;
-          for (const el of elements) {
-            if (el instanceof HTMLElement) {
-              const clickable = el.closest('button, [data-clickable]');
-              if (clickable instanceof HTMLElement) {
-                clickableElement = clickable;
-                break;
-              }
-            }
-          }
-          if (clickableElement) clickableElement.click();
-        }
-        
-        carouselPinchStartRef.current = null;
-        setTimeout(() => setIsCarouselScrolling(false), 100);
-      }
-    }
-
-    // Handle main content vertical scrolling
-    if (!isOverCarousel) {
-      if (isPinching && !wasPinching) {
-        // Pinch started - store position
         pinchStartPositionRef.current = { x: hand.x, y: hand.y };
-        setScrollLine({ startY: hand.y * window.innerHeight, currentY: hand.y * window.innerHeight });
-        setIsScrolling(false);
-      } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
-        // Pinch + move = scroll
-        const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+        setIsScrolling(true);
+      }
+    } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
+      // Pinch released - clear scroll line
+      setScrollLine(null);
+      
+      // Pinch released - check if it was a click (no significant movement)
+      const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
+      const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+      
+      // Only trigger click if no scrolling occurred and movement under 40px
+      if (!isScrolling && deltaX < 40 && deltaY < 40) {
+        // Use the pinch START position for click detection
+        const x = pinchStartPositionRef.current.x * window.innerWidth;
+        const y = pinchStartPositionRef.current.y * window.innerHeight;
         
-        // Update scroll line
-        setScrollLine({ 
-          startY: pinchStartPositionRef.current.y * window.innerHeight, 
-          currentY: hand.y * window.innerHeight 
-        });
+        // Get all elements at point and find the clickable one
+        const elements = document.elementsFromPoint(x, y);
         
-        // Scroll threshold - only scroll if moved more than 20px
-        if (Math.abs(deltaY) > 20 && scrollContainerRef.current) {
-          // Direct scroll for responsive feel
-          const currentScroll = scrollContainerRef.current.scrollTop;
-          const scrollDelta = deltaY * 1.2;
-          scrollContainerRef.current.scrollTop = currentScroll - scrollDelta;
-          
-          pinchStartPositionRef.current = { x: hand.x, y: hand.y };
-          setIsScrolling(true);
-        }
-      } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
-        // Pinch released - clear scroll line
-        setScrollLine(null);
-        
-        // Pinch released - check if it was a click (no significant movement)
-        const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
-        const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
-        
-        // Only trigger click if no scrolling occurred and movement under 40px
-        if (!isScrolling && deltaX < 40 && deltaY < 40) {
-          // Use the pinch START position for click detection
-          const x = pinchStartPositionRef.current.x * window.innerWidth;
-          const y = pinchStartPositionRef.current.y * window.innerHeight;
-          
-          // Get all elements at point and find the clickable one
-          const elements = document.elementsFromPoint(x, y);
-          
-          let clickableElement: HTMLElement | null = null;
-          for (const el of elements) {
-            if (el instanceof HTMLElement) {
-              const clickable = el.closest('button, [data-clickable], a');
-              if (clickable instanceof HTMLElement) {
-                clickableElement = clickable;
-                break;
-              }
+        let clickableElement: HTMLElement | null = null;
+        for (const el of elements) {
+          if (el instanceof HTMLElement) {
+            const clickable = el.closest('button, [data-clickable], a');
+            if (clickable instanceof HTMLElement) {
+              clickableElement = clickable;
+              break;
             }
           }
-          
-          if (clickableElement) {
-            clickableElement.click();
-          }
         }
         
-        pinchStartPositionRef.current = null;
-        // Reset scrolling flag after a short delay
-        setTimeout(() => setIsScrolling(false), 100);
+        if (clickableElement) {
+          clickableElement.click();
+        }
       }
+      
+      pinchStartPositionRef.current = null;
+      // Reset scrolling flag after a short delay
+      setTimeout(() => setIsScrolling(false), 100);
     }
 
     lastPinchStateRef.current[0] = isPinching;
-  }, [handPositions, gestureStates, emblaApi]);
+  }, [handPositions, gestureStates]);
 
   // Detect hover - check all elements at point
   useEffect(() => {
@@ -404,104 +333,87 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         <p className="text-lg opacity-90">Touch to select items</p>
       </div>
 
-      {/* Category Carousel */}
-      <div ref={carouselContainerRef} className="relative p-6 bg-muted/30 mb-6 rounded-[2rem]">
-        <Button
-          id="category-prev"
-          data-id="category-prev"
-          variant="ghost"
-          size="icon"
-          onClick={scrollPrev}
-          className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 h-12 w-12 transition-all ${
-            hoveredElement === 'category-prev' ? 'scale-110 shadow-lg' : ''
-          }`}
-        >
-          <ChevronLeft className="h-6 w-6" />
-        </Button>
-        
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex gap-3">
+      {/* Categories and Menu Items */}
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 overflow-y-auto px-6 mb-6"
+      >
+        {/* Categories Grid */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-4 text-foreground">Categories</h2>
+          <div className="grid grid-cols-2 gap-4">
             {categories.map(cat => (
-              <Button
+              <Card
                 key={cat}
                 id={`category-${cat}`}
                 data-id={`category-${cat}`}
-                onClick={() => handleCategoryChange(cat)}
-                variant={selectedCategory === cat ? "default" : "outline"}
-                className={`h-14 px-8 text-base font-semibold capitalize transition-all flex-shrink-0 ${
-                  hoveredElement === `category-${cat}` ? 'scale-105 shadow-lg' : ''
+                data-clickable="true"
+                className={`p-6 transition-all duration-200 cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-primary text-primary-foreground border-primary shadow-xl scale-105'
+                    : clickedElement === `category-${cat}`
+                    ? 'scale-95 shadow-2xl border-primary'
+                    : hoveredElement === `category-${cat}` 
+                    ? 'shadow-xl scale-105 border-primary' 
+                    : 'hover:shadow-lg'
                 }`}
+                onClick={() => handleCategoryChange(cat)}
               >
-                {cat}
-              </Button>
+                <h3 className="text-xl font-bold text-center capitalize">{cat}</h3>
+              </Card>
             ))}
           </div>
         </div>
 
-        <Button
-          id="category-next"
-          data-id="category-next"
-          variant="ghost"
-          size="icon"
-          onClick={scrollNext}
-          className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 h-12 w-12 transition-all ${
-            hoveredElement === 'category-next' ? 'scale-110 shadow-lg' : ''
-          }`}
-        >
-          <ChevronRight className="h-6 w-6" />
-        </Button>
-      </div>
-
-      {/* Menu Items */}
-        <div 
-        ref={scrollContainerRef} 
-        className="flex-1 overflow-y-auto px-6 mb-6"
-      >
+        {/* Menu Items */}
         {isLoadingCategory ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent"></div>
               <p className="text-lg font-medium text-muted-foreground">Loading menu...</p>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-6 animate-fade-in">
-            {filteredItems.map(item => (
-              <Card
-                key={item.id}
-                id={`item-${item.id}`}
-                data-id={`item-${item.id}`}
-                data-clickable="true"
-                className={`p-6 transition-all duration-200 relative ${
-                  clickedElement === `item-${item.id}`
-                    ? 'scale-95 shadow-2xl border-primary'
-                    : hoveredElement === `item-${item.id}` 
-                    ? 'shadow-xl scale-105 border-primary' 
-                    : 'hover:shadow-lg'
-                }`}
-                style={addedItemId === item.id ? {
-                  boxShadow: 'inset 0 0 0 4px rgb(34 197 94), 0 25px 50px -12px rgba(0,0,0,0.25)'
-                } : undefined}
-                onClick={() => addToCart(item)}
-              >
-                <div className={`transition-opacity duration-300 ${addedItemId === item.id ? 'opacity-20' : 'opacity-100'}`}>
-                  <div className="text-6xl text-center mb-3">{item.image}</div>
-                  <h3 className="font-semibold text-center mb-2">{item.name}</h3>
-                  <p className="text-2xl font-bold text-center text-primary">
-                    ${item.price.toFixed(2)}
-                  </p>
-                </div>
-                
-                {addedItemId === item.id && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
-                      <div className="relative text-5xl text-green-500 font-bold">✓</div>
-                    </div>
+          <div>
+            <h2 className="text-2xl font-bold mb-4 text-foreground capitalize">{selectedCategory}</h2>
+            <div className="grid grid-cols-3 gap-6 animate-fade-in">
+              {filteredItems.map(item => (
+                <Card
+                  key={item.id}
+                  id={`item-${item.id}`}
+                  data-id={`item-${item.id}`}
+                  data-clickable="true"
+                  className={`p-6 transition-all duration-200 relative ${
+                    clickedElement === `item-${item.id}`
+                      ? 'scale-95 shadow-2xl border-primary'
+                      : hoveredElement === `item-${item.id}` 
+                      ? 'shadow-xl scale-105 border-primary' 
+                      : 'hover:shadow-lg'
+                  }`}
+                  style={addedItemId === item.id ? {
+                    boxShadow: 'inset 0 0 0 4px rgb(34 197 94), 0 25px 50px -12px rgba(0,0,0,0.25)'
+                  } : undefined}
+                  onClick={() => addToCart(item)}
+                >
+                  <div className={`transition-opacity duration-300 ${addedItemId === item.id ? 'opacity-20' : 'opacity-100'}`}>
+                    <div className="text-6xl text-center mb-3">{item.image}</div>
+                    <h3 className="font-semibold text-center mb-2">{item.name}</h3>
+                    <p className="text-2xl font-bold text-center text-primary">
+                      ${item.price.toFixed(2)}
+                    </p>
                   </div>
-                )}
-              </Card>
-            ))}
+                  
+                  {addedItemId === item.id && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
+                        <div className="relative text-5xl text-green-500 font-bold">✓</div>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -526,94 +438,95 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
           ) : (
             <>
               <ShoppingCart className="mr-2 h-6 w-6" />
-              View Cart ({cart.length} items) - ${getTotal()}
+              View Cart {cart.length > 0 && `(${cart.length})`}
             </>
           )}
         </Button>
       </div>
 
-      {/* Cart Overlay */}
+      {/* Cart Modal */}
       {showCart && (
-        <div className="absolute inset-0 bg-background z-10 flex flex-col p-6">
-          <div className="bg-primary text-primary-foreground p-8 flex items-center justify-between mb-6 rounded-[2rem]">
-            <h2 className="text-3xl font-bold">Your Cart</h2>
-            <Button
-              id="close-cart"
-              data-id="close-cart"
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowCart(false)}
-              className={`text-primary-foreground hover:bg-primary-foreground/20 transition-all h-12 w-12 ${
-                hoveredElement === 'close-cart' ? 'scale-110 bg-primary-foreground/20' : ''
-              }`}
-            >
-              <X className="h-8 w-8" />
-            </Button>
-          </div>
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
+          <div className="bg-background border rounded-[2rem] p-8 max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold">Your Cart</h2>
+              <Button
+                id="close-cart"
+                data-id="close-cart"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowCart(false)}
+                className={`transition-all ${
+                  hoveredElement === 'close-cart' ? 'scale-110 shadow-lg' : ''
+                }`}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
 
-          <div className="flex-1 overflow-y-auto px-2 mb-6 scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
-            {cart.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingCart className="h-24 w-24 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-xl text-muted-foreground">Your cart is empty</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {cart.map(item => (
+            <div className="flex-1 overflow-y-auto mb-6 space-y-4">
+              {cart.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">Your cart is empty</p>
+              ) : (
+                cart.map(item => (
                   <Card key={item.id} className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="text-4xl">{item.image}</div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{item.name}</h3>
-                        <p className="text-muted-foreground">${item.price.toFixed(2)}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="text-4xl">{item.image}</div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg">{item.name}</h3>
+                          <p className="text-primary font-bold">${item.price.toFixed(2)}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Button
-                          id={`minus-${item.id}`}
-                          data-id={`minus-${item.id}`}
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className={`h-12 w-12 transition-all ${
-                            hoveredElement === `minus-${item.id}` ? 'scale-110 shadow-lg' : ''
-                          }`}
-                        >
-                          <Minus className="h-5 w-5" />
-                        </Button>
-                        <span className="text-xl font-bold w-8 text-center">{item.quantity}</span>
-                        <Button
-                          id={`plus-${item.id}`}
-                          data-id={`plus-${item.id}`}
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className={`h-12 w-12 transition-all ${
-                            hoveredElement === `plus-${item.id}` ? 'scale-110 shadow-lg' : ''
-                          }`}
-                        >
-                          <Plus className="h-5 w-5" />
-                        </Button>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
+                          <Button
+                            id={`decrease-${item.id}`}
+                            data-id={`decrease-${item.id}`}
+                            variant="outline"
+                            size="icon"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className={`h-10 w-10 transition-all ${
+                              hoveredElement === `decrease-${item.id}` ? 'scale-110 shadow-lg' : ''
+                            }`}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="text-xl font-bold w-12 text-center">{item.quantity}</span>
+                          <Button
+                            id={`increase-${item.id}`}
+                            data-id={`increase-${item.id}`}
+                            variant="outline"
+                            size="icon"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className={`h-10 w-10 transition-all ${
+                              hoveredElement === `increase-${item.id}` ? 'scale-110 shadow-lg' : ''
+                            }`}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
                         <Button
                           id={`remove-${item.id}`}
                           data-id={`remove-${item.id}`}
                           variant="destructive"
                           size="icon"
                           onClick={() => removeFromCart(item.id)}
-                          className={`h-12 w-12 transition-all ${
+                          className={`h-10 w-10 transition-all ${
                             hoveredElement === `remove-${item.id}` ? 'scale-110 shadow-lg' : ''
                           }`}
                         >
-                          <X className="h-5 w-5" />
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </Card>
-                ))}
-              </div>
-            )}
-          </div>
+                ))
+              )}
+            </div>
 
-          <div className="p-8 bg-muted/30 border-t space-y-4 rounded-[2rem]">
             <div className="flex justify-between items-center text-2xl font-bold">
               <span>Total:</span>
               <span className="text-primary">${getTotal()}</span>
