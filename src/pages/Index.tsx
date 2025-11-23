@@ -18,8 +18,10 @@ import { GesturesInfo } from '@/components/GesturesInfo';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
 import { KioskMode } from '@/components/KioskMode';
+import { GasStationMode } from '@/components/GasStationMode';
+import { EVChargingMode } from '@/components/EVChargingMode';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Plus, UtensilsCrossed } from 'lucide-react';
+import { Settings, Plus, UtensilsCrossed, Fuel, Zap } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -82,7 +84,7 @@ const getRandomPosition = () => ({
 });
 
 const Index = () => {
-  const [appMode, setAppMode] = useState<'food-order' | 'cards' | null>(null);
+  const [appMode, setAppMode] = useState<'food-order' | 'cards' | 'gas-station' | 'ev-charging' | null>(null);
   const [currentStep, setCurrentStep] = useState<'mode-selection' | 'tracking-selection' | 'canvas'>('mode-selection');
   const [isTracking, setIsTracking] = useState(false);
   const [hasStartedTracking, setHasStartedTracking] = useState(false);
@@ -310,7 +312,7 @@ const Index = () => {
     };
   }, [sessionId, toast, addDebugLog]);
 
-  const handleModeSelection = (mode: 'food-order' | 'cards') => {
+  const handleModeSelection = (mode: 'food-order' | 'cards' | 'gas-station' | 'ev-charging') => {
     setAppMode(mode);
     setCurrentStep('tracking-selection');
     if (mode === 'food-order') {
@@ -1416,6 +1418,32 @@ const Index = () => {
                     <div className="text-sm opacity-90 mt-2">Spatial cards with gesture controls</div>
                   </div>
                 </Button>
+                
+                <Button 
+                  onClick={() => handleModeSelection('gas-station')}
+                  size="lg" 
+                  variant="secondary"
+                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 rounded-[2rem]"
+                >
+                  <Fuel className="w-16 h-16" />
+                  <div>
+                    <div className="font-bold text-2xl">Gas Station</div>
+                    <div className="text-sm opacity-90 mt-2">Select pump and receipt options</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  onClick={() => handleModeSelection('ev-charging')}
+                  size="lg" 
+                  variant="secondary"
+                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 rounded-[2rem]"
+                >
+                  <Zap className="w-16 h-16" />
+                  <div>
+                    <div className="font-bold text-2xl">EV Charging</div>
+                    <div className="text-sm opacity-90 mt-2">Select column and connector type</div>
+                  </div>
+                </Button>
               </div>
             </div>
           </div>
@@ -1423,7 +1451,10 @@ const Index = () => {
           <div className="flex flex-col items-center justify-center min-h-screen p-8">
             <div className="text-center space-y-6 max-w-2xl">
               <h1 className="text-5xl font-bold text-foreground">
-                {appMode === 'food-order' ? 'Food Order Mode' : 'Cards Mode'}
+                {appMode === 'food-order' ? 'Food Order Mode' : 
+                 appMode === 'gas-station' ? 'Gas Station Mode' :
+                 appMode === 'ev-charging' ? 'EV Charging Mode' :
+                 'Cards Mode'}
               </h1>
               <p className="text-xl text-muted-foreground">Choose your tracking method</p>
               
@@ -1605,14 +1636,36 @@ const Index = () => {
             )}
             
             {/* Kiosk Mode Overlay */}
-            {isKioskMode && (
+            {isKioskMode && appMode === 'food-order' && (
               <div className="fixed inset-0 z-30 bg-background cursor-none">
                 <KioskMode handPositions={handPositions} gestureStates={gestureStates} showCursor={showKioskCursor} />
               </div>
             )}
             
+            {/* Gas Station Mode */}
+            {appMode === 'gas-station' && (
+              <div className="fixed inset-0 z-30 bg-background">
+                <GasStationMode 
+                  handPositions={handPositions} 
+                  gestureStates={gestureStates}
+                  onBack={handleRestart}
+                />
+              </div>
+            )}
+            
+            {/* EV Charging Mode */}
+            {appMode === 'ev-charging' && (
+              <div className="fixed inset-0 z-30 bg-background">
+                <EVChargingMode 
+                  handPositions={handPositions} 
+                  gestureStates={gestureStates}
+                  onBack={handleRestart}
+                />
+              </div>
+            )}
+            
             {/* 3D Hand and Skeleton - always on top in kiosk mode */}
-            {isKioskMode && (
+            {isKioskMode && appMode === 'food-order' && (
               <>
                 {show3DHand && ((remoteLandmarks && remoteLandmarks.length > 0) || (landmarks && landmarks.length > 0)) && (
                   <div className="fixed inset-0 pointer-events-none z-50">
