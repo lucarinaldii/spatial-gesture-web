@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Minus, ShoppingCart, X } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GestureState, HandPosition } from '@/hooks/useHandTracking';
+import useEmblaCarousel from 'embla-carousel-react';
 
 interface MenuItem {
   id: string;
@@ -144,11 +145,18 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   const [addedItemId, setAddedItemId] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [isCarouselScrolling, setIsCarouselScrolling] = useState(false);
   const lastPinchStateRef = useRef<boolean[]>([]);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const carouselPinchStartRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const carouselContainerRef = useRef<HTMLDivElement>(null);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: true });
 
   const categories = ['burgers', 'sides', 'drinks', 'desserts', 'salads', 'breakfast', 'snacks', 'coffee'];
+
+  const scrollPrev = () => emblaApi?.scrollPrev();
+  const scrollNext = () => emblaApi?.scrollNext();
 
   const handleCategoryChange = (category: string) => {
     if (category === selectedCategory) return;
@@ -173,74 +181,137 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     const hand = handPositions[0];
     if (!hand || !gesture) return;
 
+    const x = hand.x * window.innerWidth;
+    const y = hand.y * window.innerHeight;
+    
+    // Check if hand is over the carousel area
+    const isOverCarousel = carouselContainerRef.current && 
+      y >= carouselContainerRef.current.offsetTop && 
+      y <= carouselContainerRef.current.offsetTop + carouselContainerRef.current.offsetHeight;
+
     const wasPinching = lastPinchStateRef.current[0] || false;
     const isPinching = gesture.isPinching || false;
 
-    if (isPinching && !wasPinching) {
-      // Pinch started - store position
-      pinchStartPositionRef.current = { x: hand.x, y: hand.y };
-      setScrollLine({ startY: hand.y * window.innerHeight, currentY: hand.y * window.innerHeight });
-      setIsScrolling(false);
-    } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
-      // Pinch + move = scroll
-      const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
-      
-      // Update scroll line
-      setScrollLine({ 
-        startY: pinchStartPositionRef.current.y * window.innerHeight, 
-        currentY: hand.y * window.innerHeight 
-      });
-      
-      // Scroll threshold - only scroll if moved more than 20px
-      if (Math.abs(deltaY) > 20 && scrollContainerRef.current) {
-        // Direct scroll for responsive feel
-        const currentScroll = scrollContainerRef.current.scrollTop;
-        const scrollDelta = deltaY * 1.2;
-        scrollContainerRef.current.scrollTop = currentScroll - scrollDelta;
+    // Handle carousel horizontal scrolling
+    if (isOverCarousel && emblaApi) {
+      if (isPinching && !wasPinching) {
+        // Start carousel scroll
+        carouselPinchStartRef.current = { x: hand.x, y: hand.y };
+        setIsCarouselScrolling(false);
+      } else if (isPinching && wasPinching && carouselPinchStartRef.current) {
+        // Horizontal scroll on carousel
+        const deltaX = (hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
         
-        pinchStartPositionRef.current = { x: hand.x, y: hand.y };
-        setIsScrolling(true);
-      }
-    } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
-      // Pinch released - clear scroll line
-      setScrollLine(null);
-      
-      // Pinch released - check if it was a click (no significant movement)
-      const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
-      const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
-      
-      // Only trigger click if no scrolling occurred and movement under 40px
-      if (!isScrolling && deltaX < 40 && deltaY < 40) {
-        // Use the pinch START position for click detection
-        const x = pinchStartPositionRef.current.x * window.innerWidth;
-        const y = pinchStartPositionRef.current.y * window.innerHeight;
+        // Scroll threshold - only scroll if moved more than 20px
+        if (Math.abs(deltaX) > 20) {
+          // Direct scroll for responsive feel (same as vertical)
+          const container = emblaApi.containerNode();
+          if (container) {
+            const currentScroll = container.scrollLeft;
+            const scrollDelta = deltaX * 1.2;
+            container.scrollLeft = currentScroll - scrollDelta;
+          }
+          
+          carouselPinchStartRef.current = { x: hand.x, y: hand.y };
+          setIsCarouselScrolling(true);
+        }
+      } else if (!isPinching && wasPinching && carouselPinchStartRef.current) {
+        // Carousel pinch released
+        const deltaX = Math.abs(hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
+        const deltaY = Math.abs(hand.y - carouselPinchStartRef.current.y) * window.innerHeight;
         
-        // Get all elements at point and find the clickable one
-        const elements = document.elementsFromPoint(x, y);
-        
-        let clickableElement: HTMLElement | null = null;
-        for (const el of elements) {
-          if (el instanceof HTMLElement) {
-            const clickable = el.closest('button, [data-clickable], a');
-            if (clickable instanceof HTMLElement) {
-              clickableElement = clickable;
-              break;
+        // Only trigger click if no scrolling and minimal movement
+        if (!isCarouselScrolling && deltaX < 50 && deltaY < 50) {
+          const elements = document.elementsFromPoint(
+            carouselPinchStartRef.current.x * window.innerWidth, 
+            carouselPinchStartRef.current.y * window.innerHeight
+          );
+          let clickableElement: HTMLElement | null = null;
+          for (const el of elements) {
+            if (el instanceof HTMLElement) {
+              const clickable = el.closest('button, [data-clickable]');
+              if (clickable instanceof HTMLElement) {
+                clickableElement = clickable;
+                break;
+              }
             }
+          }
+          if (clickableElement) clickableElement.click();
+        }
+        
+        carouselPinchStartRef.current = null;
+        setTimeout(() => setIsCarouselScrolling(false), 100);
+      }
+    }
+
+    // Handle main content vertical scrolling
+    if (!isOverCarousel) {
+      if (isPinching && !wasPinching) {
+        // Pinch started - store position
+        pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+        setScrollLine({ startY: hand.y * window.innerHeight, currentY: hand.y * window.innerHeight });
+        setIsScrolling(false);
+      } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
+        // Pinch + move = scroll
+        const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+        
+        // Update scroll line
+        setScrollLine({ 
+          startY: pinchStartPositionRef.current.y * window.innerHeight, 
+          currentY: hand.y * window.innerHeight 
+        });
+        
+        // Scroll threshold - only scroll if moved more than 20px
+        if (Math.abs(deltaY) > 20 && scrollContainerRef.current) {
+          // Direct scroll for responsive feel
+          const currentScroll = scrollContainerRef.current.scrollTop;
+          const scrollDelta = deltaY * 1.2;
+          scrollContainerRef.current.scrollTop = currentScroll - scrollDelta;
+          
+          pinchStartPositionRef.current = { x: hand.x, y: hand.y };
+          setIsScrolling(true);
+        }
+      } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
+        // Pinch released - clear scroll line
+        setScrollLine(null);
+        
+        // Pinch released - check if it was a click (no significant movement)
+        const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
+        const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+        
+        // Only trigger click if no scrolling occurred and movement under 40px
+        if (!isScrolling && deltaX < 40 && deltaY < 40) {
+          // Use the pinch START position for click detection
+          const x = pinchStartPositionRef.current.x * window.innerWidth;
+          const y = pinchStartPositionRef.current.y * window.innerHeight;
+          
+          // Get all elements at point and find the clickable one
+          const elements = document.elementsFromPoint(x, y);
+          
+          let clickableElement: HTMLElement | null = null;
+          for (const el of elements) {
+            if (el instanceof HTMLElement) {
+              const clickable = el.closest('button, [data-clickable], a');
+              if (clickable instanceof HTMLElement) {
+                clickableElement = clickable;
+                break;
+              }
+            }
+          }
+          
+          if (clickableElement) {
+            clickableElement.click();
           }
         }
         
-        if (clickableElement) {
-          clickableElement.click();
-        }
+        pinchStartPositionRef.current = null;
+        // Reset scrolling flag after a short delay
+        setTimeout(() => setIsScrolling(false), 100);
       }
-      
-      pinchStartPositionRef.current = null;
-      // Reset scrolling flag after a short delay
-      setTimeout(() => setIsScrolling(false), 100);
     }
 
     lastPinchStateRef.current[0] = isPinching;
-  }, [handPositions, gestureStates]);
+  }, [handPositions, gestureStates, emblaApi]);
 
   // Detect hover - check all elements at point
   useEffect(() => {
@@ -333,87 +404,104 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         <p className="text-lg opacity-90">Touch to select items</p>
       </div>
 
-      {/* Categories and Menu Items */}
-      <div 
-        ref={scrollContainerRef} 
-        className="flex-1 overflow-y-auto px-6 mb-6"
-      >
-        {/* Categories Grid */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4 text-foreground">Categories</h2>
-          <div className="grid grid-cols-2 gap-4">
+      {/* Category Carousel */}
+      <div ref={carouselContainerRef} className="relative p-6 bg-muted/30 mb-6 rounded-[2rem]">
+        <Button
+          id="category-prev"
+          data-id="category-prev"
+          variant="ghost"
+          size="icon"
+          onClick={scrollPrev}
+          className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 h-12 w-12 transition-all ${
+            hoveredElement === 'category-prev' ? 'scale-110 shadow-lg' : ''
+          }`}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+        
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex gap-3">
             {categories.map(cat => (
-              <Card
+              <Button
                 key={cat}
                 id={`category-${cat}`}
                 data-id={`category-${cat}`}
-                data-clickable="true"
-                className={`p-6 transition-all duration-200 cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-primary text-primary-foreground border-primary shadow-xl scale-105'
-                    : clickedElement === `category-${cat}`
-                    ? 'scale-95 shadow-2xl border-primary'
-                    : hoveredElement === `category-${cat}` 
-                    ? 'shadow-xl scale-105 border-primary' 
-                    : 'hover:shadow-lg'
-                }`}
                 onClick={() => handleCategoryChange(cat)}
+                variant={selectedCategory === cat ? "default" : "outline"}
+                className={`h-14 px-8 text-base font-semibold capitalize transition-all flex-shrink-0 ${
+                  hoveredElement === `category-${cat}` ? 'scale-105 shadow-lg' : ''
+                }`}
               >
-                <h3 className="text-xl font-bold text-center capitalize">{cat}</h3>
-              </Card>
+                {cat}
+              </Button>
             ))}
           </div>
         </div>
 
-        {/* Menu Items */}
+        <Button
+          id="category-next"
+          data-id="category-next"
+          variant="ghost"
+          size="icon"
+          onClick={scrollNext}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 h-12 w-12 transition-all ${
+            hoveredElement === 'category-next' ? 'scale-110 shadow-lg' : ''
+          }`}
+        >
+          <ChevronRight className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* Menu Items */}
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 overflow-y-auto px-6 mb-6"
+      >
         {isLoadingCategory ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent"></div>
               <p className="text-lg font-medium text-muted-foreground">Loading menu...</p>
             </div>
           </div>
         ) : (
-          <div>
-            <h2 className="text-2xl font-bold mb-4 text-foreground capitalize">{selectedCategory}</h2>
-            <div className="grid grid-cols-3 gap-6 animate-fade-in">
-              {filteredItems.map(item => (
-                <Card
-                  key={item.id}
-                  id={`item-${item.id}`}
-                  data-id={`item-${item.id}`}
-                  data-clickable="true"
-                  className={`p-6 transition-all duration-200 relative ${
-                    clickedElement === `item-${item.id}`
-                      ? 'scale-95 shadow-2xl border-primary'
-                      : hoveredElement === `item-${item.id}` 
-                      ? 'shadow-xl scale-105 border-primary' 
-                      : 'hover:shadow-lg'
-                  }`}
-                  style={addedItemId === item.id ? {
-                    boxShadow: 'inset 0 0 0 4px rgb(34 197 94), 0 25px 50px -12px rgba(0,0,0,0.25)'
-                  } : undefined}
-                  onClick={() => addToCart(item)}
-                >
-                  <div className={`transition-opacity duration-300 ${addedItemId === item.id ? 'opacity-20' : 'opacity-100'}`}>
-                    <div className="text-6xl text-center mb-3">{item.image}</div>
-                    <h3 className="font-semibold text-center mb-2">{item.name}</h3>
-                    <p className="text-2xl font-bold text-center text-primary">
-                      ${item.price.toFixed(2)}
-                    </p>
-                  </div>
-                  
-                  {addedItemId === item.id && (
-                    <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
-                        <div className="relative text-5xl text-green-500 font-bold">✓</div>
-                      </div>
+          <div className="grid grid-cols-3 gap-6 animate-fade-in">
+            {filteredItems.map(item => (
+              <Card
+                key={item.id}
+                id={`item-${item.id}`}
+                data-id={`item-${item.id}`}
+                data-clickable="true"
+                className={`p-6 transition-all duration-200 relative ${
+                  clickedElement === `item-${item.id}`
+                    ? 'scale-95 shadow-2xl border-primary'
+                    : hoveredElement === `item-${item.id}` 
+                    ? 'shadow-xl scale-105 border-primary' 
+                    : 'hover:shadow-lg'
+                }`}
+                style={addedItemId === item.id ? {
+                  boxShadow: 'inset 0 0 0 4px rgb(34 197 94), 0 25px 50px -12px rgba(0,0,0,0.25)'
+                } : undefined}
+                onClick={() => addToCart(item)}
+              >
+                <div className={`transition-opacity duration-300 ${addedItemId === item.id ? 'opacity-20' : 'opacity-100'}`}>
+                  <div className="text-6xl text-center mb-3">{item.image}</div>
+                  <h3 className="font-semibold text-center mb-2">{item.name}</h3>
+                  <p className="text-2xl font-bold text-center text-primary">
+                    ${item.price.toFixed(2)}
+                  </p>
+                </div>
+                
+                {addedItemId === item.id && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
+                      <div className="relative text-5xl text-green-500 font-bold">✓</div>
                     </div>
-                  )}
-                </Card>
-              ))}
-            </div>
+                  </div>
+                )}
+              </Card>
+            ))}
           </div>
         )}
       </div>
