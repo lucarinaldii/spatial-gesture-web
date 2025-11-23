@@ -202,11 +202,14 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         // Horizontal scroll on carousel
         const deltaX = (hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
         
-        if (Math.abs(deltaX) > 10) {
-          // Direct scroll manipulation on the container
+        // Scroll threshold - only scroll if moved more than 20px
+        if (Math.abs(deltaX) > 20) {
+          // Direct scroll for responsive feel (same as vertical)
           const container = emblaApi.containerNode();
           if (container) {
-            container.scrollLeft -= deltaX * 0.8; // sensitivity factor
+            const currentScroll = container.scrollLeft;
+            const scrollDelta = deltaX * 1.2;
+            container.scrollLeft = currentScroll - scrollDelta;
           }
           
           carouselPinchStartRef.current = { x: hand.x, y: hand.y };
