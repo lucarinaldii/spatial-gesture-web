@@ -202,11 +202,10 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         // Horizontal scroll on carousel
         const deltaX = (hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
         
-        if (Math.abs(deltaX) > 30) {
-          // Scroll carousel based on horizontal movement
-          const scrollProgress = emblaApi.scrollProgress();
-          const targetProgress = scrollProgress - (deltaX / window.innerWidth) * 0.5;
-          emblaApi.scrollTo(Math.round(targetProgress * emblaApi.scrollSnapList().length));
+        if (Math.abs(deltaX) > 10) {
+          // Use relative scroll for smooth drag-like behavior
+          const scrollAmount = -(deltaX / window.innerWidth) * 2; // tune factor for sensitivity
+          (emblaApi as any).scrollBy(scrollAmount, true);
           
           carouselPinchStartRef.current = { x: hand.x, y: hand.y };
           setIsCarouselScrolling(true);
