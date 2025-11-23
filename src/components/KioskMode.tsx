@@ -203,11 +203,10 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         const deltaX = (hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
         
         if (Math.abs(deltaX) > 30) {
-          // Direct scroll manipulation for smooth horizontal movement
-          const container = emblaApi.containerNode();
-          if (container) {
-            container.scrollLeft -= deltaX;
-          }
+          // Scroll carousel based on horizontal movement
+          const scrollProgress = emblaApi.scrollProgress();
+          const targetProgress = scrollProgress - (deltaX / window.innerWidth) * 0.5;
+          emblaApi.scrollTo(Math.round(targetProgress * emblaApi.scrollSnapList().length));
           
           carouselPinchStartRef.current = { x: hand.x, y: hand.y };
           setIsCarouselScrolling(true);
@@ -258,16 +257,12 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
           currentY: hand.y * window.innerHeight 
         });
         
-        // Scroll threshold - only scroll if moved more than 40px
-        if (Math.abs(deltaY) > 40 && scrollContainerRef.current) {
-          // Smooth scroll with animation
+        // Scroll threshold - only scroll if moved more than 20px
+        if (Math.abs(deltaY) > 20 && scrollContainerRef.current) {
+          // Direct scroll for responsive feel
           const currentScroll = scrollContainerRef.current.scrollTop;
-          const targetScroll = currentScroll - (deltaY * 1.5);
-          
-          scrollContainerRef.current.scrollTo({
-            top: targetScroll,
-            behavior: 'smooth'
-          });
+          const scrollDelta = deltaY * 1.2;
+          scrollContainerRef.current.scrollTop = currentScroll - scrollDelta;
           
           pinchStartPositionRef.current = { x: hand.x, y: hand.y };
           setIsScrolling(true);
@@ -454,13 +449,9 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
       </div>
 
       {/* Menu Items */}
-      <div 
+        <div 
         ref={scrollContainerRef} 
-        className="flex-1 overflow-y-auto px-6 mb-6 scroll-smooth"
-        style={{
-          scrollBehavior: 'smooth',
-          WebkitOverflowScrolling: 'touch'
-        }}
+        className="flex-1 overflow-y-auto px-6 mb-6"
       >
         {isLoadingCategory ? (
           <div className="flex items-center justify-center h-full">
