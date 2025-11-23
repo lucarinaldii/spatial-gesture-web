@@ -87,12 +87,13 @@ const InteractiveCard = memo(({
         <Card
           className={`
             glass-panel p-6 w-64 transition-all duration-200 relative
-            ${showAddedFeedback ? 'border-green-500 border-2' : isHovered ? 'border-primary' : 'border-border/30'}
+            ${isHovered ? 'border-primary' : 'border-border/30'}
             ${wasClicked ? 'scale-95' : ''}
             ${isBeingDragged ? 'scale-110 ring-2 ring-primary' : ''}
           `}
           style={{
             backfaceVisibility: 'hidden',
+            ...(showAddedFeedback ? { boxShadow: 'inset 0 0 0 4px rgb(34 197 94)' } : {})
           }}
         >
           <div className={`transition-opacity duration-300 ${showAddedFeedback ? 'opacity-20' : 'opacity-100'}`}>

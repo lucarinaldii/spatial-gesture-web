@@ -152,6 +152,8 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const carouselContainerRef = useRef<HTMLDivElement>(null);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: true });
+  const scrollVelocity = useRef(0);
+  const lastScrollY = useRef(0);
 
   const categories = ['burgers', 'sides', 'drinks', 'desserts', 'salads', 'breakfast', 'snacks', 'coffee'];
 
@@ -259,6 +261,11 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         
         // Scroll threshold - only scroll if moved more than 40px
         if (Math.abs(deltaY) > 40 && scrollContainerRef.current) {
+          // Calculate velocity for inertia
+          const currentY = hand.y * window.innerHeight;
+          scrollVelocity.current = currentY - lastScrollY.current;
+          lastScrollY.current = currentY;
+          
           // Smooth scroll with animation
           const currentScroll = scrollContainerRef.current.scrollTop;
           const targetScroll = currentScroll - (deltaY * 1.5);
@@ -274,6 +281,20 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
       } else if (!isPinching && wasPinching && pinchStartPositionRef.current) {
         // Pinch released - clear scroll line
         setScrollLine(null);
+        
+        // Apply inertia scrolling
+        const applyInertia = () => {
+          if (Math.abs(scrollVelocity.current) > 0.5 && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop -= scrollVelocity.current * 1.5;
+            scrollVelocity.current *= 0.95; // Decay factor
+            requestAnimationFrame(applyInertia);
+          }
+        };
+        
+        if (Math.abs(scrollVelocity.current) > 2) {
+          applyInertia();
+        }
+        
         // Pinch released - check if it was a click (no significant movement)
         const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
         const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
@@ -304,6 +325,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         }
         
         pinchStartPositionRef.current = null;
+        lastScrollY.current = 0;
         // Reset scrolling flag after a short delay
         setTimeout(() => setIsScrolling(false), 100);
       }
@@ -476,14 +498,15 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 data-id={`item-${item.id}`}
                 data-clickable="true"
                 className={`p-6 transition-all duration-200 relative ${
-                  addedItemId === item.id
-                    ? 'border-green-500 border-2 shadow-2xl'
-                    : clickedElement === `item-${item.id}`
+                  clickedElement === `item-${item.id}`
                     ? 'scale-95 shadow-2xl border-primary'
                     : hoveredElement === `item-${item.id}` 
                     ? 'shadow-xl scale-105 border-primary' 
                     : 'hover:shadow-lg'
                 }`}
+                style={addedItemId === item.id ? {
+                  boxShadow: 'inset 0 0 0 4px rgb(34 197 94), 0 25px 50px -12px rgba(0,0,0,0.25)'
+                } : undefined}
                 onClick={() => addToCart(item)}
               >
                 <div className={`transition-opacity duration-300 ${addedItemId === item.id ? 'opacity-20' : 'opacity-100'}`}>
