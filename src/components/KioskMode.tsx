@@ -203,9 +203,11 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         const deltaX = (hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
         
         if (Math.abs(deltaX) > 10) {
-          // Use relative scroll for smooth drag-like behavior
-          const scrollAmount = -(deltaX / window.innerWidth) * 2; // tune factor for sensitivity
-          (emblaApi as any).scrollBy(scrollAmount, true);
+          // Direct scroll manipulation on the container
+          const container = emblaApi.containerNode();
+          if (container) {
+            container.scrollLeft -= deltaX * 0.8; // sensitivity factor
+          }
           
           carouselPinchStartRef.current = { x: hand.x, y: hand.y };
           setIsCarouselScrolling(true);
