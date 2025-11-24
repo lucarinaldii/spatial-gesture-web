@@ -414,12 +414,6 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
 
   return (
     <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none py-8 px-6">
-      {/* Header */}
-      <div className="bg-primary text-primary-foreground p-6 text-center mb-6 rounded-[2rem]">
-        <h1 className="text-3xl font-bold mb-2">Order Here</h1>
-        <p className="text-base opacity-90">Touch to select items</p>
-      </div>
-
       {/* Category Carousel */}
       <div ref={carouselContainerRef} className="relative p-4 bg-muted/30 mb-6 rounded-[2rem]">
         <Button
