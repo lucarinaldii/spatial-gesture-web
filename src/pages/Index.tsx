@@ -13,7 +13,7 @@ import { Scene3D } from '@/components/Scene3D';
 import { ObjectManipulationIndicator } from '@/components/ObjectManipulationIndicator';
 import { DeleteZone } from '@/components/DeleteZone';
 import { CardHoldDeleteButton } from '@/components/CardHoldDeleteButton';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { GlobalControls } from '@/components/GlobalControls';
 import { GesturesInfo } from '@/components/GesturesInfo';
 import { QRCodeConnection } from '@/components/QRCodeConnection';
 import { DebugPanel } from '@/components/DebugPanel';
@@ -1388,8 +1388,7 @@ const Index = () => {
         backgroundAttachment: 'fixed'
       } : undefined}
     >
-      <ThemeToggle />
-      <GesturesInfo />
+      <GlobalControls onSettingsClick={() => setShowSettingsPanel(!showSettingsPanel)} />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {currentStep === 'mode-selection' ? (
@@ -1563,16 +1562,6 @@ const Index = () => {
             <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundUpload} className="hidden" />
             <input ref={objInputRef} type="file" accept=".obj" onChange={handleOBJFileSelect} className="hidden" />
             
-            {/* Settings button - bottom right */}
-            <div className="fixed bottom-8 right-8 z-50 pointer-events-auto">
-              <Button 
-                onClick={() => setShowSettingsPanel(!showSettingsPanel)} 
-                size="lg" 
-                className="rounded-full neon-glow transition-all duration-200 w-16 h-16 p-0"
-              >
-                <Settings className="w-6 h-6" />
-              </Button>
-            </div>
 
             {/* Add card button - top center */}
             {!isKioskMode && appMode !== 'gas-station' && appMode !== 'ev-charging' && (
