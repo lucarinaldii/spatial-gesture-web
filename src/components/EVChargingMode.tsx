@@ -164,15 +164,15 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
     <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b bg-card">
-        <Button variant="ghost" onClick={onBack} className="gap-2">
-          <ChevronLeft className="h-5 w-5" />
+        <Button variant="ghost" onClick={onBack} className="gap-3 h-16 px-6 text-lg" size="lg">
+          <ChevronLeft className="h-6 w-6" />
           Back
         </Button>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Zap className="h-8 w-8" />
+        <h1 className="text-4xl font-bold flex items-center gap-3">
+          <Zap className="h-10 w-10" />
           EV Charging
         </h1>
-        <div className="w-24" />
+        <div className="w-32" />
       </div>
 
       {/* Content */}
@@ -190,7 +190,7 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={column.id}
                     data-clickable
                     data-id={`column-${column.id}`}
-                    className={`p-8 cursor-pointer transition-all relative ${
+                    className={`p-10 cursor-pointer transition-all relative ${
                       !column.available ? 'opacity-50 cursor-not-allowed' : ''
                     } ${selectedColumn === column.id ? 'ring-4 ring-primary' : ''} ${
                       hoveredElement === `column-${column.id}` && column.available ? 'ring-2 ring-primary/50 scale-105' : ''
@@ -199,17 +199,17 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                   >
                     {loadingColumn === column.id && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
-                    <div className="text-center space-y-4">
-                      <Zap className="h-12 w-12 mx-auto text-primary" />
-                      <div className="text-2xl font-bold">{column.name}</div>
-                      <div className="text-lg text-primary font-semibold">{column.power}</div>
+                    <div className="text-center space-y-5">
+                      <Zap className="h-16 w-16 mx-auto text-primary" />
+                      <div className="text-3xl font-bold">{column.name}</div>
+                      <div className="text-2xl text-primary font-semibold">{column.power}</div>
                       {!column.available ? (
-                        <div className="text-sm text-destructive font-medium">In Use</div>
+                        <div className="text-lg text-destructive font-medium">In Use</div>
                       ) : (
-                        <div className="text-sm text-green-500 font-medium">Available</div>
+                        <div className="text-lg text-green-500 font-medium">Available</div>
                       )}
                     </div>
                   </Card>
@@ -227,19 +227,19 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={connector.id}
                     data-clickable
                     data-id={`connector-${connector.id}`}
-                    className={`p-8 cursor-pointer transition-all relative ${
+                    className={`p-10 cursor-pointer transition-all relative ${
                       selectedConnector === connector.id ? 'ring-4 ring-primary' : ''
                     } ${hoveredElement === `connector-${connector.id}` ? 'ring-2 ring-primary/50 scale-105' : ''}`}
                     onClick={() => !loadingConnector && handleConnectorSelect(connector.id)}
                   >
                     {loadingConnector === connector.id && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
-                    <div className="text-center space-y-4">
-                      <div className="text-6xl">{connector.icon}</div>
-                      <div className="text-xl font-semibold">{connector.name}</div>
+                    <div className="text-center space-y-5">
+                      <div className="text-7xl">{connector.icon}</div>
+                      <div className="text-2xl font-semibold">{connector.name}</div>
                     </div>
                   </Card>
                 ))}
@@ -259,12 +259,12 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                 <p>Connector: <span className="font-bold">{selectedConnectorData?.name}</span></p>
               </div>
               <p className="text-muted-foreground text-lg">Please connect your vehicle to begin charging.</p>
-              <div className="flex gap-4 justify-center pt-8">
+              <div className="flex gap-6 justify-center pt-8">
                 <Button 
                   size="lg" 
                   data-clickable
                   data-id="start-over"
-                  className={hoveredElement === 'start-over' ? 'ring-2 ring-primary/50' : ''}
+                  className={`h-16 px-8 text-lg ${hoveredElement === 'start-over' ? 'ring-2 ring-primary/50' : ''}`}
                   onClick={() => { 
                     setStep('column'); 
                     setSelectedColumn(null); 
@@ -278,7 +278,7 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                   variant="outline"
                   data-clickable
                   data-id="exit"
-                  className={hoveredElement === 'exit' ? 'ring-2 ring-primary/50' : ''}
+                  className={`h-16 px-8 text-lg ${hoveredElement === 'exit' ? 'ring-2 ring-primary/50' : ''}`}
                   onClick={onBack}
                 >
                   Exit
