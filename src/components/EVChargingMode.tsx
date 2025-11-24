@@ -273,20 +273,6 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
         </div>
       </div>
 
-      {/* Scroll line indicator */}
-      {scrollLine && (
-        <div
-          className="fixed left-0 right-0 pointer-events-none z-[59]"
-          style={{
-            top: `${Math.min(scrollLine.startY, scrollLine.currentY)}px`,
-            height: `${Math.abs(scrollLine.currentY - scrollLine.startY)}px`,
-            background: 'linear-gradient(to bottom, hsl(var(--primary) / 0.2), hsl(var(--primary) / 0.4))',
-            borderTop: '2px solid hsl(var(--primary))',
-            borderBottom: '2px solid hsl(var(--primary))',
-          }}
-        />
-      )}
-
       {/* Hand cursor indicators */}
       {showCursor && handPositions && handPositions.length > 0 && (
         <div
