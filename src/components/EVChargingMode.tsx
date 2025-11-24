@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Check, ChevronLeft, Zap } from 'lucide-react';
+import { Check, ChevronLeft, Zap, Settings, Info } from 'lucide-react';
 
 interface EVChargingModeProps {
   handPositions: any;
@@ -172,7 +172,14 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
           <Zap className="h-10 w-10" />
           EV Charging
         </h1>
-        <div className="w-32" />
+        <div className="flex gap-3">
+          <Button variant="ghost" size="lg" className="h-16 w-16" title="Info">
+            <Info className="h-6 w-6" />
+          </Button>
+          <Button variant="ghost" size="lg" className="h-16 w-16" title="Settings">
+            <Settings className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
