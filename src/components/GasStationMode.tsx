@@ -141,19 +141,15 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
   const handlePumpSelect = (pumpId: number) => {
     setLoadingPump(pumpId);
     setSelectedPump(pumpId);
-    setTimeout(() => {
-      setLoadingPump(null);
-      setStep('receipt');
-    }, 400);
+    setLoadingPump(null);
+    setStep('receipt');
   };
 
   const handleReceiptChoice = (choice: boolean) => {
     setLoadingReceipt(choice);
     setWantsReceipt(choice);
-    setTimeout(() => {
-      setLoadingReceipt(null);
-      setStep('confirmation');
-    }, 400);
+    setLoadingReceipt(null);
+    setStep('confirmation');
   };
 
   const handleConfirm = () => {
