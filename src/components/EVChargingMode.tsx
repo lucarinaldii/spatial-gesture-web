@@ -292,13 +292,13 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
       {/* Hand cursor indicators */}
       {showCursor && handPositions && handPositions.length > 0 && (
         <div
-          className="fixed rounded-full pointer-events-none z-[60] transition-all duration-150"
+          className="fixed rounded-full pointer-events-none z-[60] will-change-transform"
           style={{
-            left: `${handPositions[0].x * 100}%`,
-            top: `${handPositions[0].y * 100}%`,
-            transform: 'translate(-50%, -50%)',
-            width: gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? '32px' : '24px',
-            height: gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? '32px' : '24px',
+            left: 0,
+            top: 0,
+            transform: `translate(${handPositions[0].x * window.innerWidth}px, ${handPositions[0].y * window.innerHeight}px) translate(-50%, -50%) scale(${gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? 1.33 : 1})`,
+            width: '24px',
+            height: '24px',
             backgroundColor: gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? 'hsl(var(--primary) / 0.8)' : 'hsl(var(--primary) / 0.5)',
             border: '3px solid hsl(var(--primary))',
             boxShadow: gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? '0 0 20px hsl(var(--primary))' : 'none',
