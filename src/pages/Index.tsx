@@ -585,6 +585,33 @@ const Index = () => {
     setAlignmentParams(defaultAlignmentParams);
   }, []);
 
+  const handleBackToTracking = useCallback(() => {
+    // Stop tracking
+    setIsTracking(false);
+    setHasStartedTracking(false);
+    setTrackingMode('initial');
+    
+    // Reset remote connection if active
+    if (channelRef.current) {
+      channelRef.current.unsubscribe();
+      channelRef.current = null;
+    }
+    setIsRemoteConnected(false);
+    setRemoteLandmarks(null);
+    setRemoteHandedness(null);
+    setSessionId('');
+    
+    // Stop local camera if running
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    
+    // Go back to tracking selection (keep the current mode)
+    setCurrentStep('tracking-selection');
+  }, []);
+
   useEffect(() => {
     if (handPositions.length === 0) {
       if (grabbedObjects.size > 0) setGrabbedObjects(new Map());
@@ -1642,7 +1669,7 @@ const Index = () => {
                 <GasStationMode 
                   handPositions={handPositions} 
                   gestureStates={gestureStates}
-                  onBack={handleRestart}
+                  onBack={handleBackToTracking}
                   showCursor={showKioskCursor}
                 />
               </div>
@@ -1654,7 +1681,7 @@ const Index = () => {
                 <EVChargingMode 
                   handPositions={handPositions} 
                   gestureStates={gestureStates}
-                  onBack={handleRestart}
+                  onBack={handleBackToTracking}
                   showCursor={showKioskCursor}
                 />
               </div>
