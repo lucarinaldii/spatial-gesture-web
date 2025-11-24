@@ -144,7 +144,7 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
     setTimeout(() => {
       setLoadingPump(null);
       setStep('receipt');
-    }, 800);
+    }, 400);
   };
 
   const handleReceiptChoice = (choice: boolean) => {
@@ -153,7 +153,7 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
     setTimeout(() => {
       setLoadingReceipt(null);
       setStep('confirmation');
-    }, 800);
+    }, 400);
   };
 
   const handleConfirm = () => {
