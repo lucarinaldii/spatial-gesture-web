@@ -1570,7 +1570,7 @@ const Index = () => {
             </div>
 
             {/* Add card button - top center */}
-            {!isKioskMode && (
+            {!isKioskMode && appMode !== 'gas-station' && appMode !== 'ev-charging' && (
               <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
                 <Button 
                   onClick={() => {
