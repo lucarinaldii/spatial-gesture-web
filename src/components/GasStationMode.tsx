@@ -34,10 +34,11 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
 
   // Pinch gesture for scrolling and clicking
   useEffect(() => {
-    if (!handPositions?.Right || !gestureStates?.Right) return;
+    if (!handPositions || handPositions.length === 0 || !gestureStates || gestureStates.length === 0) return;
 
-    const hand = handPositions.Right;
-    const isPinching = gestureStates.Right === 'Closed_Fist';
+    const hand = handPositions[0];
+    const gesture = gestureStates[0];
+    const isPinching = gesture.isPinching;
     const wasPinching = lastPinchStateRef.current;
 
     if (isPinching && !wasPinching) {
@@ -108,12 +109,12 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
 
   // Detect hover - check all elements at point
   useEffect(() => {
-    if (!handPositions?.Right) {
+    if (!handPositions || handPositions.length === 0) {
       setHoveredElement(null);
       return;
     }
 
-    const hand = handPositions.Right;
+    const hand = handPositions[0];
     const x = hand.x * window.innerWidth;
     const y = hand.y * window.innerHeight;
 
@@ -285,19 +286,19 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
         />
       )}
 
-      {/* Hand cursor indicators - above everything - only show first hand */}
-      {showCursor && handPositions?.Right && (
+      {/* Hand cursor indicators */}
+      {showCursor && handPositions && handPositions.length > 0 && (
         <div
           className="fixed rounded-full pointer-events-none z-[60] transition-all duration-150"
           style={{
-            left: `${handPositions.Right.x * 100}%`,
-            top: `${handPositions.Right.y * 100}%`,
+            left: `${handPositions[0].x * 100}%`,
+            top: `${handPositions[0].y * 100}%`,
             transform: 'translate(-50%, -50%)',
-            width: gestureStates?.Right === 'Closed_Fist' ? '32px' : '24px',
-            height: gestureStates?.Right === 'Closed_Fist' ? '32px' : '24px',
-            backgroundColor: gestureStates?.Right === 'Closed_Fist' ? 'hsl(var(--primary) / 0.8)' : 'hsl(var(--primary) / 0.5)',
+            width: gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? '32px' : '24px',
+            height: gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? '32px' : '24px',
+            backgroundColor: gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? 'hsl(var(--primary) / 0.8)' : 'hsl(var(--primary) / 0.5)',
             border: '3px solid hsl(var(--primary))',
-            boxShadow: gestureStates?.Right === 'Closed_Fist' ? '0 0 20px hsl(var(--primary))' : 'none',
+            boxShadow: gestureStates && gestureStates.length > 0 && gestureStates[0].isPinching ? '0 0 20px hsl(var(--primary))' : 'none',
           }}
         />
       )}
