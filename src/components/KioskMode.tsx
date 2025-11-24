@@ -177,8 +177,23 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   useEffect(() => {
     if (!handPositions.length || !gestureStates.length) return;
 
-    const gesture = gestureStates[0];
-    const hand = handPositions[0];
+    // Find any hand that's pinching (check both hands)
+    let hand = null;
+    let gesture = null;
+    for (let i = 0; i < Math.min(handPositions.length, gestureStates.length); i++) {
+      if (gestureStates[i]?.isPinching) {
+        hand = handPositions[i];
+        gesture = gestureStates[i];
+        break;
+      }
+    }
+    
+    // If no hand is pinching, use first hand for position tracking
+    if (!hand && handPositions.length > 0) {
+      hand = handPositions[0];
+      gesture = gestureStates[0];
+    }
+    
     if (!hand || !gesture) return;
 
     const x = hand.x * window.innerWidth;
@@ -310,16 +325,17 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
       }
     }
 
-    lastPinchStateRef.current[0] = isPinching;
+    lastPinchStateRef.current[0] = isPinching || false;
   }, [handPositions, gestureStates, emblaApi]);
 
-  // Detect hover - check all elements at point
+  // Detect hover - check all elements at point (use any hand position)
   useEffect(() => {
     if (!handPositions.length) {
       setHoveredElement(null);
       return;
     }
 
+    // Use the first available hand for hover detection
     const hand = handPositions[0];
     const x = hand.x * window.innerWidth;
     const y = hand.y * window.innerHeight;
