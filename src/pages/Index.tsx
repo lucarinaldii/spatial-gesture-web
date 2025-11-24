@@ -576,6 +576,11 @@ const Index = () => {
     baseDistanceRef.current.clear();
     baseAngleRef.current.clear();
     
+    // Reset mode selection
+    setAppMode('cards');
+    setIsKioskMode(false);
+    setCurrentStep('mode-selection');
+    
     // Reset alignment parameters
     setAlignmentParams(defaultAlignmentParams);
   }, []);
