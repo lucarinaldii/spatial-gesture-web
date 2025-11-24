@@ -161,12 +161,12 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
     <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b bg-card">
-        <Button variant="ghost" onClick={onBack} className="gap-2">
-          <ChevronLeft className="h-5 w-5" />
+        <Button variant="ghost" onClick={onBack} className="gap-3 h-16 px-6 text-lg" size="lg">
+          <ChevronLeft className="h-6 w-6" />
           Back
         </Button>
-        <h1 className="text-3xl font-bold">Gas Station</h1>
-        <div className="w-24" />
+        <h1 className="text-4xl font-bold">Gas Station</h1>
+        <div className="w-32" />
       </div>
 
       {/* Content */}
@@ -184,7 +184,7 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={pump.id}
                     data-clickable
                     data-id={`pump-${pump.id}`}
-                    className={`p-8 cursor-pointer transition-all relative ${
+                    className={`p-10 cursor-pointer transition-all relative ${
                       !pump.available ? 'opacity-50 cursor-not-allowed' : ''
                     } ${selectedPump === pump.id ? 'ring-4 ring-primary' : ''} ${
                       hoveredElement === `pump-${pump.id}` && pump.available ? 'ring-2 ring-primary/50 scale-105' : ''
@@ -193,17 +193,17 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                   >
                     {loadingPump === pump.id && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
-                    <div className="text-center space-y-4">
-                      <div className="text-6xl font-bold text-primary">{pump.id}</div>
-                      <div className="text-lg">{pump.name}</div>
+                    <div className="text-center space-y-5">
+                      <div className="text-7xl font-bold text-primary">{pump.id}</div>
+                      <div className="text-2xl">{pump.name}</div>
                       {!pump.available && (
-                        <div className="text-sm text-destructive">Unavailable</div>
+                        <div className="text-lg text-destructive font-medium">Unavailable</div>
                       )}
                       {pump.available && (
-                        <div className="text-sm text-muted-foreground">Available</div>
+                        <div className="text-lg text-muted-foreground">Available</div>
                       )}
                     </div>
                   </Card>
@@ -219,37 +219,37 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                 <Card
                   data-clickable
                   data-id="receipt-yes"
-                  className={`p-12 cursor-pointer transition-all relative ${
+                  className={`p-16 cursor-pointer transition-all relative ${
                     wantsReceipt === true ? 'ring-4 ring-primary' : ''
                   } ${hoveredElement === 'receipt-yes' ? 'ring-2 ring-primary/50 scale-105' : ''}`}
                   onClick={() => !loadingReceipt && handleReceiptChoice(true)}
                 >
                   {loadingReceipt === true && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
-                  <div className="text-center space-y-6">
-                    <Check className="h-20 w-20 mx-auto text-primary" />
-                    <div className="text-2xl font-semibold">Yes, Please</div>
+                  <div className="text-center space-y-8">
+                    <Check className="h-24 w-24 mx-auto text-primary" />
+                    <div className="text-3xl font-semibold">Yes, Please</div>
                   </div>
                 </Card>
                 <Card
                   data-clickable
                   data-id="receipt-no"
-                  className={`p-12 cursor-pointer transition-all relative ${
+                  className={`p-16 cursor-pointer transition-all relative ${
                     wantsReceipt === false ? 'ring-4 ring-primary' : ''
                   } ${hoveredElement === 'receipt-no' ? 'ring-2 ring-primary/50 scale-105' : ''}`}
                   onClick={() => !loadingReceipt && handleReceiptChoice(false)}
                 >
                   {loadingReceipt === false && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
-                  <div className="text-center space-y-6">
-                    <div className="h-20 w-20 mx-auto flex items-center justify-center text-6xl">✕</div>
-                    <div className="text-2xl font-semibold">No, Thanks</div>
+                  <div className="text-center space-y-8">
+                    <div className="h-24 w-24 mx-auto flex items-center justify-center text-7xl">✕</div>
+                    <div className="text-3xl font-semibold">No, Thanks</div>
                   </div>
                 </Card>
               </div>
@@ -267,12 +267,12 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                 <p>Receipt: <span className="font-bold">{wantsReceipt ? 'Yes' : 'No'}</span></p>
               </div>
               <p className="text-muted-foreground text-lg">You can now start fueling at your selected pump.</p>
-              <div className="flex gap-4 justify-center pt-8">
+              <div className="flex gap-6 justify-center pt-8">
                 <Button 
                   size="lg" 
                   data-clickable
                   data-id="start-over"
-                  className={hoveredElement === 'start-over' ? 'ring-2 ring-primary/50' : ''}
+                  className={`h-16 px-8 text-lg ${hoveredElement === 'start-over' ? 'ring-2 ring-primary/50' : ''}`}
                   onClick={() => { setStep('pump'); setSelectedPump(null); setWantsReceipt(null); }}
                 >
                   Start Over
@@ -282,7 +282,7 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                   variant="outline"
                   data-clickable
                   data-id="exit"
-                  className={hoveredElement === 'exit' ? 'ring-2 ring-primary/50' : ''}
+                  className={`h-16 px-8 text-lg ${hoveredElement === 'exit' ? 'ring-2 ring-primary/50' : ''}`}
                   onClick={onBack}
                 >
                   Exit
