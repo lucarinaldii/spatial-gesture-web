@@ -175,14 +175,12 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
 
   return (
     <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b bg-card">
+      {/* Back Button */}
+      <div className="p-6">
         <Button variant="ghost" onClick={onBack} className="gap-3 h-16 px-6 text-lg" size="lg">
           <ChevronLeft className="h-6 w-6" />
           Back
         </Button>
-        <h1 className="text-4xl font-bold">Gas Station</h1>
-        <div className="w-32" />
       </div>
 
       {/* Content */}
