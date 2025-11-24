@@ -33,6 +33,8 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [loadingColumn, setLoadingColumn] = useState<number | null>(null);
+  const [loadingConnector, setLoadingConnector] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const lastPinchStateRef = useRef<boolean>(false);
@@ -142,13 +144,21 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
   }, [handPositions]);
 
   const handleColumnSelect = (columnId: number) => {
+    setLoadingColumn(columnId);
     setSelectedColumn(columnId);
-    setTimeout(() => setStep('connector'), 300);
+    setTimeout(() => {
+      setLoadingColumn(null);
+      setStep('connector');
+    }, 800);
   };
 
   const handleConnectorSelect = (connectorId: string) => {
+    setLoadingConnector(connectorId);
     setSelectedConnector(connectorId);
-    setTimeout(() => setStep('confirmation'), 300);
+    setTimeout(() => {
+      setLoadingConnector(null);
+      setStep('confirmation');
+    }, 800);
   };
 
   const selectedColumnData = CHARGING_COLUMNS.find(c => c.id === selectedColumn);
@@ -184,13 +194,18 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={column.id}
                     data-clickable
                     data-id={`column-${column.id}`}
-                    className={`p-8 cursor-pointer transition-all ${
+                    className={`p-8 cursor-pointer transition-all relative ${
                       !column.available ? 'opacity-50 cursor-not-allowed' : ''
                     } ${selectedColumn === column.id ? 'ring-4 ring-primary' : ''} ${
                       hoveredElement === `column-${column.id}` && column.available ? 'ring-2 ring-primary/50 scale-105' : ''
                     }`}
-                    onClick={() => column.available && handleColumnSelect(column.id)}
+                    onClick={() => column.available && !loadingColumn && handleColumnSelect(column.id)}
                   >
+                    {loadingColumn === column.id && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                     <div className="text-center space-y-4">
                       <Zap className="h-12 w-12 mx-auto text-primary" />
                       <div className="text-2xl font-bold">{column.name}</div>
@@ -216,11 +231,16 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={connector.id}
                     data-clickable
                     data-id={`connector-${connector.id}`}
-                    className={`p-8 cursor-pointer transition-all ${
+                    className={`p-8 cursor-pointer transition-all relative ${
                       selectedConnector === connector.id ? 'ring-4 ring-primary' : ''
                     } ${hoveredElement === `connector-${connector.id}` ? 'ring-2 ring-primary/50 scale-105' : ''}`}
-                    onClick={() => handleConnectorSelect(connector.id)}
+                    onClick={() => !loadingConnector && handleConnectorSelect(connector.id)}
                   >
+                    {loadingConnector === connector.id && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                     <div className="text-center space-y-4">
                       <div className="text-6xl">{connector.icon}</div>
                       <div className="text-xl font-semibold">{connector.name}</div>

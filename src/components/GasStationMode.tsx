@@ -28,6 +28,8 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [scrollLine, setScrollLine] = useState<{ startY: number; currentY: number } | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [loadingPump, setLoadingPump] = useState<number | null>(null);
+  const [loadingReceipt, setLoadingReceipt] = useState<boolean | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const lastPinchStateRef = useRef<boolean>(false);
@@ -137,13 +139,21 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
   }, [handPositions]);
 
   const handlePumpSelect = (pumpId: number) => {
+    setLoadingPump(pumpId);
     setSelectedPump(pumpId);
-    setTimeout(() => setStep('receipt'), 300);
+    setTimeout(() => {
+      setLoadingPump(null);
+      setStep('receipt');
+    }, 800);
   };
 
   const handleReceiptChoice = (choice: boolean) => {
+    setLoadingReceipt(choice);
     setWantsReceipt(choice);
-    setTimeout(() => setStep('confirmation'), 300);
+    setTimeout(() => {
+      setLoadingReceipt(null);
+      setStep('confirmation');
+    }, 800);
   };
 
   const handleConfirm = () => {
@@ -178,13 +188,18 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={pump.id}
                     data-clickable
                     data-id={`pump-${pump.id}`}
-                    className={`p-8 cursor-pointer transition-all ${
+                    className={`p-8 cursor-pointer transition-all relative ${
                       !pump.available ? 'opacity-50 cursor-not-allowed' : ''
                     } ${selectedPump === pump.id ? 'ring-4 ring-primary' : ''} ${
                       hoveredElement === `pump-${pump.id}` && pump.available ? 'ring-2 ring-primary/50 scale-105' : ''
                     }`}
-                    onClick={() => pump.available && handlePumpSelect(pump.id)}
+                    onClick={() => pump.available && !loadingPump && handlePumpSelect(pump.id)}
                   >
+                    {loadingPump === pump.id && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                     <div className="text-center space-y-4">
                       <div className="text-6xl font-bold text-primary">{pump.id}</div>
                       <div className="text-lg">{pump.name}</div>
@@ -208,11 +223,16 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                 <Card
                   data-clickable
                   data-id="receipt-yes"
-                  className={`p-12 cursor-pointer transition-all ${
+                  className={`p-12 cursor-pointer transition-all relative ${
                     wantsReceipt === true ? 'ring-4 ring-primary' : ''
                   } ${hoveredElement === 'receipt-yes' ? 'ring-2 ring-primary/50 scale-105' : ''}`}
-                  onClick={() => handleReceiptChoice(true)}
+                  onClick={() => !loadingReceipt && handleReceiptChoice(true)}
                 >
+                  {loadingReceipt === true && (
+                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                   <div className="text-center space-y-6">
                     <Check className="h-20 w-20 mx-auto text-primary" />
                     <div className="text-2xl font-semibold">Yes, Please</div>
@@ -221,11 +241,16 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                 <Card
                   data-clickable
                   data-id="receipt-no"
-                  className={`p-12 cursor-pointer transition-all ${
+                  className={`p-12 cursor-pointer transition-all relative ${
                     wantsReceipt === false ? 'ring-4 ring-primary' : ''
                   } ${hoveredElement === 'receipt-no' ? 'ring-2 ring-primary/50 scale-105' : ''}`}
-                  onClick={() => handleReceiptChoice(false)}
+                  onClick={() => !loadingReceipt && handleReceiptChoice(false)}
                 >
+                  {loadingReceipt === false && (
+                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                   <div className="text-center space-y-6">
                     <div className="h-20 w-20 mx-auto flex items-center justify-center text-6xl">✕</div>
                     <div className="text-2xl font-semibold">No, Thanks</div>
