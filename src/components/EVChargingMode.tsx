@@ -146,19 +146,15 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
   const handleColumnSelect = (columnId: number) => {
     setLoadingColumn(columnId);
     setSelectedColumn(columnId);
-    setTimeout(() => {
-      setLoadingColumn(null);
-      setStep('connector');
-    }, 400);
+    setLoadingColumn(null);
+    setStep('connector');
   };
 
   const handleConnectorSelect = (connectorId: string) => {
     setLoadingConnector(connectorId);
     setSelectedConnector(connectorId);
-    setTimeout(() => {
-      setLoadingConnector(null);
-      setStep('confirmation');
-    }, 400);
+    setLoadingConnector(null);
+    setStep('confirmation');
   };
 
   const selectedColumnData = CHARGING_COLUMNS.find(c => c.id === selectedColumn);
