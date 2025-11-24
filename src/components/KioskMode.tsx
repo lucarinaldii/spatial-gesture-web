@@ -415,13 +415,13 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   return (
     <div className="h-full w-full max-w-2xl mx-auto bg-background flex flex-col relative cursor-none py-8 px-6">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground p-8 text-center mb-6 rounded-[2rem]">
-        <h1 className="text-4xl font-bold mb-2">Order Here</h1>
-        <p className="text-lg opacity-90">Touch to select items</p>
+      <div className="bg-primary text-primary-foreground p-6 text-center mb-6 rounded-[2rem]">
+        <h1 className="text-3xl font-bold mb-2">Order Here</h1>
+        <p className="text-base opacity-90">Touch to select items</p>
       </div>
 
       {/* Category Carousel */}
-      <div ref={carouselContainerRef} className="relative p-6 bg-muted/30 mb-6 rounded-[2rem]">
+      <div ref={carouselContainerRef} className="relative p-4 bg-muted/30 mb-6 rounded-[2rem]">
         <Button
           id="category-prev"
           data-id="category-prev"
@@ -488,7 +488,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 id={`item-${item.id}`}
                 data-id={`item-${item.id}`}
                 data-clickable="true"
-                className={`p-6 transition-all duration-200 relative ${
+                className={`p-4 transition-all duration-200 relative ${
                   clickedElement === `item-${item.id}`
                     ? 'scale-95 shadow-2xl border-primary'
                     : hoveredElement === `item-${item.id}` 
@@ -501,9 +501,9 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 onClick={() => addToCart(item)}
               >
                 <div className={`transition-opacity duration-300 ${addedItemId === item.id ? 'opacity-20' : 'opacity-100'}`}>
-                  <div className="text-6xl text-center mb-3">{item.image}</div>
-                  <h3 className="font-semibold text-center mb-2">{item.name}</h3>
-                  <p className="text-2xl font-bold text-center text-primary">
+                  <div className="text-5xl text-center mb-2">{item.image}</div>
+                  <h3 className="font-semibold text-center mb-1 text-sm">{item.name}</h3>
+                  <p className="text-xl font-bold text-center text-primary">
                     ${item.price.toFixed(2)}
                   </p>
                 </div>
@@ -512,7 +512,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                   <div className="absolute inset-0 flex items-center justify-center rounded-[2rem] animate-fade-in">
                     <div className="relative">
                       <div className="absolute inset-0 bg-green-500 blur-2xl opacity-50"></div>
-                      <div className="relative text-5xl text-green-500 font-bold">✓</div>
+                      <div className="relative text-4xl text-green-500 font-bold">✓</div>
                     </div>
                   </div>
                 )}
@@ -573,13 +573,13 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                 <p className="text-center text-muted-foreground py-12">Your cart is empty</p>
               ) : (
                 cart.map(item => (
-                  <Card key={item.id} className="p-6">
+                  <Card key={item.id} className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="text-4xl">{item.image}</div>
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="text-3xl">{item.image}</div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg">{item.name}</h3>
-                          <p className="text-primary font-bold">${item.price.toFixed(2)}</p>
+                          <h3 className="font-semibold text-base">{item.name}</h3>
+                          <p className="text-primary font-bold text-sm">${item.price.toFixed(2)}</p>
                         </div>
                       </div>
                       
@@ -597,7 +597,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
-                          <span className="text-xl font-bold w-12 text-center">{item.quantity}</span>
+                          <span className="text-lg font-bold w-10 text-center">{item.quantity}</span>
                           <Button
                             id={`increase-${item.id}`}
                             data-id={`increase-${item.id}`}
@@ -631,7 +631,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
               )}
             </div>
 
-            <div className="flex justify-between items-center text-2xl font-bold">
+            <div className="flex justify-between items-center text-xl font-bold">
               <span>Total:</span>
               <span className="text-primary">${getTotal()}</span>
             </div>

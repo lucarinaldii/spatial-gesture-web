@@ -200,7 +200,7 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={pump.id}
                     data-clickable
                     data-id={`pump-${pump.id}`}
-                    className={`p-10 cursor-pointer transition-all relative ${
+                    className={`p-6 cursor-pointer transition-all relative ${
                       !pump.available ? 'opacity-50 cursor-not-allowed' : ''
                     } ${selectedPump === pump.id ? 'ring-4 ring-primary' : ''} ${
                       hoveredElement === `pump-${pump.id}` && pump.available ? 'ring-2 ring-primary/50 scale-105' : ''
@@ -212,14 +212,14 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
-                    <div className="text-center space-y-5">
-                      <div className="text-7xl font-bold text-primary">{pump.id}</div>
-                      <div className="text-2xl">{pump.name}</div>
+                    <div className="text-center space-y-3">
+                      <div className="text-5xl font-bold text-primary">{pump.id}</div>
+                      <div className="text-xl">{pump.name}</div>
                       {!pump.available && (
-                        <div className="text-lg text-destructive font-medium">Unavailable</div>
+                        <div className="text-base text-destructive font-medium">Unavailable</div>
                       )}
                       {pump.available && (
-                        <div className="text-lg text-muted-foreground">Available</div>
+                        <div className="text-base text-muted-foreground">Available</div>
                       )}
                     </div>
                   </Card>
@@ -235,7 +235,7 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                 <Card
                   data-clickable
                   data-id="receipt-yes"
-                  className={`p-16 cursor-pointer transition-all relative ${
+                  className={`p-10 cursor-pointer transition-all relative ${
                     wantsReceipt === true ? 'ring-4 ring-primary' : ''
                   } ${hoveredElement === 'receipt-yes' ? 'ring-2 ring-primary/50 scale-105' : ''}`}
                   onClick={() => !loadingReceipt && handleReceiptChoice(true)}
@@ -245,15 +245,15 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                       <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
-                  <div className="text-center space-y-8">
-                    <Check className="h-24 w-24 mx-auto text-primary" />
-                    <div className="text-3xl font-semibold">Yes, Please</div>
+                  <div className="text-center space-y-6">
+                    <Check className="h-20 w-20 mx-auto text-primary" />
+                    <div className="text-2xl font-semibold">Yes, Please</div>
                   </div>
                 </Card>
                 <Card
                   data-clickable
                   data-id="receipt-no"
-                  className={`p-16 cursor-pointer transition-all relative ${
+                  className={`p-10 cursor-pointer transition-all relative ${
                     wantsReceipt === false ? 'ring-4 ring-primary' : ''
                   } ${hoveredElement === 'receipt-no' ? 'ring-2 ring-primary/50 scale-105' : ''}`}
                   onClick={() => !loadingReceipt && handleReceiptChoice(false)}
@@ -263,9 +263,9 @@ export const GasStationMode = ({ handPositions, gestureStates, onBack, showCurso
                       <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
-                  <div className="text-center space-y-8">
-                    <div className="h-24 w-24 mx-auto flex items-center justify-center text-7xl">✕</div>
-                    <div className="text-3xl font-semibold">No, Thanks</div>
+                  <div className="text-center space-y-6">
+                    <div className="h-20 w-20 mx-auto flex items-center justify-center text-6xl">✕</div>
+                    <div className="text-2xl font-semibold">No, Thanks</div>
                   </div>
                 </Card>
               </div>
