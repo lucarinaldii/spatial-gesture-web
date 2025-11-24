@@ -206,7 +206,7 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={column.id}
                     data-clickable
                     data-id={`column-${column.id}`}
-                    className={`p-10 cursor-pointer transition-all relative ${
+                    className={`p-6 cursor-pointer transition-all relative ${
                       !column.available ? 'opacity-50 cursor-not-allowed' : ''
                     } ${selectedColumn === column.id ? 'ring-4 ring-primary' : ''} ${
                       hoveredElement === `column-${column.id}` && column.available ? 'ring-2 ring-primary/50 scale-105' : ''
@@ -218,14 +218,14 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
-                    <div className="text-center space-y-5">
-                      <Zap className="h-16 w-16 mx-auto text-primary" />
-                      <div className="text-3xl font-bold">{column.name}</div>
-                      <div className="text-2xl text-primary font-semibold">{column.power}</div>
+                    <div className="text-center space-y-3">
+                      <Zap className="h-14 w-14 mx-auto text-primary" />
+                      <div className="text-2xl font-bold">{column.name}</div>
+                      <div className="text-xl text-primary font-semibold">{column.power}</div>
                       {!column.available ? (
-                        <div className="text-lg text-destructive font-medium">In Use</div>
+                        <div className="text-base text-destructive font-medium">In Use</div>
                       ) : (
-                        <div className="text-lg text-green-500 font-medium">Available</div>
+                        <div className="text-base text-green-500 font-medium">Available</div>
                       )}
                     </div>
                   </Card>
@@ -243,7 +243,7 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                     key={connector.id}
                     data-clickable
                     data-id={`connector-${connector.id}`}
-                    className={`p-10 cursor-pointer transition-all relative ${
+                    className={`p-6 cursor-pointer transition-all relative ${
                       selectedConnector === connector.id ? 'ring-4 ring-primary' : ''
                     } ${hoveredElement === `connector-${connector.id}` ? 'ring-2 ring-primary/50 scale-105' : ''}`}
                     onClick={() => !loadingConnector && handleConnectorSelect(connector.id)}
@@ -253,9 +253,9 @@ export const EVChargingMode = ({ handPositions, gestureStates, onBack, showCurso
                         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
-                    <div className="text-center space-y-5">
-                      <div className="text-7xl">{connector.icon}</div>
-                      <div className="text-2xl font-semibold">{connector.name}</div>
+                    <div className="text-center space-y-3">
+                      <div className="text-6xl">{connector.icon}</div>
+                      <div className="text-xl font-semibold">{connector.name}</div>
                     </div>
                   </Card>
                 ))}
