@@ -1471,7 +1471,7 @@ const Index = () => {
                   onClick={() => handleModeSelection('food-order')}
                   size="default" 
                   variant="outline"
-                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                  className="p-8 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
                   <div className="font-bold text-base">Food Order</div>
                   <div className="text-xs text-muted-foreground">Interactive kiosk for ordering food</div>
@@ -1481,7 +1481,7 @@ const Index = () => {
                   onClick={() => handleModeSelection('cards')}
                   size="default" 
                   variant="outline"
-                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                  className="p-8 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
                   <div className="font-bold text-base">Cards</div>
                   <div className="text-xs text-muted-foreground">Spatial cards with gesture controls</div>
@@ -1491,7 +1491,7 @@ const Index = () => {
                   onClick={() => handleModeSelection('gas-station')}
                   size="default" 
                   variant="outline"
-                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                  className="p-8 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
                   <div className="font-bold text-base">Gas Station</div>
                   <div className="text-xs text-muted-foreground">Select pump and receipt options</div>
@@ -1501,7 +1501,7 @@ const Index = () => {
                   onClick={() => handleModeSelection('ev-charging')}
                   size="default" 
                   variant="outline"
-                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                  className="p-8 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
                   <div className="font-bold text-base">EV Charging</div>
                   <div className="text-xs text-muted-foreground">Select column and connector type</div>
@@ -1537,7 +1537,7 @@ const Index = () => {
                       onClick={handleStartTracking} 
                       disabled={!isReady} 
                       variant="outline"
-                      className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                      className="p-8 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                     >
                       <div className="font-bold text-base">{isReady ? 'Local Camera' : 'Loading...'}</div>
                       <div className="text-xs text-muted-foreground">Use your computer webcam</div>
@@ -1546,7 +1546,7 @@ const Index = () => {
                       onClick={() => setTrackingMode('mobile-qr')} 
                       disabled={!isReady} 
                       variant="outline"
-                      className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                      className="p-8 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                     >
                       <div className="font-bold text-base">Mobile Camera</div>
                       <div className="text-xs text-muted-foreground">Use your phone as controller</div>
