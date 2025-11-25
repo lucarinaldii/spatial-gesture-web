@@ -8,7 +8,6 @@ import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
 import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
-import { SettingsPanel } from '@/components/SettingsPanel';
 import { Scene3D } from '@/components/Scene3D';
 import { ObjectManipulationIndicator } from '@/components/ObjectManipulationIndicator';
 import { DeleteZone } from '@/components/DeleteZone';
@@ -20,8 +19,9 @@ import { DebugPanel } from '@/components/DebugPanel';
 import { KioskMode } from '@/components/KioskMode';
 import { GasStationMode } from '@/components/GasStationMode';
 import { EVChargingMode } from '@/components/EVChargingMode';
+import { HandWelcomeOverlay } from '@/components/HandWelcomeOverlay';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Plus, UtensilsCrossed, Fuel, Zap } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface ObjectData {
   id: string;
@@ -98,6 +98,7 @@ const Index = () => {
   const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'mobile-remote' | 'local'>('initial');
   const [isKioskMode, setIsKioskMode] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(false);
   const channelRef = useRef<any>(null);
   const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking(trackingMode !== 'mobile-remote');
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
@@ -288,6 +289,7 @@ const Index = () => {
         setHasStartedTracking(true);
         setTrackingMode('mobile-remote'); // Switch to canvas view with remote tracking
         setCurrentStep('canvas');
+        setShowWelcomeOverlay(true);
         toast({
           title: "Mobile Connected",
           description: "Hand tracking active",
@@ -336,6 +338,7 @@ const Index = () => {
     setHasStartedTracking(true);
     setTrackingMode('local');
     setCurrentStep('canvas');
+    setShowWelcomeOverlay(true);
     
     // Start local camera for desktop interaction
     setTimeout(async () => { 
@@ -1427,7 +1430,6 @@ const Index = () => {
     >
       {currentStep === 'canvas' && (
         <GlobalControls 
-          onSettingsClick={() => setShowSettingsPanel(!showSettingsPanel)} 
           onThemeChange={(isDark) => {
             // Broadcast theme to mobile
             if (channelRef.current) {
@@ -1440,6 +1442,20 @@ const Index = () => {
           }}
           infoOpen={infoOpen}
           onInfoOpenChange={setInfoOpen}
+          showConnectors={showConnectors}
+          setShowConnectors={setShowConnectors}
+          show3DHand={show3DHand}
+          setShow3DHand={setShow3DHand}
+          showSkeleton={showSkeleton}
+          setShowSkeleton={setShowSkeleton}
+          showPlane={showPlane}
+          setShowPlane={setShowPlane}
+          showKioskCursor={showKioskCursor}
+          setShowKioskCursor={handleToggleKioskCursor}
+          onRestart={handleRestart}
+          onImportFile={() => fileInputRef.current?.click()}
+          onBackgroundUpload={() => backgroundInputRef.current?.click()}
+          onImportOBJ={() => objInputRef.current?.click()}
         />
       )}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
@@ -1685,29 +1701,12 @@ const Index = () => {
               </div>
             )}
 
-            {/* Settings Panel */}
-            {showSettingsPanel && (
-              <div className="fixed top-8 right-8 z-50 pointer-events-auto animate-scale-in">
-            <SettingsPanel
-              showConnectors={showConnectors}
-              setShowConnectors={setShowConnectors}
-              show3DHand={show3DHand}
-              setShow3DHand={setShow3DHand}
-              showSkeleton={showSkeleton}
-              setShowSkeleton={setShowSkeleton}
-              showPlane={showPlane}
-              setShowPlane={setShowPlane}
-              showKioskCursor={showKioskCursor}
-              setShowKioskCursor={handleToggleKioskCursor}
-              onRestart={handleRestart}
-              onImportFile={() => fileInputRef.current?.click()}
-              onBackgroundUpload={() => backgroundInputRef.current?.click()}
-              onImportOBJ={() => objInputRef.current?.click()}
-              onClose={() => setShowSettingsPanel(false)}
-              onShowAdvancedSettings={() => setShowSettings(!showSettings)}
-              alignmentParams={alignmentParams}
-            />
-              </div>
+            {/* Welcome Overlay */}
+            {showWelcomeOverlay && (
+              <HandWelcomeOverlay 
+                onDismiss={() => setShowWelcomeOverlay(false)}
+                hasHandDetected={(landmarks && landmarks.length > 0) || (remoteLandmarks && remoteLandmarks.length > 0)}
+              />
             )}
             
             {/* Kiosk Mode Overlay */}
