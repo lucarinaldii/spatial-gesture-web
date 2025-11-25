@@ -162,8 +162,8 @@ const Index = () => {
   const [mergingCards, setMergingCards] = useState<Set<string>>(new Set());
   const [splittingCards, setSplittingCards] = useState<Set<string>>(new Set());
   const splitDistanceRef = useRef<Map<string, number>>(new Map());
-  const [show3DHand, setShow3DHand] = useState(false);
-  const [showSkeleton, setShowSkeleton] = useState(true);
+  const [show3DHand, setShow3DHand] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
   const [showPlane, setShowPlane] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
@@ -180,7 +180,7 @@ const Index = () => {
   const plusButtonCooldownRef = useRef<number>(0);
   const [showKioskCursor, setShowKioskCursor] = useState(() => {
     const saved = localStorage.getItem('kioskShowCursor');
-    return saved !== null ? JSON.parse(saved) : false;
+    return saved !== null ? JSON.parse(saved) : true;
   });
   
   const handleToggleKioskCursor = (value: boolean) => {
@@ -1425,21 +1425,23 @@ const Index = () => {
         backgroundAttachment: 'fixed'
       } : undefined}
     >
-      <GlobalControls 
-        onSettingsClick={() => setShowSettingsPanel(!showSettingsPanel)} 
-        onThemeChange={(isDark) => {
-          // Broadcast theme to mobile
-          if (channelRef.current) {
-            channelRef.current.send({
-              type: 'broadcast',
-              event: 'theme-change',
-              payload: { isDark }
-            });
-          }
-        }}
-        infoOpen={infoOpen}
-        onInfoOpenChange={setInfoOpen}
-      />
+      {currentStep === 'canvas' && (
+        <GlobalControls 
+          onSettingsClick={() => setShowSettingsPanel(!showSettingsPanel)} 
+          onThemeChange={(isDark) => {
+            // Broadcast theme to mobile
+            if (channelRef.current) {
+              channelRef.current.send({
+                type: 'broadcast',
+                event: 'theme-change',
+                payload: { isDark }
+              });
+            }
+          }}
+          infoOpen={infoOpen}
+          onInfoOpenChange={setInfoOpen}
+        />
+      )}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {currentStep === 'welcome' ? (
