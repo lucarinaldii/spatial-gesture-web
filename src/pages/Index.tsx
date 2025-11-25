@@ -1536,19 +1536,20 @@ const Index = () => {
                     <Button 
                       onClick={handleStartTracking} 
                       disabled={!isReady} 
-                      size="lg" 
-                      className="text-lg px-8 py-6 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground"
+                      variant="outline"
+                      className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                     >
-                      {isReady ? '🖥️ Use Local Camera' : 'Loading Model...'}
+                      <div className="font-bold text-base">{isReady ? 'Local Camera' : 'Loading...'}</div>
+                      <div className="text-xs text-muted-foreground">Use your computer webcam</div>
                     </Button>
                     <Button 
                       onClick={() => setTrackingMode('mobile-qr')} 
                       disabled={!isReady} 
-                      size="lg" 
-                      variant="secondary"
-                      className="text-lg px-8 py-6"
+                      variant="outline"
+                      className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                     >
-                      📱 Use Mobile Camera
+                      <div className="font-bold text-base">Mobile Camera</div>
+                      <div className="text-xs text-muted-foreground">Use your phone as controller</div>
                     </Button>
                   </div>
                   <Button 
