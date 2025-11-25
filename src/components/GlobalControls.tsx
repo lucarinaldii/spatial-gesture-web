@@ -10,9 +10,11 @@ import {
 interface GlobalControlsProps {
   onSettingsClick?: () => void;
   onThemeChange?: (isDark: boolean) => void;
+  infoOpen?: boolean;
+  onInfoOpenChange?: (open: boolean) => void;
 }
 
-export const GlobalControls = ({ onSettingsClick, onThemeChange }: GlobalControlsProps) => {
+export const GlobalControls = ({ onSettingsClick, onThemeChange, infoOpen, onInfoOpenChange }: GlobalControlsProps) => {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
     return saved ? saved === "dark" : false;
@@ -49,7 +51,7 @@ export const GlobalControls = ({ onSettingsClick, onThemeChange }: GlobalControl
 
   return (
     <div className="fixed top-4 right-4 z-50 flex gap-2">
-      <Popover>
+      <Popover open={infoOpen} onOpenChange={onInfoOpenChange}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
