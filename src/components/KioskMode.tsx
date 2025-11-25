@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GestureState, HandPosition } from '@/hooks/useHandTracking';
-import useEmblaCarousel from 'embla-carousel-react';
 
 interface MenuItem {
   id: string;
@@ -150,13 +149,22 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
   const pinchStartPositionRef = useRef<{ x: number; y: number } | null>(null);
   const carouselPinchStartRef = useRef<{ x: number; y: number } | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const carouselScrollRef = useRef<HTMLDivElement>(null);
   const carouselContainerRef = useRef<HTMLDivElement>(null);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: true });
 
   const categories = ['burgers', 'sides', 'drinks', 'desserts', 'salads', 'breakfast', 'snacks', 'coffee'];
 
-  const scrollPrev = () => emblaApi?.scrollPrev();
-  const scrollNext = () => emblaApi?.scrollNext();
+  const scrollPrev = () => {
+    if (carouselScrollRef.current) {
+      carouselScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+  
+  const scrollNext = () => {
+    if (carouselScrollRef.current) {
+      carouselScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  };
 
   const handleCategoryChange = (category: string) => {
     if (category === selectedCategory) return;
@@ -208,35 +216,33 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     const isPinching = gesture.isPinching || false;
 
     // Handle carousel horizontal scrolling
-    if (isOverCarousel && emblaApi) {
+    if (isOverCarousel && carouselScrollRef.current) {
       if (isPinching && !wasPinching) {
         // Start carousel scroll
         carouselPinchStartRef.current = { x: hand.x, y: hand.y };
         setIsCarouselScrolling(false);
       } else if (isPinching && wasPinching && carouselPinchStartRef.current) {
         // Horizontal scroll on carousel
-        const deltaX = (hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
+        const deltaX = (hand.x - carouselPinchStartRef.current.x);
         
-        // Scroll threshold - only scroll if moved more than 20px
-        if (Math.abs(deltaX) > 20) {
-          // Direct scroll for responsive feel (same as vertical)
-          const container = emblaApi.containerNode();
-          if (container) {
-            const currentScroll = container.scrollLeft;
-            const scrollDelta = deltaX * 1.2;
-            container.scrollLeft = currentScroll - scrollDelta;
-          }
+        // Scroll threshold - only scroll if moved more than 2% of screen
+        if (Math.abs(deltaX) > 0.02) {
+          const container = carouselScrollRef.current;
+          const currentScroll = container.scrollLeft;
+          // Natural scrolling: hand right = scroll right (see items on left)
+          const scrollDelta = -deltaX * window.innerWidth * 2.5;
+          container.scrollLeft = currentScroll + scrollDelta;
           
           carouselPinchStartRef.current = { x: hand.x, y: hand.y };
           setIsCarouselScrolling(true);
         }
       } else if (!isPinching && wasPinching && carouselPinchStartRef.current) {
         // Carousel pinch released
-        const deltaX = Math.abs(hand.x - carouselPinchStartRef.current.x) * window.innerWidth;
-        const deltaY = Math.abs(hand.y - carouselPinchStartRef.current.y) * window.innerHeight;
+        const deltaX = Math.abs(hand.x - carouselPinchStartRef.current.x);
+        const deltaY = Math.abs(hand.y - carouselPinchStartRef.current.y);
         
         // Only trigger click if no scrolling and minimal movement
-        if (!isCarouselScrolling && deltaX < 50 && deltaY < 50) {
+        if (!isCarouselScrolling && deltaX < 0.05 && deltaY < 0.05) {
           const elements = document.elementsFromPoint(
             carouselPinchStartRef.current.x * window.innerWidth, 
             carouselPinchStartRef.current.y * window.innerHeight
@@ -268,7 +274,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         setIsScrolling(false);
       } else if (isPinching && wasPinching && pinchStartPositionRef.current) {
         // Pinch + move = scroll
-        const deltaY = (hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+        const deltaY = (hand.y - pinchStartPositionRef.current.y);
         
         // Update scroll line
         setScrollLine({ 
@@ -276,12 +282,12 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
           currentY: hand.y * window.innerHeight 
         });
         
-        // Scroll threshold - only scroll if moved more than 20px
-        if (Math.abs(deltaY) > 20 && scrollContainerRef.current) {
-          // Direct scroll for responsive feel
+        // Scroll threshold - only scroll if moved more than 2% of screen
+        if (Math.abs(deltaY) > 0.02 && scrollContainerRef.current) {
           const currentScroll = scrollContainerRef.current.scrollTop;
-          const scrollDelta = deltaY * 1.2;
-          scrollContainerRef.current.scrollTop = currentScroll - scrollDelta;
+          // Natural scrolling: hand down = scroll down (see content below)
+          const scrollDelta = -deltaY * window.innerHeight * 2.5;
+          scrollContainerRef.current.scrollTop = currentScroll + scrollDelta;
           
           pinchStartPositionRef.current = { x: hand.x, y: hand.y };
           setIsScrolling(true);
@@ -291,11 +297,11 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
         setScrollLine(null);
         
         // Pinch released - check if it was a click (no significant movement)
-        const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x) * window.innerWidth;
-        const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y) * window.innerHeight;
+        const deltaX = Math.abs(hand.x - pinchStartPositionRef.current.x);
+        const deltaY = Math.abs(hand.y - pinchStartPositionRef.current.y);
         
-        // Only trigger click if no scrolling occurred and movement under 40px
-        if (!isScrolling && deltaX < 40 && deltaY < 40) {
+        // Only trigger click if no scrolling occurred and movement under 5% of screen
+        if (!isScrolling && deltaX < 0.05 && deltaY < 0.05) {
           // Use the pinch START position for click detection
           const x = pinchStartPositionRef.current.x * window.innerWidth;
           const y = pinchStartPositionRef.current.y * window.innerHeight;
@@ -326,7 +332,7 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
     }
 
     lastPinchStateRef.current[0] = isPinching || false;
-  }, [handPositions, gestureStates, emblaApi]);
+  }, [handPositions, gestureStates]);
 
   // Detect hover - check all elements at point (use any hand position)
   useEffect(() => {
@@ -429,8 +435,12 @@ export const KioskMode = ({ handPositions, gestureStates, showCursor }: KioskMod
           <ChevronLeft className="h-6 w-6" />
         </Button>
         
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex gap-3">
+        <div 
+          ref={carouselScrollRef}
+          className="overflow-x-auto overflow-y-hidden scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          <div className="flex gap-3 px-12">
             {categories.map(cat => (
               <Button
                 key={cat}
