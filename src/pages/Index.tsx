@@ -181,7 +181,7 @@ const Index = () => {
   const plusButtonCooldownRef = useRef<number>(0);
   const [showKioskCursor, setShowKioskCursor] = useState(() => {
     const saved = localStorage.getItem('kioskShowCursor');
-    return saved !== null ? JSON.parse(saved) : true;
+    return saved !== null ? JSON.parse(saved) : false;
   });
   
   const handleToggleKioskCursor = (value: boolean) => {
