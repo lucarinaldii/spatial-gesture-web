@@ -312,7 +312,7 @@ const MobileCamera = () => {
               
               {/* 3D Hand Model */}
               {show3DHand && landmarks && landmarks.length > 0 && (
-                <div className="absolute inset-0 pointer-events-none" style={{ transform: 'scaleX(-1)' }}>
+                <div className="absolute inset-0 pointer-events-none">
                   <Hand3DModel 
                     landmarks={landmarks} 
                     videoWidth={window.innerWidth} 
