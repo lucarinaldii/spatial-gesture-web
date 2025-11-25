@@ -1460,7 +1460,7 @@ const Index = () => {
             </div>
             
             <footer className="absolute bottom-6 text-center text-sm text-muted-foreground">
-              Made with ❤️ and Lovable from Italy by{' '}
+              Made with ❤️ and Lovable by{' '}
               <a 
                 href="https://lucarinaldii.webflow.io/" 
                 target="_blank" 
