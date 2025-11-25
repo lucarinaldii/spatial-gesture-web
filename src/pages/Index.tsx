@@ -1510,9 +1510,8 @@ const Index = () => {
               
               <Button 
                 onClick={() => setCurrentStep('welcome')}
-                variant="ghost"
-                size="sm"
-                className="mt-4"
+                variant="outline"
+                className="text-base px-8 py-5 h-auto rounded-xl"
               >
                 ← Back
               </Button>
@@ -1559,8 +1558,7 @@ const Index = () => {
                       setAppMode(null);
                     }}
                     variant="outline"
-                    size="lg"
-                    className="text-lg px-6 py-4 mt-4"
+                    className="text-base px-8 py-5 h-auto rounded-xl mt-4"
                   >
                     ← Back
                   </Button>
@@ -1593,8 +1591,7 @@ const Index = () => {
                     <Button 
                       onClick={() => setTrackingMode('initial')} 
                       variant="outline"
-                      size="lg"
-                      className="text-lg px-6 py-4"
+                      className="text-base px-8 py-5 h-auto rounded-xl"
                     >
                       ← Back
                     </Button>
