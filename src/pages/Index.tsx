@@ -1462,8 +1462,10 @@ const Index = () => {
         ) : currentStep === 'mode-selection' ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-12 animate-fade-in">
             <div className="text-center space-y-8 max-w-3xl animate-scale-in">
-              <h2 className="text-2xl font-bold text-foreground">Interaction mode</h2>
-              
+              <div className="space-y-3">
+                <h1 className="text-4xl font-bold text-foreground">Interaction mode</h1>
+                <p className="text-muted-foreground text-base">Select the experience you want to control with gestures.</p>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <Button 
                   onClick={() => handleModeSelection('food-order')}
@@ -1519,13 +1521,15 @@ const Index = () => {
         ) : currentStep === 'tracking-selection' ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-8 animate-fade-in">
             <div className="text-center space-y-6 max-w-2xl animate-scale-in">
-              <h1 className="text-5xl font-bold text-foreground">
-                {appMode === 'food-order' ? 'Food Order Mode' : 
-                 appMode === 'gas-station' ? 'Gas Station Mode' :
-                 appMode === 'ev-charging' ? 'EV Charging Mode' :
-                 'Cards Mode'}
-              </h1>
-              <p className="text-xl text-muted-foreground">Choose your tracking method</p>
+              <div className="space-y-3">
+                <h1 className="text-4xl font-bold text-foreground">
+                  {appMode === 'food-order' ? 'Food Order Mode' : 
+                   appMode === 'gas-station' ? 'Gas Station Mode' :
+                   appMode === 'ev-charging' ? 'EV Charging Mode' :
+                   'Cards Mode'}
+                </h1>
+                <p className="text-muted-foreground text-base">Choose your tracking method to start the experience.</p>
+              </div>
               
               {trackingMode === 'initial' && (
                 <div className="space-y-4 pt-8">
