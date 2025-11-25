@@ -37,8 +37,8 @@ export const HandWelcomeOverlay = ({ onDismiss, autoDismissOnHand = true, hasHan
         setTimeout(onDismiss, 300);
       }}
     >
-      {/* Blur backdrop */}
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-md" />
+      {/* Semi-transparent backdrop */}
+      <div className="absolute inset-0 bg-background/80" />
       
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center gap-8 text-center px-8">
