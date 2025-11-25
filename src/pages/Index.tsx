@@ -85,7 +85,7 @@ const getRandomPosition = () => ({
 
 const Index = () => {
   const [appMode, setAppMode] = useState<'food-order' | 'cards' | 'gas-station' | 'ev-charging' | null>(null);
-  const [currentStep, setCurrentStep] = useState<'mode-selection' | 'tracking-selection' | 'canvas'>('mode-selection');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'mode-selection' | 'tracking-selection' | 'canvas'>('welcome');
   const [isTracking, setIsTracking] = useState(false);
   const [hasStartedTracking, setHasStartedTracking] = useState(false);
   const [canvasBackground, setCanvasBackground] = useState<string | null>(null);
@@ -1418,10 +1418,23 @@ const Index = () => {
       <GlobalControls onSettingsClick={() => setShowSettingsPanel(!showSettingsPanel)} />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
-        {currentStep === 'mode-selection' ? (
+        {currentStep === 'welcome' ? (
+          <div className="flex flex-col items-center justify-center min-h-screen p-8">
+            <div className="text-center space-y-12 max-w-4xl">
+              <h1 className="text-7xl font-bold text-foreground">Spatial UI Controller</h1>
+              
+              <Button 
+                onClick={() => setCurrentStep('mode-selection')}
+                size="lg" 
+                className="text-xl px-12 py-8 h-auto neon-glow bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem]"
+              >
+                Start
+              </Button>
+            </div>
+          </div>
+        ) : currentStep === 'mode-selection' ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-8">
             <div className="text-center space-y-8 max-w-4xl">
-              <h1 className="text-6xl font-bold text-foreground">Spatial UI Controller</h1>
               <p className="text-xl text-muted-foreground">Choose your interaction mode</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
