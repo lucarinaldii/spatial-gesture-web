@@ -1435,7 +1435,7 @@ const Index = () => {
         ) : currentStep === 'mode-selection' ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-8">
             <div className="text-center space-y-8 max-w-4xl">
-              <p className="text-xl text-muted-foreground">Choose your interaction mode</p>
+              <h2 className="text-4xl font-bold text-foreground mb-4">Choose your interaction mode</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
                 <Button 
