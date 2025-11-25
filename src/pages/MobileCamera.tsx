@@ -3,6 +3,17 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useHandTracking } from '@/hooks/useHandTracking';
+import Hand3DModel from '@/components/Hand3DModel';
+import { AlignmentParams } from '@/components/AlignmentSettings';
+import { Settings, Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const MobileCamera = () => {
   const [searchParams] = useSearchParams();
@@ -16,6 +27,31 @@ const MobileCamera = () => {
   const [isChannelReady, setIsChannelReady] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState<'loading' | 'ready' | 'camera-loading' | 'error'>('loading');
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [show3DHand, setShow3DHand] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+  
+  const defaultAlignmentParams: AlignmentParams = {
+    leftHand: {
+      skeletonScale: 0.85,
+      skeletonXOffset: -1.0,
+      skeletonYOffset: 0.0,
+      skeletonZDepth: 0.85,
+      hand3DScale: 1.25,
+      hand3DXOffset: 2.1,
+      hand3DYOffset: 1.1,
+      hand3DZDepth: 1.0,
+    },
+    rightHand: {
+      skeletonScale: 0.85,
+      skeletonXOffset: 0.8,
+      skeletonYOffset: 1.8,
+      skeletonZDepth: 0.65,
+      hand3DScale: 1.21,
+      hand3DXOffset: -2.2,
+      hand3DYOffset: 0.7,
+      hand3DZDepth: 1.0,
+    },
+  };
 
   const addDebugLog = (message: string) => {
     const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '';
@@ -177,6 +213,48 @@ const MobileCamera = () => {
           style={{ display: 'none' }}
         />
         
+        {/* Settings button - only show when tracking */}
+        {isTracking && (
+          <div className="fixed top-4 right-4 z-50">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="end">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-foreground">Display Settings</h3>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="mobile-3dhand" className="flex items-center gap-2 cursor-pointer">
+                      {show3DHand ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      3D Hand
+                    </Label>
+                    <Switch
+                      id="mobile-3dhand"
+                      checked={show3DHand}
+                      onCheckedChange={setShow3DHand}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="mobile-skeleton" className="flex items-center gap-2 cursor-pointer">
+                      {showSkeleton ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      Skeleton
+                    </Label>
+                    <Switch
+                      id="mobile-skeleton"
+                      checked={showSkeleton}
+                      onCheckedChange={setShowSkeleton}
+                    />
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+        
         {loadingStatus === 'loading' && (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
@@ -217,7 +295,7 @@ const MobileCamera = () => {
         
         {loadingStatus === 'ready' && isTracking && (
           <div className="flex-1 flex flex-col w-full h-full">
-            {/* Full-screen hand skeleton visualization */}
+            {/* Full-screen hand visualization */}
             <div className="relative w-full h-full bg-background overflow-hidden">
               {/* Figma Jam style dot grid background */}
               <svg 
@@ -232,47 +310,62 @@ const MobileCamera = () => {
                 <rect width="100%" height="100%" fill="url(#dot-grid)" />
               </svg>
               
-              <svg 
-                viewBox="0 0 640 480" 
-                className="relative w-full h-full"
-                preserveAspectRatio="xMidYMid slice"
-                style={{ transform: 'scaleX(-1)' }} // Mirror for natural movement
-              >
-                {landmarks && landmarks.map((hand: any, handIndex: number) => (
-                  <g key={handIndex}>
-                    {/* Draw connections between landmarks */}
-                    {[
-                      [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
-                      [0, 5], [5, 6], [6, 7], [7, 8], // Index
-                      [0, 9], [9, 10], [10, 11], [11, 12], // Middle
-                      [0, 13], [13, 14], [14, 15], [15, 16], // Ring
-                      [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
-                    ].map(([start, end], idx) => (
-                      <line
-                        key={idx}
-                        x1={hand[start].x * 640}
-                        y1={hand[start].y * 480}
-                        x2={hand[end].x * 640}
-                        y2={hand[end].y * 480}
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="1.5"
-                        opacity="0.7"
-                      />
-                    ))}
-                    {/* Draw landmark points */}
-                    {hand.map((landmark: any, idx: number) => (
-                      <circle
-                        key={idx}
-                        cx={landmark.x * 640}
-                        cy={landmark.y * 480}
-                        r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 2.5 : 1.5}
-                        fill="hsl(var(--primary))"
-                        opacity="0.8"
-                      />
-                    ))}
-                  </g>
-                ))}
-              </svg>
+              {/* 3D Hand Model */}
+              {show3DHand && landmarks && landmarks.length > 0 && (
+                <div className="absolute inset-0 pointer-events-none" style={{ transform: 'scaleX(-1)' }}>
+                  <Hand3DModel 
+                    landmarks={landmarks} 
+                    videoWidth={window.innerWidth} 
+                    videoHeight={window.innerHeight}
+                    alignmentParams={defaultAlignmentParams}
+                  />
+                </div>
+              )}
+              
+              {/* Skeleton visualization */}
+              {showSkeleton && (
+                <svg 
+                  viewBox="0 0 640 480" 
+                  className="absolute inset-0 w-full h-full"
+                  preserveAspectRatio="xMidYMid slice"
+                  style={{ transform: 'scaleX(-1)' }} // Mirror for natural movement
+                >
+                  {landmarks && landmarks.map((hand: any, handIndex: number) => (
+                    <g key={handIndex}>
+                      {/* Draw connections between landmarks */}
+                      {[
+                        [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+                        [0, 5], [5, 6], [6, 7], [7, 8], // Index
+                        [0, 9], [9, 10], [10, 11], [11, 12], // Middle
+                        [0, 13], [13, 14], [14, 15], [15, 16], // Ring
+                        [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
+                      ].map(([start, end], idx) => (
+                        <line
+                          key={idx}
+                          x1={hand[start].x * 640}
+                          y1={hand[start].y * 480}
+                          x2={hand[end].x * 640}
+                          y2={hand[end].y * 480}
+                          stroke="hsl(var(--primary))"
+                          strokeWidth="1.5"
+                          opacity="0.7"
+                        />
+                      ))}
+                      {/* Draw landmark points */}
+                      {hand.map((landmark: any, idx: number) => (
+                        <circle
+                          key={idx}
+                          cx={landmark.x * 640}
+                          cy={landmark.y * 480}
+                          r={idx === 0 || idx === 4 || idx === 8 || idx === 12 || idx === 16 || idx === 20 ? 2.5 : 1.5}
+                          fill="hsl(var(--primary))"
+                          opacity="0.8"
+                        />
+                      ))}
+                    </g>
+                  ))}
+                </svg>
+              )}
             </div>
           </div>
         )}
