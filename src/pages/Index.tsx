@@ -97,6 +97,7 @@ const Index = () => {
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [trackingMode, setTrackingMode] = useState<'initial' | 'mobile-qr' | 'mobile-remote' | 'local'>('initial');
   const [isKioskMode, setIsKioskMode] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const channelRef = useRef<any>(null);
   const { isReady, handPositions: localHandPositions, gestureStates: localGestureStates, landmarks, handedness, videoRef, startCamera } = useHandTracking(trackingMode !== 'mobile-remote');
   const { handPositions: remoteHandPositions, gestureStates: remoteGestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
@@ -255,7 +256,16 @@ const Index = () => {
     setDebugLogs((prev) => [...prev.slice(-49), entry]);
   }, []);
 
-  // Setup channel to receive hand tracking from mobile
+  // Auto-open info dropdown 2 seconds after entering canvas
+  useEffect(() => {
+    if (currentStep === 'canvas') {
+      const timer = setTimeout(() => {
+        setInfoOpen(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
   useEffect(() => {
     if (!sessionId) return;
 
@@ -1427,6 +1437,8 @@ const Index = () => {
             });
           }
         }}
+        infoOpen={infoOpen}
+        onInfoOpenChange={setInfoOpen}
       />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
