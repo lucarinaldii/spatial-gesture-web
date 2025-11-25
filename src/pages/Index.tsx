@@ -1438,33 +1438,70 @@ const Index = () => {
                 <p className="text-muted-foreground text-base">Control interfaces using hand gestures and spatial tracking. Navigate, select, and interact without touching the screen.</p>
               </div>
               
-              <div className="relative inline-block">
-                <select
-                  className="appearance-none bg-primary text-primary-foreground px-8 py-4 pr-12 rounded-xl text-base font-medium cursor-pointer hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  defaultValue=""
-                  onChange={(e) => {
-                    const mode = e.target.value as 'food-order' | 'cards' | 'gas-station' | 'ev-charging';
-                    if (mode) {
-                      setAppMode(mode);
-                      if (mode === 'food-order') {
-                        setIsKioskMode(true);
-                      }
-                      setCurrentStep('tracking-selection');
-                    }
-                  }}
+              <Button 
+                onClick={() => setCurrentStep('mode-selection')}
+                size="default" 
+                className="text-base px-8 py-5 h-auto neon-glow bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+              >
+                Start
+              </Button>
+            </div>
+          </div>
+        ) : currentStep === 'mode-selection' ? (
+          <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in">
+            <div className="text-center space-y-6 max-w-3xl animate-scale-in">
+              <h2 className="text-2xl font-bold text-foreground">Interaction mode</h2>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  onClick={() => handleModeSelection('food-order')}
+                  size="default" 
+                  variant="outline"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
-                  <option value="" disabled>Select interaction mode</option>
-                  <option value="food-order">Food Order — Interactive kiosk for ordering food</option>
-                  <option value="cards">Cards — Spatial cards with gesture controls</option>
-                  <option value="gas-station">Gas Station — Select pump and receipt options</option>
-                  <option value="ev-charging">EV Charging — Select column and connector type</option>
-                </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                  <div className="font-bold text-base">Food Order</div>
+                  <div className="text-xs text-muted-foreground">Interactive kiosk for ordering food</div>
+                </Button>
+                
+                <Button 
+                  onClick={() => handleModeSelection('cards')}
+                  size="default" 
+                  variant="outline"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                >
+                  <div className="font-bold text-base">Cards</div>
+                  <div className="text-xs text-muted-foreground">Spatial cards with gesture controls</div>
+                </Button>
+                
+                <Button 
+                  onClick={() => handleModeSelection('gas-station')}
+                  size="default" 
+                  variant="outline"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                >
+                  <div className="font-bold text-base">Gas Station</div>
+                  <div className="text-xs text-muted-foreground">Select pump and receipt options</div>
+                </Button>
+                
+                <Button 
+                  onClick={() => handleModeSelection('ev-charging')}
+                  size="default" 
+                  variant="outline"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
+                >
+                  <div className="font-bold text-base">EV Charging</div>
+                  <div className="text-xs text-muted-foreground">Select column and connector type</div>
+                </Button>
               </div>
+              
+              <Button 
+                onClick={() => setCurrentStep('welcome')}
+                variant="ghost"
+                size="sm"
+                className="mt-4"
+              >
+                ← Back
+              </Button>
             </div>
           </div>
         ) : currentStep === 'tracking-selection' ? (
@@ -1501,7 +1538,7 @@ const Index = () => {
                   </div>
                   <Button 
                     onClick={() => {
-                      setCurrentStep('welcome');
+                      setCurrentStep('mode-selection');
                       setTrackingMode('initial');
                       setAppMode(null);
                     }}
