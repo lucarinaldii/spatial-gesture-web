@@ -9,14 +9,11 @@ interface HandWelcomeOverlayProps {
 export const HandWelcomeOverlay = ({ onDismiss, autoDismissOnHand = true, hasHandDetected = false }: HandWelcomeOverlayProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
-  // Auto dismiss when hand is detected
+  // Auto dismiss immediately when hand is detected
   useEffect(() => {
     if (autoDismissOnHand && hasHandDetected) {
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(onDismiss, 300);
-      }, 500);
-      return () => clearTimeout(timer);
+      setIsVisible(false);
+      setTimeout(onDismiss, 300);
     }
   }, [hasHandDetected, autoDismissOnHand, onDismiss]);
 
