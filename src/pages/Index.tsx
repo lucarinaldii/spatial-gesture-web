@@ -1419,73 +1419,76 @@ const Index = () => {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {currentStep === 'welcome' ? (
-          <div className="flex flex-col items-center justify-center min-h-screen p-8">
-            <div className="text-center space-y-12 max-w-4xl">
-              <h1 className="text-7xl font-bold text-foreground">Spatial UI Controller</h1>
+          <div className="flex flex-col items-center justify-center min-h-screen p-6">
+            <div className="text-center space-y-6 max-w-2xl">
+              <div className="space-y-3">
+                <h1 className="text-4xl font-bold text-foreground">Spatial UI Controller</h1>
+                <p className="text-muted-foreground text-base">Control interfaces using hand gestures and spatial tracking. Navigate, select, and interact without touching the screen.</p>
+              </div>
               
               <Button 
                 onClick={() => setCurrentStep('mode-selection')}
-                size="lg" 
-                className="text-xl px-12 py-8 h-auto neon-glow bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem]"
+                size="default" 
+                className="text-base px-8 py-5 h-auto neon-glow bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
               >
                 Start
               </Button>
             </div>
           </div>
         ) : currentStep === 'mode-selection' ? (
-          <div className="flex flex-col items-center justify-center min-h-screen p-8">
-            <div className="text-center space-y-8 max-w-4xl">
-              <h2 className="text-4xl font-bold text-foreground mb-4">Choose your interaction mode</h2>
+          <div className="flex flex-col items-center justify-center min-h-screen p-6">
+            <div className="text-center space-y-6 max-w-3xl">
+              <h2 className="text-2xl font-bold text-foreground">Choose your interaction mode</h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
+              <div className="grid grid-cols-2 gap-4">
                 <Button 
                   onClick={() => handleModeSelection('food-order')}
-                  size="lg" 
-                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground rounded-[2rem]"
+                  size="default" 
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-2 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
                 >
-                  <UtensilsCrossed className="w-16 h-16" />
+                  <UtensilsCrossed className="w-8 h-8" />
                   <div>
-                    <div className="font-bold text-2xl">Food Order</div>
-                    <div className="text-sm opacity-90 mt-2">Interactive kiosk for ordering food</div>
+                    <div className="font-bold text-base">Food Order</div>
+                    <div className="text-xs opacity-90 mt-1">Interactive kiosk for ordering food</div>
                   </div>
                 </Button>
                 
                 <Button 
                   onClick={() => handleModeSelection('cards')}
-                  size="lg" 
+                  size="default" 
                   variant="secondary"
-                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 rounded-[2rem]"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-2 rounded-xl"
                 >
-                  <Plus className="w-16 h-16" />
+                  <Plus className="w-8 h-8" />
                   <div>
-                    <div className="font-bold text-2xl">Cards</div>
-                    <div className="text-sm opacity-90 mt-2">Spatial cards with gesture controls</div>
+                    <div className="font-bold text-base">Cards</div>
+                    <div className="text-xs opacity-90 mt-1">Spatial cards with gesture controls</div>
                   </div>
                 </Button>
                 
                 <Button 
                   onClick={() => handleModeSelection('gas-station')}
-                  size="lg" 
+                  size="default" 
                   variant="secondary"
-                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 rounded-[2rem]"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-2 rounded-xl"
                 >
-                  <Fuel className="w-16 h-16" />
+                  <Fuel className="w-8 h-8" />
                   <div>
-                    <div className="font-bold text-2xl">Gas Station</div>
-                    <div className="text-sm opacity-90 mt-2">Select pump and receipt options</div>
+                    <div className="font-bold text-base">Gas Station</div>
+                    <div className="text-xs opacity-90 mt-1">Select pump and receipt options</div>
                   </div>
                 </Button>
                 
                 <Button 
                   onClick={() => handleModeSelection('ev-charging')}
-                  size="lg" 
+                  size="default" 
                   variant="secondary"
-                  className="text-lg px-8 py-12 h-auto flex flex-col gap-4 rounded-[2rem]"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-2 rounded-xl"
                 >
-                  <Zap className="w-16 h-16" />
+                  <Zap className="w-8 h-8" />
                   <div>
-                    <div className="font-bold text-2xl">EV Charging</div>
-                    <div className="text-sm opacity-90 mt-2">Select column and connector type</div>
+                    <div className="font-bold text-base">EV Charging</div>
+                    <div className="text-xs opacity-90 mt-1">Select column and connector type</div>
                   </div>
                 </Button>
               </div>
