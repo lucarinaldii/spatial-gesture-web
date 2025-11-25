@@ -155,7 +155,7 @@ const MobileCamera = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background flex items-center justify-center">
+    <div className="fixed inset-0 bg-background flex items-center justify-center dark">
       <div className="w-full h-full flex flex-col">
         {/* Always render video element so ref is available */}
         <video
