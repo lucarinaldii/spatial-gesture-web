@@ -1431,8 +1431,8 @@ const Index = () => {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {currentStep === 'welcome' ? (
-          <div className="flex flex-col items-center justify-center min-h-screen p-6">
-            <div className="text-center space-y-6 max-w-2xl">
+          <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in">
+            <div className="text-center space-y-6 max-w-2xl animate-scale-in">
               <div className="space-y-3">
                 <h1 className="text-4xl font-bold text-foreground">Spatial UI Controller</h1>
                 <p className="text-muted-foreground text-base">Control interfaces using hand gestures and spatial tracking. Navigate, select, and interact without touching the screen.</p>
@@ -1468,8 +1468,8 @@ const Index = () => {
             </div>
           </div>
         ) : currentStep === 'tracking-selection' ? (
-          <div className="flex flex-col items-center justify-center min-h-screen p-8">
-            <div className="text-center space-y-6 max-w-2xl">
+          <div className="flex flex-col items-center justify-center min-h-screen p-8 animate-fade-in">
+            <div className="text-center space-y-6 max-w-2xl animate-scale-in">
               <h1 className="text-5xl font-bold text-foreground">
                 {appMode === 'food-order' ? 'Food Order Mode' : 
                  appMode === 'gas-station' ? 'Gas Station Mode' :
@@ -1501,7 +1501,7 @@ const Index = () => {
                   </div>
                   <Button 
                     onClick={() => {
-                      setCurrentStep('mode-selection');
+                      setCurrentStep('welcome');
                       setTrackingMode('initial');
                       setAppMode(null);
                     }}
@@ -1509,7 +1509,7 @@ const Index = () => {
                     size="lg"
                     className="text-lg px-6 py-4 mt-4"
                   >
-                    ← Back to Mode Selection
+                    ← Back
                   </Button>
                 </div>
               )}
