@@ -48,14 +48,25 @@ const MobileCamera = () => {
         });
         channelRef.current = channel;
 
-        channel.subscribe((status) => {
-          if (!mounted) return;
-          addDebugLog(`[MOBILE] Channel status: ${status}`);
-          if (status === 'SUBSCRIBED') {
-            addDebugLog('[MOBILE] Connected to desktop');
-            setIsChannelReady(true);
-          }
-        });
+        channel
+          .on('broadcast', { event: 'theme-change' }, ({ payload }: any) => {
+            if (!mounted) return;
+            const root = window.document.documentElement;
+            if (payload.isDark) {
+              root.classList.add("dark");
+            } else {
+              root.classList.remove("dark");
+            }
+            addDebugLog(`[MOBILE] Theme changed to: ${payload.isDark ? 'dark' : 'light'}`);
+          })
+          .subscribe((status) => {
+            if (!mounted) return;
+            addDebugLog(`[MOBILE] Channel status: ${status}`);
+            if (status === 'SUBSCRIBED') {
+              addDebugLog('[MOBILE] Connected to desktop');
+              setIsChannelReady(true);
+            }
+          });
       } catch (error) {
         console.error('Setup error:', error);
         addDebugLog(`[MOBILE] Setup error: ${error instanceof Error ? error.message : 'Unknown'}`);
@@ -155,7 +166,7 @@ const MobileCamera = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background flex items-center justify-center dark">
+    <div className="fixed inset-0 bg-background flex items-center justify-center">
       <div className="w-full h-full flex flex-col">
         {/* Always render video element so ref is available */}
         <video

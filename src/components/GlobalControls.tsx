@@ -9,9 +9,10 @@ import {
 
 interface GlobalControlsProps {
   onSettingsClick?: () => void;
+  onThemeChange?: (isDark: boolean) => void;
 }
 
-export const GlobalControls = ({ onSettingsClick }: GlobalControlsProps) => {
+export const GlobalControls = ({ onSettingsClick, onThemeChange }: GlobalControlsProps) => {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
     return saved ? saved === "dark" : false;
@@ -28,6 +29,9 @@ export const GlobalControls = ({ onSettingsClick }: GlobalControlsProps) => {
     } else {
       root.classList.remove("dark");
     }
+    
+    // Notify parent of initial theme
+    onThemeChange?.(shouldBeDark);
   }, []);
 
   useEffect(() => {
@@ -38,7 +42,10 @@ export const GlobalControls = ({ onSettingsClick }: GlobalControlsProps) => {
       root.classList.remove("dark");
     }
     localStorage.setItem("theme", isDark ? "dark" : "light");
-  }, [isDark]);
+    
+    // Notify parent of theme change
+    onThemeChange?.(isDark);
+  }, [isDark, onThemeChange]);
 
   return (
     <div className="fixed top-4 right-4 z-50 flex gap-2">

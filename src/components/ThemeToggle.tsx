@@ -2,7 +2,11 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
-export const ThemeToggle = () => {
+interface ThemeToggleProps {
+  onThemeChange?: (isDark: boolean) => void;
+}
+
+export const ThemeToggle = ({ onThemeChange }: ThemeToggleProps) => {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
     return saved ? saved === "dark" : false;
@@ -19,6 +23,9 @@ export const ThemeToggle = () => {
     } else {
       root.classList.remove("dark");
     }
+    
+    // Notify parent of initial theme
+    onThemeChange?.(shouldBeDark);
   }, []);
 
   useEffect(() => {
@@ -29,7 +36,10 @@ export const ThemeToggle = () => {
       root.classList.remove("dark");
     }
     localStorage.setItem("theme", isDark ? "dark" : "light");
-  }, [isDark]);
+    
+    // Notify parent of theme change
+    onThemeChange?.(isDark);
+  }, [isDark, onThemeChange]);
 
   return (
     <Button

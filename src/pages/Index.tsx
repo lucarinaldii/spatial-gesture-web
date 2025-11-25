@@ -1415,7 +1415,19 @@ const Index = () => {
         backgroundAttachment: 'fixed'
       } : undefined}
     >
-      <GlobalControls onSettingsClick={() => setShowSettingsPanel(!showSettingsPanel)} />
+      <GlobalControls 
+        onSettingsClick={() => setShowSettingsPanel(!showSettingsPanel)} 
+        onThemeChange={(isDark) => {
+          // Broadcast theme to mobile
+          if (channelRef.current) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'theme-change',
+              payload: { isDark }
+            });
+          }
+        }}
+      />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/20 via-background to-background pointer-events-none" style={{ opacity: canvasBackground ? 0.3 : 1 }} />
       <div className="relative z-10">
         {currentStep === 'welcome' ? (
