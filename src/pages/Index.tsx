@@ -1438,58 +1438,47 @@ const Index = () => {
         ) : currentStep === 'mode-selection' ? (
           <div className="flex flex-col items-center justify-center min-h-screen p-6">
             <div className="text-center space-y-6 max-w-3xl">
-              <h2 className="text-2xl font-bold text-foreground">Choose your interaction mode</h2>
+              <h2 className="text-2xl font-bold text-foreground">Interaction mode</h2>
               
               <div className="grid grid-cols-2 gap-4">
                 <Button 
                   onClick={() => handleModeSelection('food-order')}
                   size="default" 
-                  className="text-sm px-4 py-6 h-auto flex flex-col gap-2 neon-glow bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+                  variant="outline"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
-                  <UtensilsCrossed className="w-8 h-8" />
-                  <div>
-                    <div className="font-bold text-base">Food Order</div>
-                    <div className="text-xs opacity-90 mt-1">Interactive kiosk for ordering food</div>
-                  </div>
+                  <div className="font-bold text-base">Food Order</div>
+                  <div className="text-xs text-muted-foreground">Interactive kiosk for ordering food</div>
                 </Button>
                 
                 <Button 
                   onClick={() => handleModeSelection('cards')}
                   size="default" 
-                  variant="secondary"
-                  className="text-sm px-4 py-6 h-auto flex flex-col gap-2 rounded-xl"
+                  variant="outline"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
-                  <Plus className="w-8 h-8" />
-                  <div>
-                    <div className="font-bold text-base">Cards</div>
-                    <div className="text-xs opacity-90 mt-1">Spatial cards with gesture controls</div>
-                  </div>
+                  <div className="font-bold text-base">Cards</div>
+                  <div className="text-xs text-muted-foreground">Spatial cards with gesture controls</div>
                 </Button>
                 
                 <Button 
                   onClick={() => handleModeSelection('gas-station')}
                   size="default" 
-                  variant="secondary"
-                  className="text-sm px-4 py-6 h-auto flex flex-col gap-2 rounded-xl"
+                  variant="outline"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
-                  <Fuel className="w-8 h-8" />
-                  <div>
-                    <div className="font-bold text-base">Gas Station</div>
-                    <div className="text-xs opacity-90 mt-1">Select pump and receipt options</div>
-                  </div>
+                  <div className="font-bold text-base">Gas Station</div>
+                  <div className="text-xs text-muted-foreground">Select pump and receipt options</div>
                 </Button>
                 
                 <Button 
                   onClick={() => handleModeSelection('ev-charging')}
                   size="default" 
-                  variant="secondary"
-                  className="text-sm px-4 py-6 h-auto flex flex-col gap-2 rounded-xl"
+                  variant="outline"
+                  className="text-sm px-4 py-6 h-auto flex flex-col gap-1 rounded-xl border-border hover:bg-accent/50"
                 >
-                  <Zap className="w-8 h-8" />
-                  <div>
-                    <div className="font-bold text-base">EV Charging</div>
-                    <div className="text-xs opacity-90 mt-1">Select column and connector type</div>
-                  </div>
+                  <div className="font-bold text-base">EV Charging</div>
+                  <div className="text-xs text-muted-foreground">Select column and connector type</div>
                 </Button>
               </div>
             </div>
