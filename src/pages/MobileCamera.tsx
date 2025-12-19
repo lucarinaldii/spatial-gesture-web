@@ -1,8 +1,10 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useHandTracking, Hand3DModel, AlignmentParams } from '@/lib/hand-tracking';
+import { useHandTracking } from '@/hooks/useHandTracking';
+import Hand3DModel from '@/components/Hand3DModel';
+import { AlignmentParams } from '@/components/AlignmentSettings';
 import { Settings, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,24 +53,12 @@ const MobileCamera = () => {
     },
   };
 
-  const addDebugLog = useCallback((message: string) => {
+  const addDebugLog = (message: string) => {
     const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '';
     const entry = `[${timestamp}] ${message}`;
     console.log(entry); // Always log to console
     setDebugLogs((prev) => [...prev.slice(-49), entry]);
-  }, []);
-
-  useEffect(() => {
-    const isInsecure = typeof window !== 'undefined' &&
-      !window.isSecureContext &&
-      window.location.protocol !== 'https:';
-
-    if (isInsecure) {
-      setLoadingStatus('error');
-      setCameraError('Camera access is blocked because this page is not served over HTTPS. Use https://<your-local-ip>:8080 on your phone instead of http or localhost.');
-      addDebugLog('[MOBILE] Insecure context detected - HTTPS required for camera access');
-    }
-  }, [addDebugLog]);
+  };
 
   // Setup channel connection
   useEffect(() => {
@@ -127,7 +117,7 @@ const MobileCamera = () => {
       addDebugLog('[MOBILE] Disconnecting channel');
       channelRef.current?.unsubscribe();
     };
-  }, [sessionId, navigate, toast, addDebugLog]);
+  }, [sessionId, navigate, toast]);
 
   // Update loading status when system is ready
   useEffect(() => {
@@ -135,7 +125,7 @@ const MobileCamera = () => {
       setLoadingStatus('ready');
       addDebugLog('System ready - waiting for user to start camera');
     }
-  }, [isReady, isChannelReady, addDebugLog]);
+  }, [isReady, isChannelReady]);
 
   // Send landmarks to desktop - throttled to ~20fps using timestamp
   const lastSendTimeRef = useRef<number>(0);

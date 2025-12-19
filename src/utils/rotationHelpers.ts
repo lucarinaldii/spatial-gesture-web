@@ -1,4 +1,8 @@
-import { RotationAngles } from '../types';
+export interface RotationAngles {
+  x: number;
+  y: number;
+  z: number;
+}
 
 export const calculateRotationFromHands = (
   hand1X: number,
@@ -26,11 +30,6 @@ export const calculateRotationFromHands = (
   };
 };
 
-export const getHandAngle = (
-  hand1X: number,
-  hand1Y: number,
-  hand2X: number,
-  hand2Y: number
-): number => {
+export const getHandAngle = (hand1X: number, hand1Y: number, hand2X: number, hand2Y: number): number => {
   return Math.atan2(hand2Y - hand1Y, hand2X - hand1X) * (180 / Math.PI);
 };

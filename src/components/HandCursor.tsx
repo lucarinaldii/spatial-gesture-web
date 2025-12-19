@@ -1,13 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { HandPosition, GestureState } from '../types';
+import { HandPosition, GestureState } from '@/hooks/useHandTracking';
 
-export interface HandCursorProps {
+interface HandCursorProps {
   position: HandPosition | null;
   gestureState: GestureState;
-  className?: string;
 }
 
-export const HandCursor = ({ position, gestureState, className = '' }: HandCursorProps) => {
+const HandCursor = ({ position, gestureState }: HandCursorProps) => {
   const cursorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,7 +23,7 @@ export const HandCursor = ({ position, gestureState, className = '' }: HandCurso
   return (
     <div
       ref={cursorRef}
-      className={`fixed top-0 left-0 pointer-events-none z-[9999] transition-transform duration-75 ${className}`}
+      className="fixed top-0 left-0 pointer-events-none z-[9999] transition-transform duration-75"
       style={{ willChange: 'transform' }}
     >
       <div
@@ -32,6 +31,7 @@ export const HandCursor = ({ position, gestureState, className = '' }: HandCurso
           gestureState.isPinching ? 'scale-110' : 'scale-130'
         }`}
       >
+        {/* Hand Silhouette SVG */}
         <svg
           width="104"
           height="104"
@@ -45,25 +45,47 @@ export const HandCursor = ({ position, gestureState, className = '' }: HandCurso
           }}
         >
           {gestureState.isPinching ? (
+            // Closed/Grabbing Fist
             <g fill="white" opacity="0.95">
+              {/* Palm base */}
               <rect x="35" y="50" width="30" height="35" rx="8" />
+              
+              {/* Thumb (wrapped around) */}
               <ellipse cx="30" cy="60" rx="8" ry="15" transform="rotate(-20 30 60)" />
+              
+              {/* Curled fingers on top */}
               <ellipse cx="42" cy="45" rx="6" ry="12" />
               <ellipse cx="50" cy="43" rx="6" ry="13" />
               <ellipse cx="58" cy="45" rx="6" ry="12" />
               <ellipse cx="65" cy="48" rx="5" ry="10" />
+              
+              {/* Knuckles definition */}
               <rect x="38" y="50" width="5" height="8" rx="2" opacity="0.3" />
               <rect x="47" y="50" width="5" height="8" rx="2" opacity="0.3" />
               <rect x="56" y="50" width="5" height="8" rx="2" opacity="0.3" />
             </g>
           ) : (
+            // Open Flat Hand
             <g fill="white" opacity="0.9">
+              {/* Palm - wider and flatter */}
               <path d="M 32 85 L 32 55 Q 32 50 37 50 L 63 50 Q 68 50 68 55 L 68 85 Q 68 90 63 90 L 37 90 Q 32 90 32 85 Z" />
+              
+              {/* Thumb - angled outward */}
               <path d="M 32 65 L 25 62 Q 18 60 14 55 Q 12 52 12 48 Q 12 44 15 42 Q 18 40 22 42 L 30 50 Q 32 52 32 55 Z" />
+              
+              {/* Index finger - straight and long */}
               <rect x="36" y="15" width="8" height="40" rx="4" />
+              
+              {/* Middle finger - longest */}
               <rect x="46" y="10" width="8" height="45" rx="4" />
+              
+              {/* Ring finger */}
               <rect x="56" y="15" width="8" height="40" rx="4" />
+              
+              {/* Pinky - shortest */}
               <rect x="66" y="22" width="7" height="33" rx="3.5" />
+              
+              {/* Finger gaps/webbing for realism */}
               <ellipse cx="40" cy="52" rx="3" ry="4" opacity="0.2" />
               <ellipse cx="50" cy="52" rx="3" ry="4" opacity="0.2" />
               <ellipse cx="60" cy="52" rx="3" ry="4" opacity="0.2" />
@@ -72,6 +94,7 @@ export const HandCursor = ({ position, gestureState, className = '' }: HandCurso
           )}
         </svg>
 
+        {/* Hand label */}
         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <div className={`text-xs font-mono font-bold ${
             gestureState.isPinching ? 'text-white' : 'text-white/70'
@@ -83,3 +106,5 @@ export const HandCursor = ({ position, gestureState, className = '' }: HandCurso
     </div>
   );
 };
+
+export default HandCursor;

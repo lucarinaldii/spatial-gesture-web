@@ -1,36 +1,61 @@
 import { useRef, memo, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
+import { NormalizedLandmark } from '@mediapipe/tasks-vision';
 import * as THREE from 'three';
-import { AlignmentParams } from '../types';
-import { interpolateAlignmentParams, HAND_LANDMARKS } from '../utils/handBoneCalculations';
+import { landmarkToVector3, HAND_LANDMARKS } from '@/utils/handBoneCalculations';
+import { AlignmentParams } from './AlignmentSettings';
 
-interface NormalizedLandmark {
-  x: number;
-  y: number;
-  z: number;
-}
+// Helper function to interpolate between left and right alignment parameters
+const interpolateAlignmentParams = (
+  leftParams: AlignmentParams['leftHand'],
+  rightParams: AlignmentParams['rightHand'],
+  handCenterX: number
+) => {
+  // Create a smooth blend zone from 0.3 to 0.7
+  const blendZoneStart = 0.3;
+  const blendZoneEnd = 0.7;
+  
+  let blend: number;
+  if (handCenterX < blendZoneStart) {
+    blend = 0; // Full left
+  } else if (handCenterX > blendZoneEnd) {
+    blend = 1; // Full right
+  } else {
+    // Smooth interpolation in the blend zone
+    blend = (handCenterX - blendZoneStart) / (blendZoneEnd - blendZoneStart);
+  }
+  
+  return {
+    skeletonScale: leftParams.skeletonScale * (1 - blend) + rightParams.skeletonScale * blend,
+    skeletonXOffset: leftParams.skeletonXOffset * (1 - blend) + rightParams.skeletonXOffset * blend,
+    skeletonYOffset: leftParams.skeletonYOffset * (1 - blend) + rightParams.skeletonYOffset * blend,
+    skeletonZDepth: leftParams.skeletonZDepth * (1 - blend) + rightParams.skeletonZDepth * blend,
+    hand3DScale: leftParams.hand3DScale * (1 - blend) + rightParams.hand3DScale * blend,
+    hand3DXOffset: leftParams.hand3DXOffset * (1 - blend) + rightParams.hand3DXOffset * blend,
+    hand3DYOffset: leftParams.hand3DYOffset * (1 - blend) + rightParams.hand3DYOffset * blend,
+    hand3DZDepth: leftParams.hand3DZDepth * (1 - blend) + rightParams.hand3DZDepth * blend,
+  };
+};
 
-export interface Hand3DModelProps {
+interface Hand3DModelProps {
   landmarks: NormalizedLandmark[][];
   videoWidth: number;
   videoHeight: number;
   alignmentParams: AlignmentParams;
-  handedness?: any;
-  color?: string;
-  emissiveColor?: string;
-  className?: string;
+  handedness?: any; // MediaPipe handedness data
 }
 
 interface HandModelProps {
   landmarks: NormalizedLandmark[];
   handIndex: number;
   alignmentParams: AlignmentParams;
-  handParams: AlignmentParams['leftHand'];
+  handParams: AlignmentParams['leftHand']; // Use interpolated params
   themeColor: string;
   themeEmissive: string;
 }
 
+// Create a smooth finger segment using capsule-like geometry - flatter and more human
 function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13, color, emissive }: {
   start: THREE.Vector3; 
   end: THREE.Vector3; 
@@ -48,6 +73,7 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13,
   
   return (
     <group>
+      {/* Main finger segment - tapered cylinder */}
       <mesh position={midpoint} quaternion={quaternion}>
         <cylinderGeometry args={[endRadius, startRadius, distance, 16, 1, false]} />
         <meshStandardMaterial 
@@ -60,6 +86,7 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13,
         />
       </mesh>
       
+      {/* Smooth caps at both ends */}
       <mesh position={start}>
         <sphereGeometry args={[startRadius, 16, 16]} />
         <meshStandardMaterial 
@@ -84,9 +111,11 @@ function SmoothFingerSegment({ start, end, startRadius = 0.16, endRadius = 0.13,
   );
 }
 
+// Create palm surface connecting all finger bases
 function PalmMesh({ vectors, color, emissive }: { vectors: THREE.Vector3[]; color: string; emissive: string }) {
   const geometry = new THREE.BufferGeometry();
   
+  // Create palm surface vertices
   const wrist = vectors[0];
   const thumbBase = vectors[1];
   const indexBase = vectors[5];
@@ -94,11 +123,15 @@ function PalmMesh({ vectors, color, emissive }: { vectors: THREE.Vector3[]; colo
   const ringBase = vectors[13];
   const pinkyBase = vectors[17];
   
+  // Define palm triangles to create a smooth surface
   const vertices = new Float32Array([
+    // Palm center area
     ...wrist.toArray(), ...thumbBase.toArray(), ...indexBase.toArray(),
     ...wrist.toArray(), ...indexBase.toArray(), ...middleBase.toArray(),
     ...wrist.toArray(), ...middleBase.toArray(), ...ringBase.toArray(),
     ...wrist.toArray(), ...ringBase.toArray(), ...pinkyBase.toArray(),
+    
+    // Finger base connections
     ...indexBase.toArray(), ...middleBase.toArray(), ...ringBase.toArray(),
     ...indexBase.toArray(), ...ringBase.toArray(), ...pinkyBase.toArray(),
   ]);
@@ -120,18 +153,26 @@ function PalmMesh({ vectors, color, emissive }: { vectors: THREE.Vector3[]; colo
   );
 }
 
+// Smooth, realistic hand model
 function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, themeColor, themeEmissive }: HandModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   
+  // Validate all landmarks exist before processing
   if (!landmarks || landmarks.length < 21 || landmarks.some(lm => !lm || lm.x === undefined)) {
     return null;
   }
   
+  // Use provided interpolated params directly
+  
+  // Convert landmarks using hand-specific alignment params
   const vectors = landmarks.map(lm => {
+    // Map normalized coordinates (0-1) to screen space
+    // Use hand-specific alignment params with viewport-responsive multiplier
     const scaleFactor = handParams.hand3DScale;
-    const baseSize = typeof window !== 'undefined' ? Math.min(window.innerWidth, window.innerHeight) / 100 : 10;
-    const xOffset = typeof window !== 'undefined' ? (handParams.hand3DXOffset / 100) * window.innerWidth * 0.1 : 0;
-    const yOffset = typeof window !== 'undefined' ? (handParams.hand3DYOffset / 100) * window.innerHeight * 0.1 : 0;
+    const baseSize = Math.min(window.innerWidth, window.innerHeight) / 100;
+    // Apply hand-specific positioning with percentage-based offsets
+    const xOffset = (handParams.hand3DXOffset / 100) * window.innerWidth * 0.1;
+    const yOffset = (handParams.hand3DYOffset / 100) * window.innerHeight * 0.1;
     const x = (1 - lm.x - 0.5) * baseSize * 1.5 * scaleFactor + xOffset;
     const y = -(lm.y - 0.5) * baseSize * 1.5 * scaleFactor + yOffset;
     const z = -lm.z * handParams.hand3DZDepth;
@@ -139,13 +180,36 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, th
   });
   
   const fingers = [
-    { name: 'thumb', indices: [1, 2, 3, 4], radii: [[0.21, 0.18], [0.18, 0.17], [0.17, 0.16]] },
-    { name: 'index', indices: [5, 6, 7, 8], radii: [[0.18, 0.17], [0.17, 0.16], [0.16, 0.13]] },
-    { name: 'middle', indices: [9, 10, 11, 12], radii: [[0.20, 0.18], [0.18, 0.16], [0.16, 0.14]] },
-    { name: 'ring', indices: [13, 14, 15, 16], radii: [[0.18, 0.16], [0.16, 0.14], [0.14, 0.13]] },
-    { name: 'pinky', indices: [17, 18, 19, 20], radii: [[0.16, 0.14], [0.14, 0.13], [0.13, 0.12]] },
+    { 
+      name: 'thumb', 
+      indices: [1, 2, 3, 4],
+      radii: [[0.21, 0.18], [0.18, 0.17], [0.17, 0.16]]
+    },
+    { 
+      name: 'index', 
+      indices: [5, 6, 7, 8],
+      radii: [[0.18, 0.17], [0.17, 0.16], [0.16, 0.13]]
+    },
+    { 
+      name: 'middle', 
+      indices: [9, 10, 11, 12],
+      radii: [[0.20, 0.18], [0.18, 0.16], [0.16, 0.14]]
+    },
+    { 
+      name: 'ring', 
+      indices: [13, 14, 15, 16],
+      radii: [[0.18, 0.16], [0.16, 0.14], [0.14, 0.13]]
+    },
+    { 
+      name: 'pinky', 
+      indices: [17, 18, 19, 20],
+      radii: [[0.16, 0.14], [0.14, 0.13], [0.13, 0.12]]
+    },
   ];
   
+  // Remove hardcoded positioning - hands now position based on actual landmark coordinates
+  
+  // Trigger re-render when landmarks change
   useFrame(() => {
     if (groupRef.current) {
       groupRef.current.updateMatrixWorld();
@@ -154,14 +218,17 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, th
   
   return (
     <group ref={groupRef}>
+      {/* Palm surface */}
       <PalmMesh vectors={vectors} color={themeColor} emissive={themeEmissive} />
       
+      {/* Connection from wrist to finger bases */}
       <SmoothFingerSegment start={vectors[0]} end={vectors[1]} startRadius={0.26} endRadius={0.21} color={themeColor} emissive={themeEmissive} />
       <SmoothFingerSegment start={vectors[0]} end={vectors[5]} startRadius={0.23} endRadius={0.20} color={themeColor} emissive={themeEmissive} />
       <SmoothFingerSegment start={vectors[0]} end={vectors[9]} startRadius={0.23} endRadius={0.20} color={themeColor} emissive={themeEmissive} />
       <SmoothFingerSegment start={vectors[0]} end={vectors[13]} startRadius={0.22} endRadius={0.18} color={themeColor} emissive={themeEmissive} />
       <SmoothFingerSegment start={vectors[0]} end={vectors[17]} startRadius={0.21} endRadius={0.17} color={themeColor} emissive={themeEmissive} />
       
+      {/* Render each finger with smooth segments */}
       {fingers.map((finger) => (
         <group key={finger.name}>
           {finger.indices.map((landmarkIdx, segmentIdx) => {
@@ -182,6 +249,7 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, th
             );
           })}
           
+          {/* Fingertip - extra smooth */}
           <mesh position={vectors[finger.indices[finger.indices.length - 1]]}>
             <sphereGeometry args={[finger.radii[finger.radii.length - 1][1], 12, 12]} />
             <meshStandardMaterial 
@@ -195,6 +263,7 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, th
         </group>
       ))}
       
+      {/* Wrist base */}
       <mesh position={vectors[0]}>
         <sphereGeometry args={[0.27, 12, 12]} />
         <meshStandardMaterial 
@@ -209,56 +278,43 @@ function SmoothHandModel({ landmarks, handIndex, alignmentParams, handParams, th
   );
 }
 
-export const Hand3DModel = memo(function Hand3DModel({
-  landmarks,
-  videoWidth,
-  videoHeight,
-  alignmentParams,
-  handedness,
-  color,
-  emissiveColor,
-  className = '',
-}: Hand3DModelProps) {
-  const [themeColors, setThemeColors] = useState({ color: color || '#ffffff', emissive: emissiveColor || '#f8f8f8' });
+const Hand3DModel = memo(function Hand3DModel({ landmarks, videoWidth, videoHeight, alignmentParams, handedness }: Hand3DModelProps) {
+  const [themeColors, setThemeColors] = useState({ color: '#ffffff', emissive: '#f8f8f8' });
   
   useEffect(() => {
-    if (color && emissiveColor) {
-      setThemeColors({ color, emissive: emissiveColor });
-      return;
-    }
-    
     const updateThemeColors = () => {
-      try {
-        const rootStyles = getComputedStyle(document.documentElement);
-        const foregroundHSL = rootStyles.getPropertyValue('--foreground').trim();
-        if (foregroundHSL) {
-          const [h, s, l] = foregroundHSL.split(' ').map(v => parseFloat(v.replace('%', '')));
-          const computedColor = `hsl(${h}, ${s}%, ${l}%)`;
-          const computedEmissive = `hsl(${h}, ${s}%, ${Math.max(l - 3, 0)}%)`;
-          setThemeColors({ color: computedColor, emissive: computedEmissive });
-        }
-      } catch {
-        // Use defaults
-      }
+      const rootStyles = getComputedStyle(document.documentElement);
+      const foregroundHSL = rootStyles.getPropertyValue('--foreground').trim();
+      const [h, s, l] = foregroundHSL.split(' ').map(v => parseFloat(v.replace('%', '')));
+      const color = `hsl(${h}, ${s}%, ${l}%)`;
+      const emissive = `hsl(${h}, ${s}%, ${Math.max(l - 3, 0)}%)`;
+      setThemeColors({ color, emissive });
     };
     
     updateThemeColors();
     
+    // Watch for theme changes
     const observer = new MutationObserver(updateThemeColors);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     
     return () => observer.disconnect();
-  }, [color, emissiveColor]);
+  }, []);
   
   if (!landmarks || landmarks.length === 0) return null;
   
   return (
     <div 
-      className={`fixed inset-0 pointer-events-none z-20 ${className}`}
-      style={{ width: '100vw', height: '100vh' }}
+      className="fixed inset-0 pointer-events-none z-20"
+      style={{ 
+        width: '100vw', 
+        height: '100vh',
+      }}
     >
       <Canvas
-        style={{ width: '100%', height: '100%' }}
+        style={{ 
+          width: '100%', 
+          height: '100%',
+        }}
         gl={{ 
           alpha: true, 
           antialias: false,
@@ -269,21 +325,29 @@ export const Hand3DModel = memo(function Hand3DModel({
       >
         <PerspectiveCamera makeDefault position={[0, 0, 12]} fov={75} />
         
+        {/* Simplified lighting without shadows for performance */}
         <ambientLight intensity={0.9} />
-        <directionalLight position={[5, 10, 8]} intensity={0.8} color="#fff5e6" />
+        <directionalLight 
+          position={[5, 10, 8]} 
+          intensity={0.8} 
+          color="#fff5e6" 
+        />
         <directionalLight position={[-5, -5, -8]} intensity={0.3} color="#ffeedd" />
         <pointLight position={[0, 5, 15]} intensity={0.4} color="#ffe4d1" />
         
+        {/* Render each detected hand */}
         {landmarks.map((handLandmarks, index) => {
+          // Calculate hand center from wrist (0) and middle finger base (9)
           const wrist = handLandmarks[0];
           const middleMCP = handLandmarks[9];
           const handCenterX = (wrist.x + middleMCP.x) / 2;
           
-          const interpolated = interpolateAlignmentParams(
-            alignmentParams.leftHand as unknown as { [key: string]: number },
-            alignmentParams.rightHand as unknown as { [key: string]: number },
+          // Get interpolated alignment params for smooth transitions
+          const interpolatedParams = interpolateAlignmentParams(
+            alignmentParams.leftHand,
+            alignmentParams.rightHand,
             handCenterX
-          ) as unknown as AlignmentParams['leftHand'];
+          );
           
           return (
             <SmoothHandModel 
@@ -291,7 +355,7 @@ export const Hand3DModel = memo(function Hand3DModel({
               landmarks={handLandmarks}
               handIndex={index}
               alignmentParams={alignmentParams}
-              handParams={interpolated}
+              handParams={interpolatedParams}
               themeColor={themeColors.color}
               themeEmissive={themeColors.emissive}
             />
@@ -301,3 +365,5 @@ export const Hand3DModel = memo(function Hand3DModel({
     </div>
   );
 });
+
+export default Hand3DModel;

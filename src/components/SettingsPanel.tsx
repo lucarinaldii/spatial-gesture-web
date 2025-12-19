@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Plus, RotateCcw, Image, Link, Eye, EyeOff, Settings as SettingsIcon, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { AlignmentParams } from '@/lib/hand-tracking';
+import { AlignmentParams } from '@/components/AlignmentSettings';
 
 export interface SettingsPanelProps {
   showConnectors: boolean;

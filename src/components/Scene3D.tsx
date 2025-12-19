@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { OBJLoader } from 'three-stdlib';
 import * as THREE from 'three';
-import { GestureState, HandPosition } from '@/lib/hand-tracking';
+import { GestureState, HandPosition } from '@/hooks/useHandTracking';
 
 interface Object3DData {
   id: string;

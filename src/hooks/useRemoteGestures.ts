@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { GestureState, HandPosition } from '../types';
+import { GestureState, HandPosition } from './useHandTracking';
 
 const PINCH_THRESHOLD = 0.05;
+const POINTING_THRESHOLD = 0.15;
 
 interface Landmark {
   x: number;
@@ -16,16 +17,12 @@ const calculateDistance = (p1: Landmark, p2: Landmark): number => {
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 };
 
-const isFingerExtended = (
-  landmarks: Landmark[],
-  tipIndex: number,
-  pipIndex: number,
-  mcpIndex: number
-): boolean => {
+const isFingerExtended = (landmarks: Landmark[], tipIndex: number, pipIndex: number, mcpIndex: number): boolean => {
   const tip = landmarks[tipIndex];
   const pip = landmarks[pipIndex];
   const mcp = landmarks[mcpIndex];
   
+  // Check if tip is further from wrist than pip
   return tip.y < pip.y && pip.y < mcp.y;
 };
 
@@ -36,16 +33,19 @@ const detectGesture = (handLandmarks: Landmark[], handIndex: number): GestureSta
   const ringTip = handLandmarks[16];
   const pinkyTip = handLandmarks[20];
   
+  // Calculate pinch between thumb and index
   const pinchDistance = calculateDistance(thumbTip, indexTip);
   const isPinching = pinchDistance < PINCH_THRESHOLD;
   const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance / PINCH_THRESHOLD)));
   
+  // Detect finger extensions
   const thumbExtended = isFingerExtended(handLandmarks, 4, 3, 2);
   const indexExtended = isFingerExtended(handLandmarks, 8, 7, 6);
   const middleExtended = isFingerExtended(handLandmarks, 12, 11, 10);
   const ringExtended = isFingerExtended(handLandmarks, 16, 15, 14);
   const pinkyExtended = isFingerExtended(handLandmarks, 20, 19, 18);
   
+  // Pointing gesture: only index finger extended
   const isPointing = indexExtended && !middleExtended && !ringExtended && !pinkyExtended;
   
   return {
@@ -79,6 +79,7 @@ const detectGesture = (handLandmarks: Landmark[], handIndex: number): GestureSta
 };
 
 const calculateHandPosition = (handLandmarks: Landmark[], handIndex: number): HandPosition => {
+  // Use index fingertip as interaction point, mirrored horizontally like desktop
   const indexTip = handLandmarks[8];
   
   return {

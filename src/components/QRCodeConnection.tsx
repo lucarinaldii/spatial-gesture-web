@@ -10,27 +10,15 @@ interface QRCodeConnectionProps {
 export const QRCodeConnection = ({ onSessionId }: QRCodeConnectionProps) => {
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const [connectionUrl, setConnectionUrl] = useState('');
-  const [localHint, setLocalHint] = useState<string | null>(null);
 
   useEffect(() => {
     // Pass session ID to parent
     onSessionId(sessionId);
 
     // Get current URL and create mobile camera URL
-    const { hostname, port } = window.location;
-    const configuredBaseUrl = import.meta.env.VITE_PUBLIC_BASE_URL?.replace(/\/$/, '');
-    const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(hostname);
-    const protocol = 'https:'; // force HTTPS so mobile can access camera
-    const baseUrl = configuredBaseUrl || `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+    const baseUrl = window.location.origin;
     const mobileUrl = `${baseUrl}/mobile-camera?session=${sessionId}`;
     setConnectionUrl(mobileUrl);
-
-    if (isLocalhost && !configuredBaseUrl) {
-      const portSuffix = port ? `:${port}` : '';
-      setLocalHint(`Phones can't reach localhost. Use https://<your-local-ip>${portSuffix}/mobile-camera?session=${sessionId}`);
-    } else {
-      setLocalHint(null);
-    }
   }, [sessionId, onSessionId]);
 
   return (
@@ -54,11 +42,6 @@ export const QRCodeConnection = ({ onSessionId }: QRCodeConnectionProps) => {
           </div>
         )}
         <p className="text-xs text-muted-foreground">Session: {sessionId}</p>
-        {localHint && (
-          <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
-            {localHint}
-          </p>
-        )}
       </div>
     </Card>
   );

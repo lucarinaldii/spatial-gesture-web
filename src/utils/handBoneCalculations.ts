@@ -1,10 +1,5 @@
+import { NormalizedLandmark } from '@mediapipe/tasks-vision';
 import * as THREE from 'three';
-
-interface NormalizedLandmark {
-  x: number;
-  y: number;
-  z: number;
-}
 
 // MediaPipe hand landmark indices
 export const HAND_LANDMARKS = {
@@ -44,10 +39,12 @@ export const FINGER_CHAINS = {
  * Convert MediaPipe normalized coordinates to 3D world space
  */
 export function landmarkToVector3(landmark: NormalizedLandmark, scale = 1): THREE.Vector3 {
+  // MediaPipe provides x, y (0-1 normalized), z (depth relative to wrist)
+  // We need to flip x because the video is mirrored
   return new THREE.Vector3(
-    (1 - landmark.x) * scale - scale / 2,
-    -landmark.y * scale + scale / 2,
-    -landmark.z * scale * 2
+    (1 - landmark.x) * scale - scale / 2, // Center and flip horizontally
+    -landmark.y * scale + scale / 2, // Center and flip vertically
+    -landmark.z * scale * 2 // Scale depth and invert for correct orientation
   );
 }
 
@@ -62,6 +59,7 @@ export function calculateBoneRotation(
   const direction = new THREE.Vector3().subVectors(endPoint, startPoint).normalize();
   const quaternion = new THREE.Quaternion();
   
+  // Create a matrix that looks from start to end
   const matrix = new THREE.Matrix4();
   matrix.lookAt(startPoint, endPoint, upVector);
   quaternion.setFromRotationMatrix(matrix);
@@ -75,21 +73,26 @@ export function calculateBoneRotation(
 export function calculateHandPose(landmarks: NormalizedLandmark[], scale = 1) {
   const vectors = landmarks.map(lm => landmarkToVector3(lm, scale));
   
+  // Hand position (wrist)
   const handPosition = vectors[HAND_LANDMARKS.WRIST].clone();
   
+  // Calculate hand orientation from palm landmarks
   const wrist = vectors[HAND_LANDMARKS.WRIST];
   const indexMcp = vectors[HAND_LANDMARKS.INDEX_MCP];
   const pinkyMcp = vectors[HAND_LANDMARKS.PINKY_MCP];
   
+  // Palm normal (cross product of palm vectors)
   const palmVector1 = new THREE.Vector3().subVectors(indexMcp, wrist);
   const palmVector2 = new THREE.Vector3().subVectors(pinkyMcp, wrist);
   const palmNormal = new THREE.Vector3().crossVectors(palmVector1, palmVector2).normalize();
   
+  // Hand orientation quaternion
   const handRotation = new THREE.Quaternion();
   const targetMatrix = new THREE.Matrix4();
   targetMatrix.lookAt(wrist, wrist.clone().add(palmNormal), new THREE.Vector3(0, 1, 0));
   handRotation.setFromRotationMatrix(targetMatrix);
   
+  // Calculate finger rotations
   const fingerRotations: Record<string, THREE.Quaternion[]> = {};
   
   Object.entries(FINGER_CHAINS).forEach(([fingerName, chain]) => {
@@ -134,32 +137,4 @@ export function smoothPose(
     position: smoothedPosition,
     rotation: smoothedRotation,
   };
-}
-
-/**
- * Interpolate between left and right alignment parameters based on hand position
- */
-export function interpolateAlignmentParams(
-  leftParams: { [key: string]: number },
-  rightParams: { [key: string]: number },
-  handCenterX: number
-): { [key: string]: number } {
-  const blendZoneStart = 0.3;
-  const blendZoneEnd = 0.7;
-  
-  let blend: number;
-  if (handCenterX < blendZoneStart) {
-    blend = 0;
-  } else if (handCenterX > blendZoneEnd) {
-    blend = 1;
-  } else {
-    blend = (handCenterX - blendZoneStart) / (blendZoneEnd - blendZoneStart);
-  }
-  
-  const result: { [key: string]: number } = {};
-  for (const key in leftParams) {
-    result[key] = leftParams[key] * (1 - blend) + rightParams[key] * blend;
-  }
-  
-  return result;
 }
