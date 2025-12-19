@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useHandTracking } from '@/hooks/useHandTracking';
@@ -53,12 +53,24 @@ const MobileCamera = () => {
     },
   };
 
-  const addDebugLog = (message: string) => {
+  const addDebugLog = useCallback((message: string) => {
     const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '';
     const entry = `[${timestamp}] ${message}`;
     console.log(entry); // Always log to console
     setDebugLogs((prev) => [...prev.slice(-49), entry]);
-  };
+  }, []);
+
+  useEffect(() => {
+    const isInsecure = typeof window !== 'undefined' &&
+      !window.isSecureContext &&
+      window.location.protocol !== 'https:';
+
+    if (isInsecure) {
+      setLoadingStatus('error');
+      setCameraError('Camera access is blocked because this page is not served over HTTPS. Use https://<your-local-ip>:8080 on your phone instead of http or localhost.');
+      addDebugLog('[MOBILE] Insecure context detected - HTTPS required for camera access');
+    }
+  }, [addDebugLog]);
 
   // Setup channel connection
   useEffect(() => {
@@ -117,7 +129,7 @@ const MobileCamera = () => {
       addDebugLog('[MOBILE] Disconnecting channel');
       channelRef.current?.unsubscribe();
     };
-  }, [sessionId, navigate, toast]);
+  }, [sessionId, navigate, toast, addDebugLog]);
 
   // Update loading status when system is ready
   useEffect(() => {
@@ -125,7 +137,7 @@ const MobileCamera = () => {
       setLoadingStatus('ready');
       addDebugLog('System ready - waiting for user to start camera');
     }
-  }, [isReady, isChannelReady]);
+  }, [isReady, isChannelReady, addDebugLog]);
 
   // Send landmarks to desktop - throttled to ~20fps using timestamp
   const lastSendTimeRef = useRef<number>(0);

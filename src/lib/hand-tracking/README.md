@@ -245,3 +245,69 @@ Requires camera access and WebGL support for 3D features.
 ## License
 
 MIT
+
+## Build & Publish (standalone)
+
+The library lives in `src/lib/hand-tracking` with its own `package.json`. To bundle it without the rest of the app:
+
+```bash
+# from repo root
+npm run build:hand-tracking   # outputs ESM+CJS+d.ts to src/lib/hand-tracking/dist
+npm run pack:hand-tracking    # creates react-hand-tracking-*.tgz you can npm install
+```
+
+Peer deps are declared (React, MediaPipe, Three/React-Three) so consumers keep a single copy.
+
+## Hand-as-mouse quickstart
+
+Drop this into any React app after installing the package to move a cursor and click on pinch:
+
+```tsx
+import { useEffect, useRef } from 'react';
+import { useHandTracking, HandCursor } from 'react-hand-tracking';
+
+export function HandMouse() {
+  const { isReady, handPositions, gestureStates, videoRef, startCamera } = useHandTracking(true);
+  const wasPinching = useRef(false);
+
+  useEffect(() => {
+    if (!isReady) return;
+    startCamera();
+  }, [isReady, startCamera]);
+
+  useEffect(() => {
+    const pos = handPositions[0];
+    const gesture = gestureStates[0];
+    if (!pos || !gesture) return;
+
+    const clientX = pos.x * window.innerWidth;
+    const clientY = pos.y * window.innerHeight;
+    const target = document.elementFromPoint(clientX, clientY);
+    if (!target) return;
+
+    target.dispatchEvent(new PointerEvent('pointermove', { clientX, clientY, bubbles: true }));
+
+    const justPinched = gesture.isPinching && !wasPinching.current;
+    const justReleased = !gesture.isPinching && wasPinching.current;
+    if (justPinched) {
+      target.dispatchEvent(new PointerEvent('pointerdown', { clientX, clientY, bubbles: true }));
+      target.dispatchEvent(new PointerEvent('click', { clientX, clientY, bubbles: true }));
+    }
+    if (justReleased) {
+      target.dispatchEvent(new PointerEvent('pointerup', { clientX, clientY, bubbles: true }));
+    }
+    wasPinching.current = gesture.isPinching;
+  }, [handPositions, gestureStates]);
+
+  return (
+    <>
+      <video ref={videoRef} style={{ display: 'none' }} />
+      {handPositions.map((pos, i) => (
+        <HandCursor key={i} position={pos} gestureState={gestureStates[i]} />
+      ))}
+    </>
+  );
+}
+```
+
+This uses pinch to trigger click events at the hand position; adjust the gesture logic to match your UX.
