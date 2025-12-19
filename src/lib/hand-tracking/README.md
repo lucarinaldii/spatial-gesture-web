@@ -1,54 +1,60 @@
 # React Hand Tracking
 
-A comprehensive hand tracking and gesture detection library for React applications using MediaPipe.
+A React-first hand tracking and gesture toolkit built on MediaPipe Tasks. Provides hooks, cursors, 2D/3D visualizers, and remote-hand helpers so you can control any UI with your hands.
 
-## Features
+## What’s inside
 
-- 🖐️ Real-time hand tracking with MediaPipe
-- 👆 Gesture detection (pinch, point, finger states)
-- 🎨 Multiple visualization options (cursor, skeleton, 3D model)
-- 📱 Remote gesture support for mobile-to-desktop connections
-- ⚡ Optimized performance with configurable smoothing
-- 🎯 TypeScript support with full type definitions
+- 🖐️ Real-time hand tracking via MediaPipe (WASM served from CDN)
+- 👆 Gesture detection (pinch, point, finger states + pinch strength)
+- 🧭 Components: cursor, skeleton overlay, 3D hand model, welcome overlay
+- 📡 Remote gestures: consume landmarks streamed from a phone or other device
+- ⚙️ Configurable smoothing and thresholds
+- 🧾 Full TypeScript types and d.ts output
 
-## Installation
+## Install (local or packaged)
 
+This repo ships the library source under `src/lib/hand-tracking`.
+
+### Option 1: Use the packaged tarball
 ```bash
-npm install react-hand-tracking
+# from repo root
+npm run build:hand-tracking    # bundles to dist
+npm run pack:hand-tracking     # produces react-hand-tracking-0.1.0.tgz
+npm install ./react-hand-tracking-0.1.0.tgz
 ```
 
-### Peer Dependencies
+### Option 2: Link from source (for local dev)
+```bash
+npm install file:src/lib/hand-tracking
+```
 
-Make sure you have these peer dependencies installed:
-
+### Peer dependencies
+Install these in your host app:
 ```bash
 npm install react react-dom three @react-three/fiber @react-three/drei @mediapipe/tasks-vision
 ```
 
-## Quick Start
+> Camera access requires a secure context. Use `https://` even on LAN (self-signed cert is fine). MediaPipe assets are fetched from the CDN by default.
+
+## Quick start (local camera, auto-start)
 
 ```tsx
 import { useHandTracking, HandCursor, HandSkeleton, DEFAULT_ALIGNMENT_PARAMS } from 'react-hand-tracking';
 
 function App() {
+  // autoStart is true by default; set autoStart: false if you want a button
   const {
     isReady,
     handPositions,
     gestureStates,
     landmarks,
     videoRef,
-    startCamera,
-  } = useHandTracking(true);
+  } = useHandTracking(true, { autoStart: true });
 
   return (
     <div>
       {/* Hidden video element for camera feed */}
       <video ref={videoRef} style={{ display: 'none' }} />
-      
-      {/* Start tracking button */}
-      {isReady && (
-        <button onClick={startCamera}>Start Tracking</button>
-      )}
       
       {/* Hand cursors */}
       {handPositions.map((pos, i) => (
@@ -73,7 +79,31 @@ function App() {
 }
 ```
 
-## API Reference
+## Mobile-camera mode (remote)
+
+Use your phone to capture hands and send landmarks over WebSocket/Supabase/etc. Feed those into `useRemoteGestures` and drive the same UI:
+
+```tsx
+import { useRemoteGestures, HandCursor } from 'react-hand-tracking';
+
+function RemoteExample({ remoteLandmarks, remoteHandedness }) {
+  const { handPositions, gestureStates } = useRemoteGestures(remoteLandmarks, remoteHandedness);
+
+  return handPositions.map((pos, i) => (
+    <HandCursor key={i} position={pos} gestureState={gestureStates[i]} />
+  ));
+}
+```
+
+Mobile capture can reuse the same `useHandTracking` hook on the phone, then broadcast `landmarks` + `handedness` to the desktop.
+
+## API reference
+
+### Exports
+- Hooks: `useHandTracking`, `useRemoteGestures`
+- Components: `HandCursor`, `HandSkeleton`, `Hand3DModel`, `HandWelcomeOverlay`
+- Types: `HandPosition`, `GestureState`, `FingerState`, `AlignmentParams`, `HandTrackingConfig`, `UseHandTrackingResult`, etc.
+- Utils: `calculateRotationFromHands`, `getHandAngle`, `HAND_LANDMARKS`, `FINGER_CHAINS`, `calculateHandPose`, `smoothPose`, `interpolateAlignmentParams`, `landmarkToVector3`, `calculateBoneRotation`
 
 ### Hooks
 
@@ -93,13 +123,20 @@ const {
 } = useHandTracking(true, {
   maxHands: 2,
   minDetectionConfidence: 0.3,
+  minPresenceConfidence: 0.3,
+  minTrackingConfidence: 0.3,
   smoothingFactor: 0.5,
+  movementThreshold: 0.008,
+  autoStart: true,
 });
 ```
+- Returns: tracking state, landmarks, handedness, and a `videoRef` to attach to a hidden `<video>`.
+- `startCamera()` requests `getUserMedia`, waits for dimensions, then starts the MediaPipe loop. It runs automatically when `autoStart` is true.
+- If you run SSR, guard usage with `typeof window !== 'undefined'`.
 
 #### `useRemoteGestures(remoteLandmarks, remoteHandedness)`
 
-Process landmark data received from a remote source (e.g., mobile device).
+Transforms landmarks/handedness arrays (e.g., from a phone over WebSocket/Supabase) into the same hand position + gesture objects used locally.
 
 ```tsx
 const { handPositions, gestureStates } = useRemoteGestures(
@@ -112,7 +149,7 @@ const { handPositions, gestureStates } = useRemoteGestures(
 
 #### `<HandCursor />`
 
-Displays a hand cursor at the detected position.
+Displays a floating cursor that mirrors the detected hand. Scales/reflects based on pinch state and hand index.
 
 ```tsx
 <HandCursor
@@ -139,7 +176,7 @@ Renders a 2D skeleton overlay.
 
 #### `<Hand3DModel />`
 
-Renders a 3D hand model using Three.js.
+Renders a 3D hand model using Three.js. Supply `alignmentParams` to position/scale hands relative to the viewport.
 
 ```tsx
 <Hand3DModel
@@ -167,7 +204,7 @@ Shows a welcome screen prompting users to show their hands.
 />
 ```
 
-### Types
+### Types (key ones)
 
 ```tsx
 interface HandPosition {
@@ -197,7 +234,7 @@ interface FingerState {
 }
 ```
 
-### Utilities
+### Utilities (selected)
 
 ```tsx
 import {
@@ -240,7 +277,7 @@ const alignmentParams = {
 - Safari 15.4+
 - Firefox 90+
 
-Requires camera access and WebGL support for 3D features.
+Requires camera access and WebGL support for 3D features. On mobile, browsers will block the camera if the page is not served over HTTPS.
 
 ## License
 

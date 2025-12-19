@@ -9,6 +9,7 @@ const DEFAULT_CONFIG: Required<HandTrackingConfig> = {
   minTrackingConfidence: 0.3,
   smoothingFactor: 0.5,
   movementThreshold: 0.008,
+  autoStart: true,
 };
 
 export const useHandTracking = (
@@ -29,6 +30,7 @@ export const useHandTracking = (
   const lastPositionsRef = useRef<HandPosition[]>([]);
   const lastPinchStatesRef = useRef<boolean[]>([false, false]);
   const lastLandmarksRef = useRef<any>(null);
+  const hasAutoStartedRef = useRef(false);
   
   const LANDMARK_SMOOTHING = 0.7;
   const PINCH_THRESHOLD_ENTER_BASE = 0.05;
@@ -229,6 +231,18 @@ export const useHandTracking = (
       throw error;
     }
   }, [processFrame]);
+
+  // Optional auto-start for local camera mode
+  useEffect(() => {
+    if (!enabled || !mergedConfig.autoStart) return;
+    if (!isReady || !videoRef.current) return;
+    if (hasAutoStartedRef.current) return;
+
+    hasAutoStartedRef.current = true;
+    startCamera().catch((error) => {
+      console.error('Error auto-starting camera:', error);
+    });
+  }, [enabled, mergedConfig.autoStart, isReady, startCamera]);
 
   useEffect(() => {
     if (!enabled) return;

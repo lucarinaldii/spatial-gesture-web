@@ -55,6 +55,7 @@ export interface HandTrackingConfig {
   minTrackingConfidence?: number;
   smoothingFactor?: number;
   movementThreshold?: number;
+  autoStart?: boolean; // start the local camera automatically when ready
 }
 
 export interface UseHandTrackingResult {
