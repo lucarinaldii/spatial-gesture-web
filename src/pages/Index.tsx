@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { useHandTracking } from '@/hooks/useHandTracking';
-import { useRemoteGestures } from '@/hooks/useRemoteGestures';
+import { 
+  useHandTracking, 
+  useRemoteGestures,
+  HandSkeleton,
+  Hand3DModel,
+  HandWelcomeOverlay,
+  AlignmentParams
+} from '@/lib/hand-tracking';
 import { supabase } from '@/integrations/supabase/client';
-import HandSkeleton from '@/components/HandSkeleton';
-import Hand3DModel from '@/components/Hand3DModel';
 import InteractiveObject from '@/components/InteractiveObject';
-import AlignmentSettings, { AlignmentParams } from '@/components/AlignmentSettings';
+import AlignmentSettings from '@/components/AlignmentSettings';
 import WireConnection from '@/components/WireConnection';
 import { Scene3D } from '@/components/Scene3D';
 import { ObjectManipulationIndicator } from '@/components/ObjectManipulationIndicator';
@@ -19,7 +23,6 @@ import { DebugPanel } from '@/components/DebugPanel';
 import { KioskMode } from '@/components/KioskMode';
 import { GasStationMode } from '@/components/GasStationMode';
 import { EVChargingMode } from '@/components/EVChargingMode';
-import { HandWelcomeOverlay } from '@/components/HandWelcomeOverlay';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
 

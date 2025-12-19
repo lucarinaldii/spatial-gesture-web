@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus, Minus, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { GestureState, HandPosition } from '@/hooks/useHandTracking';
+import { GestureState, HandPosition } from '@/lib/hand-tracking';
 
 interface MenuItem {
   id: string;

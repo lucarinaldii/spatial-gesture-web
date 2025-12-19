@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, memo, Suspense } from 'react';
 import { Card } from '@/components/ui/card';
-import { HandPosition, GestureState } from '@/hooks/useHandTracking';
+import { HandPosition, GestureState } from '@/lib/hand-tracking';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, Center } from '@react-three/drei';
 import { Document, Page, pdfjs } from 'react-pdf';

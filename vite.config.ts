@@ -7,9 +7,8 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: true, // allow access from local network devices
+    host: true,
     port: 8080,
-    https: true, // required for mobile camera access on non-localhost hosts
   },
   plugins: [
     basicSsl(),

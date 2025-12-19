@@ -2,9 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useHandTracking } from '@/hooks/useHandTracking';
-import Hand3DModel from '@/components/Hand3DModel';
-import { AlignmentParams } from '@/components/AlignmentSettings';
+import { useHandTracking, Hand3DModel, AlignmentParams } from '@/lib/hand-tracking';
 import { Settings, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {

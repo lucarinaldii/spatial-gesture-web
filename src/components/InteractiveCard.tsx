@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { Card } from '@/components/ui/card';
-import { HandPosition, GestureState } from '@/hooks/useHandTracking';
+import { HandPosition, GestureState } from '@/lib/hand-tracking';
 
 interface InteractiveCardProps {
   title: string;

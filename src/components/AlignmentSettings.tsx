@@ -1,29 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-
-export interface AlignmentParams {
-  leftHand: {
-    skeletonScale: number;
-    skeletonXOffset: number;
-    skeletonYOffset: number;
-    skeletonZDepth: number;
-    hand3DScale: number;
-    hand3DXOffset: number;
-    hand3DYOffset: number;
-    hand3DZDepth: number;
-  };
-  rightHand: {
-    skeletonScale: number;
-    skeletonXOffset: number;
-    skeletonYOffset: number;
-    skeletonZDepth: number;
-    hand3DScale: number;
-    hand3DXOffset: number;
-    hand3DYOffset: number;
-    hand3DZDepth: number;
-  };
-}
+import { AlignmentParams } from '@/lib/hand-tracking';
 
 interface AlignmentSettingsProps {
   params: AlignmentParams;
