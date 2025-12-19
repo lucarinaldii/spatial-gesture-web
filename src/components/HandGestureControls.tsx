@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { GestureState, HandPosition } from '@/hooks/useHandTracking';
+import { GestureState, HandPosition } from '@/lib/hand-tracking';
 import * as THREE from 'three';
 
 interface HandGestureControlsProps {
